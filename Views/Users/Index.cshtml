@@ -5,16 +5,18 @@
     ViewData["Title"] = "User Management";
 }
 
-<div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center;">
-    <div>
-        <h1>User Management</h1>
-        <p class="text-muted">Manage system users and their roles</p>
-    </div>
-    <a href="@Url.Action("Create")" style="background-color: #10b981; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='#059669'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.backgroundColor='#10b981'; this.style.transform='none'; this.style.boxShadow='none';">+ New User</a>
+<div class="page-header">
+    <h1>User Management</h1>
+    <p class="page-subtitle">Manage system users and their access levels.</p>
 </div>
 
 <div class="card">
-    <table>
+    <div class="page-header-actions">
+        <h2 class="table-title">Users Directory</h2>
+        <a href="@Url.Action("Create")" class="btn-primary btn-add">+ New User</a>
+    </div>
+    <div class="table-wrap">
+        <table>
         <thead>
             <tr>
                 <th>Username</th>
@@ -22,7 +24,7 @@
                 <th>Sponsor</th>
                 <th>Roles</th>
                 <th>Status</th>
-                <th style="text-align: center;">Actions</th>
+                <th class="text-center">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -36,22 +38,23 @@
                             var roles = (await UserManager.GetRolesAsync(u)).ToList();
                             if(roles.Any()){
                                 @foreach(var role in roles){
-                                    <span style="background-color: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 4px; display: inline-block;">@role</span>
+                                    <span class="role-badge">@role</span>
                                 }
                             }else{
-                                <span class="text-muted" style="font-style: italic;">No roles assigned</span>
+                                <span class="text-muted">No roles assigned</span>
                             }
                         }
                     </td>
                     <td>
-                        <span style="background-color: @(u.IsActive ? "#d1fae5" : "#fee2e2"); color: @(u.IsActive ? "#065f46" : "#991b1b"); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">@(u.IsActive ? "Active" : "Inactive")</span>
+                        <span class="status-badge @(u.IsActive ? "status-active" : "status-inactive")">@(u.IsActive ? "Active" : "Inactive")</span>
                     </td>
-                    <td style="text-align: center;">
-                        <a href="#" style="color: #2563eb; text-decoration: none; font-weight: 500; font-size: 12px; margin-right: 8px;">Edit</a>
-                        <a href="#" style="color: #ef4444; text-decoration: none; font-weight: 500; font-size: 12px;" onclick="return confirm('Are you sure?');">Delete</a>
+                    <td class="text-center">
+                        <a href="#" class="link-edit">Edit</a>
+                        <a href="#" class="link-delete" onclick="return confirm('Are you sure?');">Delete</a>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+    </div>
 </div>

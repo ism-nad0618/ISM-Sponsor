@@ -98,30 +98,348 @@ button {
 }
 
 button,
-.btn {
+.btn,
+a.btn,
+button.btn {
     border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 10px 14px;
+    border-radius: 25px;
+    padding: 10px 20px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    line-height: 1.2;
+}
+
+/* Ensure buttons in forms and tables are consistent */
+form button,
+table button,
+form .btn,
+table .btn {
+    border-radius: 25px;
 }
 
 button,
 .btn-primary {
     background: var(--ism-green);
     color: var(--white);
+    border-radius: 25px;
 }
 
 button:hover,
 .btn-primary:hover {
     background: var(--ism-green-dark);
+    text-decoration: none;
+}
+
+.btn-add {
+    padding: 12px 24px;
 }
 
 .btn-secondary {
-    background: var(--white);
-    color: var(--ism-green);
-    border-color: var(--ism-green);
+    background: var(--gray-500);
+    color: var(--white);
+    border-radius: 25px;
+}
+
+.btn-secondary:hover {
+    background: var(--gray-700);
+    text-decoration: none;
+}
+
+.btn-success {
+    background: #16a34a;
+    color: var(--white);
+    border-radius: 25px;
+}
+
+.btn-success:hover {
+    background: #15803d;
+    text-decoration: none;
+}
+
+.btn-warning {
+    background: #eab308;
+    color: var(--gray-900);
+    border-radius: 25px;
+}
+
+.btn-warning:hover {
+    background: #ca8a04;
+    text-decoration: none;
+}
+
+.btn-danger {
+    background: #f59e0b;
+    color: var(--white);
+    border-radius: 25px;
+}
+
+.btn-danger:hover {
+    background: #d97706;
+    text-decoration: none;
+}
+
+.btn-info {
+    background: #22c55e;
+    color: var(--white);
+    border-radius: 25px;
+}
+
+.btn-info:hover {
+    background: #16a34a;
+    text-decoration: none;
+}
+
+/* Button utilities */
+.btn-block {
+    width: 100%;
+    display: block;
+    text-align: center;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Ensure select dropdowns maintain consistent styling but not rounded */
+select {
+    border-radius: 8px;
+}
+
+.year-selector select {
+    border-radius: 8px;
+}
+
+/* Utility Classes */
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flex-start {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.form-actions-bordered {
+    padding-top: 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.page-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.required {
+    color: var(--danger);
+}
+
+.optional {
+    color: var(--gray-500);
+}
+
+.help-text {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-top: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--gray-500);
+    padding: 32px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.d-inline {
+    display: inline;
+}
+
+.text-muted {
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+.readonly-field {
+    background: var(--gray-100);
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-active {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-inactive {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.role-badge {
+    background-color: var(--ism-green-soft);
+    color: var(--ism-green-dark);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 4px;
+    display: inline-block;
+}
+
+.badge-yellow {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.grade-badge {
+    background-color: #dbeafe;
+    color: #1e40af;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.link-edit {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12px;
+    margin-right: 8px;
+}
+
+.link-delete {
+    color: var(--danger);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.link-edit:hover,
+.link-delete:hover {
+    text-decoration: underline;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.btn-link-delete {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--danger);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-link:hover,
+.btn-link-delete:hover {
+    text-decoration: underline;
+}
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+
+.gap-1 { gap: 0.5rem; }
+.gap-2 { gap: 1rem; }
+.gap-3 { gap: 1.5rem; }
+
+.flex-wrap { flex-wrap: wrap; }
+
+.w-auto { width: auto; }
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.card-narrow {
+    max-width: 600px;
+}
+
+.validation-message {
+    display: block;
+    margin-top: 6px;
+}
+
+.login-heading {
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+.offline-container {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.offline-icon {
+    font-size: 72px;
+    margin-bottom: 24px;
+}
+
+.offline-heading {
+    color: #374151;
+    margin: 0 0 16px 0;
+}
+
+.offline-text {
+    color: #6b7280;
+    font-size: 16px;
+    margin: 0 0 24px 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .sidebar {
@@ -224,6 +542,10 @@ button:hover,
     font-size: 28px;
     font-weight: 800;
     color: var(--ism-green-dark);
+}
+
+.stat-value-sm {
+    font-size: 18px;
 }
 
 .table-title {
@@ -359,6 +681,8 @@ select:focus {
     border: none;
     font-size: 22px;
     padding: 0;
+    border-radius: 0;
+    cursor: pointer;
 }
 
 .highlight {

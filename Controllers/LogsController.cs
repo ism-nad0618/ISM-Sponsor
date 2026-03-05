@@ -24,7 +24,6 @@ namespace ISMSponsor.Controllers
 
             var year = HttpContext.Session.GetString("ActiveSchoolYear") ?? string.Empty;
             var logs = await _logsService.GetByYearAsync(year, sponsorId);
-            ViewBag.ActivityLogs = await _logsService.GetRecentActivityAsync(year);
             return View(logs);
         }
 

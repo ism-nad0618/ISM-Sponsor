@@ -4,6 +4,7 @@
 
     var logs = ViewBag.Logs as List<ISMSponsor.Models.Domain.LogCoverage> ?? new List<ISMSponsor.Models.Domain.LogCoverage>();
     var changeRequests = ViewBag.ChangeRequests as List<ISMSponsor.Models.Domain.ChangeRequest> ?? new List<ISMSponsor.Models.Domain.ChangeRequest>();
+    var activityLogs = ViewBag.ActivityLogs as List<ISMSponsor.Models.Domain.ActivityLog> ?? new List<ISMSponsor.Models.Domain.ActivityLog>();
 
     var pendingLogs = logs.Count(l => !string.Equals(l.LogStatus, "Approved", StringComparison.OrdinalIgnoreCase));
     var pendingRequests = changeRequests.Count(cr => !string.Equals(cr.Status, "approved", StringComparison.OrdinalIgnoreCase));
@@ -30,7 +31,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-label">Today</div>
-        <div class="stat-value" style="font-size: 18px;">@DateTime.Now.ToString("MMMM d, yyyy")</div>
+        <div class="stat-value stat-value-sm">@DateTime.Now.ToString("MMMM d, yyyy")</div>
     </div>
 </div>
 
@@ -60,6 +61,44 @@
                             <td>@log.StudentId</td>
                             <td>@log.LogStatus</td>
                             <td>@(log.AttachmentUploadedOn?.ToString("MMMM d, yyyy") ?? "Not uploaded")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Activity Logs</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Item</th>
+                    <th>Details</th>
+                    <th>User</th>
+                    <th>Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!activityLogs.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="empty-state">No activity logs available.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var activity in activityLogs)
+                    {
+                        <tr>
+                            <td>@activity.Date.ToString("MMM d, yyyy h:mm tt")</td>
+                            <td>@activity.Item</td>
+                            <td>@activity.Details</td>
+                            <td>@activity.UserDisplay</td>
+                            <td><span class="role-badge">@activity.RoleName</span></td>
                         </tr>
                     }
                 }

@@ -3,11 +3,11 @@
     ViewData["Title"] = "Offline";
 }
 
-<div style="text-align: center; padding: 60px 20px;">
-    <div style="font-size: 72px; margin-bottom: 24px;">🔌</div>
-    <h1 style="color: #374151; margin: 0 0 16px 0;">You're Offline</h1>
-    <p style="color: #6b7280; font-size: 16px; margin: 0 0 24px 0; max-width: 400px; margin-left: auto; margin-right: auto;">
+<div class="offline-container">
+    <div class="offline-icon">🔌</div>
+    <h1 class="offline-heading">You're Offline</h1>
+    <p class="offline-text">
         The application is not currently reachable. Please check your internet connection and try again.
     </p>
-    <button onclick="window.location.reload()" style="background-color: #2563eb; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='#1e40af'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(37, 99, 235, 0.3)';" onmouseout="this.style.backgroundColor='#2563eb'; this.style.transform='none'; this.style.boxShadow='none';">Try Again</button>
+    <button onclick="window.location.reload()" class="btn-primary">Try Again</button>
 </div>

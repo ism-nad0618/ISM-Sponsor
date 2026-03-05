@@ -20,7 +20,7 @@
         
         <div class="form-group">
             <label asp-for="SchoolYearId" class="field-label">School Year ID</label>
-            <input asp-for="SchoolYearId" class="form-control" readonly style="background: #f0f0f0;" />
+            <input asp-for="SchoolYearId" class="form-control readonly-field" readonly />
             <small class="form-text">School Year ID cannot be changed</small>
         </div>
 
@@ -51,9 +51,9 @@
             <small class="form-text">Only one school year can be active at a time</small>
         </div>
 
-        <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button type="submit" style="background: #2d5a8c; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
-            <a asp-action="Index" style="background: #6c757d; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 4px; display: inline-block;">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Save Changes</button>
+            <a asp-action="Index" class="btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
