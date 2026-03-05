@@ -1,0 +1,69 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Dashboard";
+
+    var logs = ViewBag.Logs as List<ISMSponsor.Models.Domain.LogCoverage> ?? new List<ISMSponsor.Models.Domain.LogCoverage>();
+    var changeRequests = ViewBag.ChangeRequests as List<ISMSponsor.Models.Domain.ChangeRequest> ?? new List<ISMSponsor.Models.Domain.ChangeRequest>();
+
+    var pendingLogs = logs.Count(l => !string.Equals(l.LogStatus, "Approved", StringComparison.OrdinalIgnoreCase));
+    var pendingRequests = changeRequests.Count(cr => !string.Equals(cr.Status, "approved", StringComparison.OrdinalIgnoreCase));
+    var approvedLogs = logs.Count(l => string.Equals(l.LogStatus, "Approved", StringComparison.OrdinalIgnoreCase));
+}
+
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="page-subtitle">Summary of LoGs, requests, and recent sponsor operations.</p>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Pending LoGs</div>
+        <div class="stat-value">@pendingLogs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Approved LoGs</div>
+        <div class="stat-value">@approvedLogs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending Change Requests</div>
+        <div class="stat-value">@pendingRequests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Today</div>
+        <div class="stat-value" style="font-size: 18px;">@DateTime.Now.ToString("MMMM d, yyyy")</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Recent LoGs Records</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Status</th>
+                    <th>Last Uploaded</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!logs.Any())
+                {
+                    <tr>
+                        <td colspan="3">No LoGs records available.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in logs.Take(6))
+                    {
+                        <tr>
+                            <td>@log.StudentId</td>
+                            <td>@log.LogStatus</td>
+                            <td>@(log.AttachmentUploadedOn?.ToString("MMMM d, yyyy") ?? "Not uploaded")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

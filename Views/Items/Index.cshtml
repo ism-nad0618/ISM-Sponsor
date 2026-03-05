@@ -1,0 +1,47 @@
+@model List<ISMSponsor.Models.Domain.Item>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Items";
+}
+
+<div style="margin-bottom: 32px;">
+    <h1>Items Management</h1>
+    <p class="text-muted">Manage required items by grade level</p>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Item ID</th>
+                <th>Item Name</th>
+                <th>Grade Level</th>
+                <th>Status</th>
+                <th style="text-align: center;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(Model.Count == 0){
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #9ca3af; padding: 32px;">No items found</td>
+                </tr>
+            }else{
+                @foreach(var item in Model){
+                    <tr>
+                        <td><strong>@item.ItemId</strong></td>
+                        <td>@item.ItemName</td>
+                        <td><span style="background-color: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">@item.GradeLevel</span></td>
+                        <td>
+                            <span style="background-color: @(item.IsActive ? "#d1fae5" : "#fee2e2"); color: @(item.IsActive ? "#065f46" : "#991b1b"); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                @(item.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            <a href="#" style="color: #2563eb; text-decoration: none; font-weight: 500; font-size: 12px; margin-right: 8px;">Edit</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

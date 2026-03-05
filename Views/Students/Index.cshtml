@@ -1,0 +1,47 @@
+@model List<ISMSponsor.Models.Domain.Student>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Students";
+}
+
+<div style="margin-bottom: 32px;">
+    <h1>Student Management</h1>
+    <p class="text-muted">Manage student records and assignments</p>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>School Year</th>
+                <th>Student ID</th>
+                <th>Full Name</th>
+                <th>Grade</th>
+                <th>Sponsor</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(Model.Count == 0){
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #9ca3af; padding: 32px;">No students found</td>
+                </tr>
+            }else{
+                @foreach(var s in Model){
+                    <tr>
+                        <td><strong>@s.SchoolYearId</strong></td>
+                        <td>@s.StudentId</td>
+                        <td>@s.LastName, @s.FirstName</td>
+                        <td>@s.GradeLevel</td>
+                        <td>@s.SponsorId</td>
+                        <td>
+                            <span style="background-color: @(s.StudentStatus?.ToLower() == "active" ? "#d1fae5" : "#fee2e2"); color: @(s.StudentStatus?.ToLower() == "active" ? "#065f46" : "#991b1b"); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                @s.StudentStatus
+                            </span>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

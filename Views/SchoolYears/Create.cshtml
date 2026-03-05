@@ -1,0 +1,63 @@
+@model ISMSponsor.Models.Domain.SchoolYear
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Create School Year";
+}
+
+<div class="page-header">
+    <h1>Create School Year</h1>
+    <p class="page-subtitle">Add a new school year to the system.</p>
+</div>
+
+@if (TempData["Error"] is string errorText)
+{
+    <div class="alert alert-error">@errorText</div>
+}
+
+<div class="card">
+    <form method="post" asp-action="Create">
+        @Html.AntiForgeryToken()
+        
+        <div class="form-group">
+            <label asp-for="SchoolYearId" class="field-label">School Year ID</label>
+            <input asp-for="SchoolYearId" class="form-control" placeholder="e.g., 25-26" required />
+            <span asp-validation-for="SchoolYearId" class="text-danger"></span>
+            <small class="form-text">Use format: YY-YY (e.g., 25-26 for 2025-2026)</small>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Name" class="field-label">Name</label>
+            <input asp-for="Name" class="form-control" placeholder="e.g., School Year 2025-2026" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ValidFrom" class="field-label">Valid From</label>
+            <input asp-for="ValidFrom" type="date" class="form-control" required />
+            <span asp-validation-for="ValidFrom" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ValidTo" class="field-label">Valid To</label>
+            <input asp-for="ValidTo" type="date" class="form-control" required />
+            <span asp-validation-for="ValidTo" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label class="field-label">
+                <input asp-for="IsActive" type="checkbox" />
+                Set as Active School Year
+            </label>
+            <span asp-validation-for="IsActive" class="text-danger"></span>
+        </div>
+
+        <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" style="background: #2d5a8c; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer;">Create School Year</button>
+            <a asp-action="Index" style="background: #6c757d; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 4px; display: inline-block;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,95 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ISMSponsor.Models.ApplicationUser> SignInManager
+@inject UserManager<ISMSponsor.Models.ApplicationUser> UserManager
+@{
+    var user = UserManager.GetUserAsync(User).Result;
+    string role = user != null ? string.Join(", ", UserManager.GetRolesAsync(user).Result) : "";
+    string display = user?.DisplayName ?? User.Identity?.Name ?? "User";
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    Func<string, string, string> navClass = (controller, action) =>
+        string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+        (string.IsNullOrEmpty(action) || string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase))
+            ? "active"
+            : "";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ISM Sponsor Portal</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="~/js/site.js"></script>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-main">INTERNATIONAL SCHOOL MANILA</div>
+            <div class="logo-sub">Sponsor Portal</div>
+        </div>
+
+        <div class="user-info">
+            @if (SignInManager.IsSignedIn(User))
+            {
+                <span>@display (@role)</span>
+                <form method="post" asp-controller="Account" asp-action="Logout">
+                    <button type="submit">Sign Out</button>
+                </form>
+            }
+        </div>
+
+        <div class="year-selector">
+            <form method="post" asp-controller="SchoolYears" asp-action="SetActive" id="yearForm">
+                <select name="id" onchange="document.getElementById('yearForm').submit();" aria-label="Active school year">
+                    @{
+                        var years = Context.Items["SchoolYears"] as List<ISMSponsor.Models.Domain.SchoolYear>;
+                        var current = Context.Session.GetString("ActiveSchoolYear");
+                        if (years != null)
+                        {
+                            foreach (var y in years)
+                            {
+                                <option value="@y.SchoolYearId" selected="@(y.SchoolYearId == current ? "selected" : null)">@y.Name</option>
+                            }
+                        }
+                    }
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <ul>
+            <li><a class="@navClass("Dashboard", "Index")" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+            @if (User.IsInRole("sponsor") || User.IsInRole("admin"))
+            {
+                <li><a class="@navClass("Sponsors", "Profile")" asp-controller="Sponsors" asp-action="Profile">Sponsor Profile</a></li>
+            }
+            <li><a class="@navClass("Logs", "Index")" asp-controller="Logs" asp-action="Index">Letters of Guarantee (LoGs)</a></li>
+            <li><a class="@navClass("Reports", "Index")" asp-controller="Reports" asp-action="Index">Reports</a></li>
+
+            @if (User.IsInRole("admin"))
+            {
+                <li><strong>Settings</strong></li>
+                <li><a class="@navClass("SchoolYears", "Index")" asp-controller="SchoolYears" asp-action="Index">School Years</a></li>
+                <li><a class="@navClass("Students", "Index")" asp-controller="Students" asp-action="Index">Students</a></li>
+                <li><a class="@navClass("Items", "Index")" asp-controller="Items" asp-action="Index">Items</a></li>
+                <li><a class="@navClass("Roles", "Index")" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                <li><a class="@navClass("Users", "Index")" asp-controller="Users" asp-action="Index">Users</a></li>
+            }
+        </ul>
+    </div>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>
