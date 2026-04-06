@@ -62,9 +62,9 @@
     <div class="sidebar">
         <ul>
             <li><a class="@navClass("Dashboard", "Index")" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
-            @if (User.IsInRole("sponsor") || User.IsInRole("admin"))
+            @if (User.IsInRole("admin") || User.IsInRole("cashier"))
             {
-                <li><a class="@navClass("Sponsors", "Profile")" asp-controller="Sponsors" asp-action="Profile">Sponsor Profile</a></li>
+                <li><a class="@navClass("Sponsors", "Index")" asp-controller="Sponsors" asp-action="Index">All Sponsors</a></li>
             }
             <li><a class="@navClass("Logs", "Index")" asp-controller="Logs" asp-action="Index">Letters of Guarantee (LoGs)</a></li>
             <li><a class="@navClass("Reports", "Index")" asp-controller="Reports" asp-action="Index">Reports</a></li>

@@ -9,8 +9,21 @@
     <p class="page-subtitle">Review registered sponsor records.</p>
 </div>
 
+@if (TempData["Success"] is string successText)
+{
+    <div class="alert alert-success">@successText</div>
+}
+
+@if (TempData["Error"] is string errorText)
+{
+    <div class="alert alert-error">@errorText</div>
+}
+
 <div class="card">
-    <h2 class="table-title">Sponsor Directory</h2>
+    <div class="page-header-actions">
+        <h2 class="table-title">Sponsor Directory</h2>
+        <a asp-action="Create" class="btn-primary btn-add">+ New Sponsor</a>
+    </div>
     <div class="table-wrap">
         <table>
             <thead>

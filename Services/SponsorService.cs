@@ -23,6 +23,13 @@ namespace ISMSponsor.Services
         public async Task<List<Sponsor>> GetAllAsync() =>
             await _context.Sponsors.OrderBy(s=>s.SponsorName).ToListAsync();
 
+        public async Task<Sponsor> CreateAsync(Sponsor sponsor)
+        {
+            _context.Sponsors.Add(sponsor);
+            await _context.SaveChangesAsync();
+            return sponsor;
+        }
+
         public async Task AddContactAsync(SponsorContact contact)
         {
             _context.SponsorContacts.Add(contact);

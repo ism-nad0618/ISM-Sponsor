@@ -4,34 +4,34 @@
     ViewData["Title"] = "Create New User";
 }
 
-<div class="page-header">
+<div style="margin-bottom: 32px;">
     <h1>Create New User</h1>
-    <p class="page-subtitle">Add a new user account to the system</p>
+    <p class="text-muted">Add a new user account to the system</p>
 </div>
 
-<div class="card card-narrow">
+<div class="card" style="max-width: 600px;">
     <form asp-action="Create" method="post">
         <div class="form-group">
-            <label asp-for="Username">Username <span class="required">*</span></label>
+            <label asp-for="Username">Username <span style="color: #ef4444;">*</span></label>
             <input asp-for="Username" placeholder="Enter username" />
             <span asp-validation-for="Username" class="form-error"></span>
         </div>
 
         <div class="form-group">
-            <label asp-for="DisplayName">Display Name <span class="required">*</span></label>
+            <label asp-for="DisplayName">Display Name <span style="color: #ef4444;">*</span></label>
             <input asp-for="DisplayName" placeholder="Enter display name" />
             <span asp-validation-for="DisplayName" class="form-error"></span>
         </div>
 
         <div class="form-group">
-            <label asp-for="Password">Password <span class="required">*</span></label>
+            <label asp-for="Password">Password <span style="color: #ef4444;">*</span></label>
             <input asp-for="Password" type="password" placeholder="Enter password" />
             <span asp-validation-for="Password" class="form-error"></span>
-            <p class="help-text">Minimum 1 character</p>
+            <p style="font-size: 12px; color: #6b7280; margin-top: 4px;">Minimum 1 character</p>
         </div>
 
         <div class="form-group">
-            <label asp-for="Role">Role <span class="required">*</span></label>
+            <label asp-for="Role">Role <span style="color: #ef4444;">*</span></label>
             <select asp-for="Role">
                 <option value="">-- Select a role --</option>
                 <option value="admin">Admin</option>
@@ -43,14 +43,14 @@
         </div>
 
         <div class="form-group">
-            <label asp-for="SponsorId">Sponsor ID <span class="optional">(optional, if role is sponsor)</span></label>
+            <label asp-for="SponsorId">Sponsor ID <span style="color: #9ca3af;">(optional, if role is sponsor)</span></label>
             <input asp-for="SponsorId" placeholder="e.g., ACME" />
             <span asp-validation-for="SponsorId" class="form-error"></span>
         </div>
 
-        <div class="form-actions form-actions-bordered">
-            <button type="submit" class="btn-primary">✓ Create User</button>
-            <a href="@Url.Action("Index")" class="btn-secondary">Cancel</a>
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+            <button type="submit" style="background-color: #10b981; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s ease; flex: 1;" onmouseover="this.style.backgroundColor='#059669'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.backgroundColor='#10b981'; this.style.transform='none'; this.style.boxShadow='none';">✓ Create User</button>
+            <a href="@Url.Action("Index")" style="background-color: #e5e7eb; color: #374151; padding: 12px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; text-align: center; flex: 1; transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='#d1d5db'; this.style.transform='translateY(-1px)';" onmouseout="this.style.backgroundColor='#e5e7eb'; this.style.transform='none';">Cancel</a>
         </div>
     </form>
 </div>

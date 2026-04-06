@@ -23,8 +23,8 @@ namespace ISMSponsor.Controllers
 
         public async Task<IActionResult> Profile(string? id = null)
         {
-            // administrators may view arbitrary sponsor by id
-            if (User.IsInRole("admin"))
+            // administrators and cashiers may view arbitrary sponsor by id
+            if (User.IsInRole("admin") || User.IsInRole("cashier"))
             {
                 if (!string.IsNullOrEmpty(id))
                 {
@@ -129,11 +129,39 @@ namespace ISMSponsor.Controllers
             return RedirectToAction("Profile");
         }
 
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,cashier")]
         public async Task<IActionResult> Index()
         {
             var list = await _sponsorService.GetAllAsync();
             return View(list);
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        public async Task<IActionResult> Create(ISMSponsor.Models.Domain.Sponsor sponsor)
+        {
+            if (ModelState.IsValid)
+            {
+                // Check if sponsor ID already exists
+                var existing = await _sponsorService.GetByIdAsync(sponsor.SponsorId);
+                if (existing != null)
+                {
+                    ModelState.AddModelError("SponsorId", "A sponsor with this ID already exists.");
+                    return View(sponsor);
+                }
+
+                await _sponsorService.CreateAsync(sponsor);
+                TempData["Success"] = "Sponsor created successfully.";
+                return RedirectToAction("Index");
+            }
+            return View(sponsor);
         }
     }
 }
