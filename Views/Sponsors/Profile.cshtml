@@ -31,7 +31,14 @@
 
     <div class="button-group">
         <button type="button" onclick="openContacts()">View Contacts</button>
-        <button type="button" class="btn-secondary" onclick="openChangeRequest()">Request Change</button>
+        @if (User.IsInRole("sponsor"))
+        {
+            <a href="/SponsorRequest/Create" class="btn-secondary">Request Change</a>
+        }
+        else
+        {
+            <button type="button" class="btn-secondary" onclick="openChangeRequest()">Request Change</button>
+        }
     </div>
 </div>
 

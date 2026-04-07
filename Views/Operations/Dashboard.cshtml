@@ -1,0 +1,176 @@
+@model ISMSponsor.ViewModels.OperationalMonitoringViewModel
+@{
+    ViewData["Title"] = "Operations Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Operations Dashboard</h1>
+            <p class="page-subtitle">System health monitoring and operational metrics</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            @if (Model.ApplicationHealth.Status == "Healthy")
+            {
+                <span class="status-badge status-active">All Systems Healthy</span>
+            }
+            else if (Model.ApplicationHealth.Status == "Degraded")
+            {
+                <span class="status-badge status-pending">System Degraded</span>
+            }
+            else
+            {
+                <span class="status-badge status-inactive">System Down</span>
+            }
+            <span class="page-subtitle">Last updated @Model.GeneratedAt.ToString("MMM dd, h:mm tt")</span>
+        </div>
+    </div>
+</div>
+
+@* System Health Status *@
+<div class="card">
+    <h2 class="table-title">Application Health</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <div class="stat-card @(Model.ApplicationHealth.DatabaseHealthy ? "stat-card-success" : "stat-card-danger")">
+            <div class="stat-value">@(Model.ApplicationHealth.DatabaseHealthy ? "Connected" : "Down")</div>
+            <div class="stat-label">Database</div>
+            <div class="stat-sublabel">Primary data store</div>
+        </div>
+        
+        <div class="stat-card @(Model.ApplicationHealth.ConfigurationValid ? "stat-card-success" : "stat-card-danger")">
+            <div class="stat-value">@(Model.ApplicationHealth.ConfigurationValid ? "Valid" : "Invalid")</div>
+            <div class="stat-label">Configuration</div>
+            <div class="stat-sublabel">App settings</div>
+        </div>
+        
+        <div class="stat-card @(Model.ApplicationHealth.SyncHealthy ? "stat-card-success" : "stat-card-danger")">
+            <div class="stat-value">@(Model.ApplicationHealth.SyncHealthy ? "Operational" : "Failing")</div>
+            <div class="stat-label">Sync Engine</div>
+            <div class="stat-sublabel">Integration layer</div>
+        </div>
+        
+        <div class="stat-card @(Model.ApplicationHealth.AuditHealthy ? "stat-card-success" : "stat-card-danger")">
+            <div class="stat-value">@(Model.ApplicationHealth.AuditHealthy ? "Logging" : "Not Logging")</div>
+            <div class="stat-label">Audit System</div>
+            <div class="stat-sublabel">Activity tracking</div>
+        </div>
+    </div>
+</div>
+
+@* Integration Monitoring *@
+<div class="card">
+    <h2 class="table-title">Integration Monitoring</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+        <div>
+            <h3 class="card-subtitle">Recent Sync Activity</h3>
+            @if (Model.RecentSyncAttempts.Any())
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Entity</th>
+                                <th>Target System</th>
+                                <th>Status</th>
+                                <th>Retries</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var attempt in Model.RecentSyncAttempts.Take(10))
+                            {
+                                <tr>
+                                    <td>@attempt.AttemptedAt.ToString("HH:mm:ss")</td>
+                                    <td>@attempt.EntityType</td>
+                                    <td>@attempt.TargetSystem</td>
+                                    <td>
+                                        @if (attempt.Status == "Success")
+                                        {
+                                            <span class="status-badge status-active">Success</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-inactive">Failed</span>
+                                        }
+                                    </td>
+                                    <td>@attempt.RetryCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                ViewData["EmptyIcon"] = "";
+                ViewData["EmptyTitle"] = "No recent sync activity";
+                ViewData["EmptyMessage"] = "Synchronization attempts will appear here as they occur.";
+                @await Html.PartialAsync("_EmptyState")
+            }
+        </div>
+        
+        <div>
+            <h3 class="card-subtitle">Recent Sync Failures</h3>
+            @if (Model.RecentSyncFailures.Any())
+            {
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    @foreach (var failure in Model.RecentSyncFailures.Take(5))
+                    {
+                        <div class="alert alert-error">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">@failure.EntityType → @failure.TargetSystem</div>
+                            <div style="font-size: 13px; color: #991b1b;">@failure.ErrorMessage</div>
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 0.25rem;">Retry @failure.RetryCount of 3 · @failure.FailedAt.ToString("HH:mm")</div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    <div style="font-weight: 600;">No Recent Failures</div>
+                    <div style="font-size: 13px;">All systems operational!</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* Data Consistency Warnings *@
+@if (Model.ConsistencyWarnings.Any())
+{
+    <div class="card">
+        <h2 class="table-title">Data Consistency Warnings</h2>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+            @foreach (var warning in Model.ConsistencyWarnings)
+            {
+                var alertClass = warning.Severity switch {
+                    "Critical" => "alert-error",
+                    "High" => "alert-warning",
+                    "Medium" => "alert-info",
+                    _ => "alert-info"
+                };
+                
+                <div class="alert @alertClass">
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                        @warning.WarningType
+                        <span class="status-badge @(warning.Severity == "Critical" ? "status-inactive" : warning.Severity == "High" ? "status-pending" : "status-draft")">@warning.Severity</span>
+                    </div>
+                    <div style="font-size: 13px;">@warning.Description</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 0.25rem;">Detected: @warning.DetectedAt.ToString("MMM dd, HH:mm")</div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* Quick Actions *@
+<div class="card">
+    <h2 class="table-title">Quick Actions</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem;">
+        <a href="@Url.Action("SmokeTest", "Operations")" class="btn-secondary">Smoke Tests</a>
+        <a href="@Url.Action("Runbooks", "Operations")" class="btn-secondary">Runbooks</a>
+        <a href="@Url.Action("ReleaseChecklist", "Operations")" class="btn-secondary">Release Checklist</a>
+        <a href="@Url.Action("SyncStatus", "AdminReports")" class="btn-secondary">Sync Report</a>
+    </div>
+</div>

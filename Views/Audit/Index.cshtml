@@ -1,0 +1,137 @@
+@model List<ISMSponsor.Models.Domain.ActivityLog>
+@{
+    ViewData["Title"] = "Security Audit Log";
+    Layout = "_Layout";
+    var filter = ViewBag.Filter as ISMSponsor.ViewModels.AuditFilterViewModel;
+    var modules = ViewBag.Modules as List<string> ?? new List<string>();
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Security Audit Log</h1>
+            <p class="page-subtitle">System activity tracking and compliance monitoring • <strong>@Model.Count</strong> record(s) found</p>
+        </div>
+        <div>
+            <a asp-action="Monitoring" class="btn-secondary">Analytics Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <form asp-action="Index" method="get">
+        <h2 class="table-title">Search & Filter</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div>
+                <label class="field-label">Module</label>
+                <select name="filter.Module">
+                    <option value="">All Modules</option>
+                    @foreach (var module in modules)
+                    {
+                        <option value="@module" selected="@(filter?.Module == module)">@module</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Actor (Username)</label>
+                <input type="text" name="filter.Actor" value="@filter?.Actor" placeholder="Enter username..." />
+            </div>
+            <div>
+                <label class="field-label">From Date</label>
+                <input type="date" name="filter.FromDate" value="@(filter?.FromDate?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div>
+                <label class="field-label">To Date</label>
+                <input type="date" name="filter.ToDate" value="@(filter?.ToDate?.ToString("yyyy-MM-dd"))" />
+            </div>
+        </div>
+        
+        <details style="margin-top: 1rem;">
+            <summary style="cursor: pointer; font-weight: 600; color: var(--ism-green-dark); font-size: 14px; margin-bottom: 1rem;">Advanced Filters</summary>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div>
+                    <label class="field-label">Sponsor ID</label>
+                    <input type="text" name="filter.SponsorId" value="@filter?.SponsorId" placeholder="Sponsor ID..." />
+                </div>
+                <div>
+                    <label class="field-label">Reason Code</label>
+                    <input type="text" name="filter.ReasonCode" value="@filter?.ReasonCode" placeholder="Reason code..." />
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label class="field-label">Search Term</label>
+                    <input type="text" name="filter.SearchTerm" value="@filter?.SearchTerm" placeholder="Search in activity details..." />
+                </div>
+            </div>
+        </details>
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
+            <button type="submit" class="btn-primary">Apply Filters</button>
+            <a asp-action="Index" class="btn-secondary">Clear All</a>
+            <button type="button" class="btn-secondary" onclick="location.href='@Url.Action("Index", new { filter = new { FromDate = DateTime.Today } })'">Today</button>
+            <button type="button" class="btn-secondary" onclick="location.href='@Url.Action("Index", new { filter = new { FromDate = DateTime.Today.AddDays(-7) } })'">This Week</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Audit Records (@Model.Count)</h2>
+    @if (Model.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date & Time</th>
+                        <th>Module</th>
+                        <th>Actor</th>
+                        <th>Role</th>
+                        <th>Details</th>
+                        <th>School Year</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td data-label="ID"><strong>#@log.ActivityLogId</strong></td>
+                            <td data-label="Date & Time">
+                                <div>@log.Date.ToString("MM/dd/yyyy")</div>
+                                <div style="font-size: 12px; color: var(--gray-500);">@log.Date.ToString("h:mm tt")</div>
+                            </td>
+                            <td data-label="Module">
+                                <span class="status-badge status-draft">@log.Item</span>
+                            </td>
+                            <td data-label="Actor">@log.UserDisplay</td>
+                            <td data-label="Role">
+                                <span class="role-badge">@log.RoleName</span>
+                            </td>
+                            <td data-label="Details">
+                                <div style="max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@log.Details">
+                                    @log.Details
+                                </div>
+                            </td>
+                            <td data-label="School Year">
+                                <span class="status-badge">@log.SchoolYearId</span>
+                            </td>
+                            <td data-label="Actions" class="action-cell">
+                                <a asp-action="Details" asp-route-id="@log.ActivityLogId" class="btn-link">View Details</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        ViewData["EmptyIcon"] = "";
+        ViewData["EmptyTitle"] = "No audit records found";
+        ViewData["EmptyMessage"] = "Try adjusting your search filters or clearing them to see all records.";
+        ViewData["EmptyAction"] = "Clear Filters";
+        ViewData["EmptyActionUrl"] = Url.Action("Index");
+        @await Html.PartialAsync("_EmptyState")
+    }
+</div>

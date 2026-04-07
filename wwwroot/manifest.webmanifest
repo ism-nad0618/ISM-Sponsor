@@ -1,20 +1,55 @@
 {
-  "name": "ISMSponsor",
-  "short_name": "ISMSponsor",
+  "name": "ISM Sponsor Portal",
+  "short_name": "ISM Sponsor",
+  "description": "International School Manila - Sponsor Portal for managing Letters of Guarantee and student sponsorships",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#333333",
+  "theme_color": "#0d5f3b",
+  "categories": ["education", "productivity"],
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View sponsor dashboard",
+      "url": "/Dashboard",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Sponsors",
+      "short_name": "Sponsors",
+      "description": "Manage sponsors",
+      "url": "/Sponsors",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

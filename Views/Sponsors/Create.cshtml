@@ -1,4 +1,4 @@
-@model ISMSponsor.Models.Domain.Sponsor
+@model ISMSponsor.ViewModels.CreateSponsorViewModel
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Create New Sponsor";
@@ -6,7 +6,7 @@
 
 <div class="page-header">
     <h1>Create New Sponsor</h1>
-    <p class="page-subtitle">Add a new sponsor organization to the system</p>
+    <p class="page-subtitle">Add a new sponsor organization with user account and verification document</p>
 </div>
 
 @if (TempData["Error"] is string errorText)
@@ -15,7 +15,9 @@
 }
 
 <div class="card card-narrow">
-    <form asp-action="Create" method="post">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+        <h3 class="form-section-title">Sponsor Information</h3>
+        
         <div class="form-group">
             <label asp-for="SponsorId" class="field-label">Sponsor ID <span class="required">*</span></label>
             <input asp-for="SponsorId" placeholder="e.g., ACME" required />
@@ -47,8 +49,49 @@
             <span asp-validation-for="Tin" class="form-error"></span>
         </div>
 
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+
+        <h3 class="form-section-title">User Account Information</h3>
+        <p class="help-text" style="margin-bottom: 1.5rem;">A sponsor user account will be created for this organization</p>
+
+        <div class="form-group">
+            <label asp-for="Username" class="field-label">Username <span class="required">*</span></label>
+            <input asp-for="Username" placeholder="Enter username for login" required />
+            <span asp-validation-for="Username" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DisplayName" class="field-label">Display Name <span class="required">*</span></label>
+            <input asp-for="DisplayName" placeholder="Enter display name" required />
+            <span asp-validation-for="DisplayName" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Password" class="field-label">Password <span class="required">*</span></label>
+            <input asp-for="Password" type="password" placeholder="Enter password (minimum 6 characters)" required />
+            <span asp-validation-for="Password" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ConfirmPassword" class="field-label">Confirm Password <span class="required">*</span></label>
+            <input asp-for="ConfirmPassword" type="password" placeholder="Re-enter password" required />
+            <span asp-validation-for="ConfirmPassword" class="form-error"></span>
+        </div>
+
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+
+        <h3 class="form-section-title">Verification Document</h3>
+        <p class="help-text" style="margin-bottom: 1.5rem;">Upload a document to verify sponsor details (PDF, JPG, PNG, DOC, or DOCX, max 10MB)</p>
+
+        <div class="form-group">
+            <label asp-for="VerificationDocument" class="field-label">Document <span class="required">*</span></label>
+            <input asp-for="VerificationDocument" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
+            <span asp-validation-for="VerificationDocument" class="form-error"></span>
+            <p class="help-text">Accepted formats: PDF, JPG, PNG, DOC, DOCX (Max: 10MB)</p>
+        </div>
+
         <div class="form-actions form-actions-bordered">
-            <button type="submit" class="btn-primary btn-add">✓ Create Sponsor</button>
+            <button type="submit" class="btn-primary btn-add"> Create Sponsor & User Account</button>
             <a asp-action="Index" class="btn-secondary btn-add">Cancel</a>
         </div>
     </form>

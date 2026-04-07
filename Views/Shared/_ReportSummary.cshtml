@@ -1,0 +1,26 @@
+@model dynamic
+@{
+    var metrics = ViewBag.SummaryMetrics as Dictionary<string, object> ?? new Dictionary<string, object>();
+    var title = ViewBag.SummaryTitle as string ?? "Report Summary";
+}
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="margin: 0 0 1rem 0; padding: 1rem 1rem 0 1rem; font-size: 1.1rem;">@title</h3>
+    
+    @if (metrics.Any())
+    {
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+            @foreach (var metric in metrics)
+            {
+                <div style="background: #f8f9fa; border-radius: 6px; padding: 1rem;">
+                    <div style="color: #666; font-size: 0.85rem; margin-bottom: 0.25rem;">@metric.Key</div>
+                    <div style="font-size: 1.75rem; font-weight: 600; color: #0066cc;">@metric.Value</div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p style="padding: 1rem; color: #666; text-align: center;">No summary metrics available.</p>
+    }
+</div>

@@ -5,8 +5,15 @@
 }
 
 <div class="page-header">
-    <h1>All Sponsors</h1>
-    <p class="page-subtitle">Review registered sponsor records.</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>All Sponsors</h1>
+            <p class="page-subtitle">Review registered sponsor records</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn-primary btn-add" onclick="openCreateSponsorModal()">+ New Sponsor</button>
+        </div>
+    </div>
 </div>
 
 @if (TempData["Success"] is string successText)
@@ -20,31 +27,1920 @@
 }
 
 <div class="card">
-    <div class="page-header-actions">
-        <h2 class="table-title">Sponsor Directory</h2>
-        <a asp-action="Create" class="btn-primary btn-add">+ New Sponsor</a>
-    </div>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Sponsor ID</th>
-                    <th>Sponsor Name</th>
-                    <th>Legal Name</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var s in Model)
-                {
+    <form method="get" asp-action="Index" class="filter-form" id="sponsorFilterForm">
+        <div class="filter-group" style="flex: 1; min-width: 250px; position: relative;">
+            <label class="field-label">Search</label>
+            <input type="text" id="searchInput" name="search" placeholder="Sponsor ID, Name, or Legal Name..." 
+                   aria-label="Search sponsors" />
+            <span id="searchLoadingIndicator" class="search-loader" style="display:none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);"></span>
+        </div>
+        <div class="filter-group" style="min-width: 160px;">
+            <label class="field-label">Status</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showInactiveSponsors" name="showInactive" onchange="filterTable()" />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Show Inactive</span>
+            </label>
+        </div>
+        <div class="filter-group" style="min-width: 180px;">
+            <label class="field-label">Approval Status</label>
+            <select id="approvalFilter" name="approval" onchange="filterTable()">
+                <option value="all">All</option>
+                <option value="Approved">Approved</option>
+                <option value="PendingApproval">Pending</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+        </div>
+        <div class="filter-group" style="min-width: 200px;">
+            <label class="field-label">Sort By</label>
+            <select id="sortSelect" name="sortBy" onchange="sortTable()">
+                <option value="sponsorId-asc">Sponsor ID (A-Z)</option>
+                <option value="sponsorId-desc">Sponsor ID (Z-A)</option>
+                <option value="sponsorName-asc" selected>Sponsor Name (A-Z)</option>
+                <option value="sponsorName-desc">Sponsor Name (Z-A)</option>
+                <option value="legalName-asc">Legal Name (A-Z)</option>
+                <option value="legalName-desc">Legal Name (Z-A)</option>
+            </select>
+        </div>
+        <button type="button" class="btn-secondary" onclick="filterTable()">Apply Filters</button>
+        <button type="button" class="btn-secondary" onclick="clearFilters()">Clear</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Sponsor Records (@Model.Count)</h2>
+    
+    @if (Model == null || !Model.Any())
+    {
+        <div class="table-wrap">
+            @{
+                ViewData["EmptyIcon"] = "";
+                ViewData["EmptyTitle"] = "No sponsors yet";
+                ViewData["EmptyMessage"] = "Get started by adding your first sponsor organization to the system.";
+                ViewData["EmptyAction"] = "+ New Sponsor";
+                ViewData["EmptyActionUrl"] = "javascript:openCreateSponsorModal()";
+            }
+            @await Html.PartialAsync("_EmptyState")
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table id="sponsorsTable">
+                <thead>
                     <tr>
-                        <td>@s.SponsorId</td>
-                        <td>@s.SponsorName</td>
-                        <td>@s.LegalName</td>
-                        <td><a asp-action="Profile" asp-route-id="@s.SponsorId">View Profile</a></td>
+                        <th>Sponsor ID</th>
+                        <th>Sponsor Name</th>
+                        <th>Legal Name</th>
+                        <th>Approval</th>
+                        <th>Status</th>
+                        <th>Contacts</th>
+                        <th>Actions</th>
                     </tr>
+                </thead>
+                <tbody id="sponsorsTableBody">
+                    @foreach (var s in Model)
+                    {
+                        <tr data-sponsor-id="@s.SponsorId" data-sponsor-name="@s.SponsorName" data-legal-name="@s.LegalName" data-status="@(s.IsActive ? "active" : "inactive")" data-approval="@(s.ApprovalStatus ?? "Approved")" class="@(s.IsActive ? "" : "inactive-row")" style="@(s.IsActive ? "" : "opacity: 0.6;")">
+                            <td data-label="Sponsor ID">@s.SponsorId</td>
+                            <td data-label="Sponsor Name">@s.SponsorName</td>
+                            <td data-label="Legal Name">@s.LegalName</td>
+                            <td data-label="Approval">
+                                @{
+                                    var approvalStatus = s.ApprovalStatus ?? "Approved";
+                                    var approvalBadgeClass = approvalStatus == "Approved" ? "status-active" : 
+                                                             approvalStatus == "PendingApproval" ? "status-badge" : 
+                                                             "status-inactive";
+                                    var approvalBadgeStyle = approvalStatus == "PendingApproval" ? "background: #fef3c7; color: #92400e;" : "";
+                                }
+                                <span class="status-badge @approvalBadgeClass" style="@approvalBadgeStyle">
+                                    @if (approvalStatus == "Approved")
+                                    {
+                                        <text> Approved</text>
+                                    }
+                                    else if (approvalStatus == "PendingApproval")
+                                    {
+                                        <text>⏳ Pending</text>
+                                    }
+                                    else if (approvalStatus == "Rejected")
+                                    {
+                                        <text> Rejected</text>
+                                    }
+                                    else
+                                    {
+                                        @approvalStatus
+                                    }
+                                </span>
+                            </td>
+                            <td data-label="Status">
+                                <span class="status-badge @(s.IsActive ? "status-active" : "status-inactive")">@(s.IsActive ? "Active" : "Inactive")</span>
+                            </td>
+                            <td data-label="Contacts">
+                                <a href="javascript:void(0)" onclick="openContactsModal('@s.SponsorId')" class="btn-link">
+                                     Manage
+                                </a>
+                            </td>
+                            <td class="action-cell">
+                                <a href="javascript:void(0)" class="btn-link" onclick="openViewProfileModal('@s.SponsorId')">View/Edit</a>
+                                @if (s.IsActive)
+                                {
+                                    <span style="color: var(--gray-300); margin: 0 4px;">|</span>
+                                    <a href="javascript:void(0)" class="btn-link" onclick="toggleSponsorStatus('@s.SponsorId', false)">Deactivate</a>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--gray-300); margin: 0 4px;">|</span>
+                                    <a href="javascript:void(0)" class="btn-link" onclick="toggleSponsorStatus('@s.SponsorId', true)">Activate</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            
+            <div id="noResultsMessage" style="display: none;">
+                @{
+                    ViewData["EmptyIcon"] = "";
+                    ViewData["EmptyTitle"] = "No sponsors found";
+                    ViewData["EmptyMessage"] = "Try adjusting your search or filters to find what you're looking for.";
                 }
-            </tbody>
-        </table>
+                @await Html.PartialAsync("_EmptyState")
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Create Sponsor Modal -->
+<div id="createSponsorModal" class="modal">
+    <div class="modal-content" style="max-width: 750px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <div>
+                <h2 style="margin: 0;">Create New Sponsor</h2>
+                <p style="color: var(--gray-600); margin: 4px 0 0 0; font-size: 14px;">Add a new sponsor organization with user account and verification document</p>
+            </div>
+            <button type="button" class="close" onclick="closeCreateSponsorModal()">&times;</button>
+        </div>
+        
+        <!-- Step Indicator -->
+        <div style="display: flex; justify-content: space-between; margin: 24px 0 16px 0; position: relative;">
+            <div style="position: absolute; top: 15px; left: 0; right: 0; height: 2px; background: #e0e0e0; z-index: 0;"></div>
+            <div id="progressBar" style="position: absolute; top: 15px; left: 0; height: 2px; background: var(--ism-blue); z-index: 1; width: 0%; transition: width 0.3s;"></div>
+            
+            <div class="step-item active" id="stepIndicator1" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--ism-blue); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">1</div>
+                <div style="font-size: 12px; color: var(--gray-700); font-weight: 500;">Sponsor Info</div>
+            </div>
+            <div class="step-item" id="stepIndicator2" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: var(--gray-600); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">2</div>
+                <div style="font-size: 12px; color: var(--gray-600);">User Account</div>
+            </div>
+            <div class="step-item" id="stepIndicator3" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: var(--gray-600); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">3</div>
+                <div style="font-size: 12px; color: var(--gray-600);">Verification</div>
+            </div>
+        </div>
+        
+        <div id="modalError" class="alert alert-error" style="display: none; margin-top: 16px;"></div>
+        
+        <form id="createSponsorForm" enctype="multipart/form-data" style="margin-top: 16px;">
+            @Html.AntiForgeryToken()
+            
+            <!-- Step 1: Sponsor Information -->
+            <div class="form-step" id="step1" style="display: block;">
+                <h3 class="form-section-title">Sponsor Information</h3>
+            
+            <div class="form-group">
+                <label class="field-label">Sponsor ID <span class="required">*</span></label>
+                <input type="text" name="SponsorId" id="SponsorId" placeholder="e.g., ACME" required />
+                <span class="form-error" id="SponsorId-error"></span>
+                <p class="help-text">Unique identifier for the sponsor</p>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Sponsor Name <span class="required">*</span></label>
+                <input type="text" name="SponsorName" id="SponsorName" placeholder="Enter sponsor name" required />
+                <span class="form-error" id="SponsorName-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Legal Name <span class="required">*</span></label>
+                <input type="text" name="LegalName" id="LegalName" placeholder="Enter legal business name" required />
+                <span class="form-error" id="LegalName-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Address <span class="required">*</span></label>
+                <textarea name="Address" id="Address" rows="3" placeholder="Enter complete address" required></textarea>
+                <span class="form-error" id="Address-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Tax Identification Number (TIN) <span class="required">*</span></label>
+                <input type="text" name="Tin" id="Tin" placeholder="Enter TIN" required />
+                <span class="form-error" id="Tin-error"></span>
+            </div>
+
+            <div class="form-actions" style="margin-top: 24px;">
+                <button type="button" class="btn-primary btn-add" onclick="nextStep(2)">Next: User Account →</button>
+                <button type="button" class="btn-secondary btn-add" onclick="closeCreateSponsorModal()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Step 2: User Account Information -->
+        <div class="form-step" id="step2" style="display: none;">
+            <h3 class="form-section-title">User Account Information</h3>
+            <p class="help-text" style="margin-bottom: 1.5rem;">A sponsor user account will be created for this organization</p>
+
+            <div class="form-group">
+                <label class="field-label">Username <span class="required">*</span></label>
+                <input type="text" name="Username" id="Username" placeholder="Enter username for login" required readonly style="background-color: #f5f5f5;" />
+                <span class="form-error" id="Username-error"></span>
+                <p class="help-text">Auto-populated from Sponsor ID</p>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Display Name <span class="required">*</span></label>
+                <input type="text" name="DisplayName" id="DisplayName" placeholder="Enter display name" required readonly style="background-color: #f5f5f5;" />
+                <span class="form-error" id="DisplayName-error"></span>
+                <p class="help-text">Auto-populated from Sponsor ID</p>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Password <span class="required">*</span></label>
+                <input type="password" name="Password" id="Password" placeholder="Enter password" required />
+                <span class="form-error" id="Password-error"></span>
+                <p class="help-text">Must be at least 8 characters with uppercase, lowercase, digit, and special character</p>
+            </div>
+
+            <div class="form-group">
+                <label class="field-label">Confirm Password <span class="required">*</span></label>
+                <input type="password" name="ConfirmPassword" id="ConfirmPassword" placeholder="Re-enter password" required />
+                <span class="form-error" id="ConfirmPassword-error"></span>
+            </div>
+
+            <div class="form-actions" style="margin-top: 24px;">
+                <button type="button" class="btn-secondary btn-add" onclick="prevStep(1)">← Back</button>
+                <button type="button" class="btn-primary btn-add" onclick="nextStep(3)">Next: Verification →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Verification Document -->
+        <div class="form-step" id="step3" style="display: none;">
+            <h3 class="form-section-title">Verification Document</h3>
+            <p class="help-text" style="margin-bottom: 1.5rem;">Upload a document to verify sponsor details (PDF, JPG, PNG, DOC, or DOCX, max 10MB)</p>
+
+            <div class="form-group">
+                <label class="field-label">Document <span class="required">*</span></label>
+                <input type="file" name="VerificationDocument" id="VerificationDocument" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
+                <span class="form-error" id="VerificationDocument-error"></span>
+                <p class="help-text">Accepted formats: PDF, JPG, PNG, DOC, DOCX (Max: 10MB)</p>
+            </div>
+
+            <div class="form-actions" style="margin-top: 24px;">
+                <button type="button" class="btn-secondary btn-add" onclick="prevStep(2)">← Back</button>
+                <button type="submit" class="btn-primary btn-add" id="submitBtn"> Create Sponsor & User Account</button>
+            </div>
+        </div>
+    </form>
     </div>
 </div>
+
+<!-- View/Edit Profile Modal -->
+<div id="viewProfileModal" class="modal">
+    <div class="modal-content" style="max-width: 750px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <div>
+                <h2 style="margin: 0;">Sponsor Profile</h2>
+                <p style="color: var(--gray-600); margin: 4px 0 0 0; font-size: 14px;">View and edit sponsor organization information</p>
+            </div>
+            <button type="button" class="close" onclick="closeViewProfileModal()">&times;</button>
+        </div>
+        
+        <!-- Approval Status Section (Admin Only) -->
+        <div id="approvalStatusSection" style="display: none; margin: 16px 0 0 0;">
+            <div id="approvalPendingBanner" style="display: none; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: start; gap: 12px;">
+                    <span style="font-size: 24px;">⏳</span>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 4px 0; color: #92400e; font-size: 15px;">Approval Pending</h4>
+                        <p style="margin: 0; color: #92400e; font-size: 13px;">This sponsor is awaiting approval before they can access the system.</p>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; display: flex; gap: 12px;">
+                    <button type="button" class="btn-primary btn-add" onclick="showApprovalForm()"> Approve Sponsor</button>
+                    <button type="button" class="btn-secondary btn-add" onclick="showRejectionForm()" style="background: #dc2626; border-color: #dc2626; color: white;"> Reject Sponsor</button>
+                </div>
+            </div>
+            
+            <div id="approvalApprovedBanner" style="display: none; background: #d1fae5; border: 1px solid #34d399; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;"></span>
+                    <div>
+                        <strong style="color: #065f46;">Approved</strong>
+                        <span id="approvalDetailsText" style="color: #065f46; font-size: 13px;"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="approvalRejectedBanner" style="display: none; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;"></span>
+                    <div>
+                        <strong style="color: #991b1b;">Rejected</strong>
+                        <span id="rejectionDetailsText" style="color: #991b1b; font-size: 13px;"></span>
+                    </div>
+                </div>
+                <button type="button" class="btn-primary btn-add" onclick="showReapprovalForm()" style="margin-top: 12px;">Reconsider & Approve</button>
+            </div>
+            
+            <!-- Approval Form (Hidden by default) -->
+            <div id="approvalForm" style="display: none; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <h4 style="margin: 0 0 12px 0; color: #111827;">Approve Sponsor</h4>
+                <div class="form-group">
+                    <label class="field-label">Approval Notes (Optional)</label>
+                    <textarea id="approvalNotes" rows="3" placeholder="Add any notes about this approval..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button type="button" class="btn-primary btn-add" onclick="submitApproval()">Confirm Approval</button>
+                    <button type="button" class="btn-secondary btn-add" onclick="cancelApprovalForm()">Cancel</button>
+                </div>
+            </div>
+            
+            <!-- Rejection Form (Hidden by default) -->
+            <div id="rejectionForm" style="display: none; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <h4 style="margin: 0 0 12px 0; color: #111827;">Reject Sponsor</h4>
+                <div class="form-group">
+                    <label class="field-label">Rejection Reason <span class="required">*</span></label>
+                    <textarea id="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;" required></textarea>
+                    <span class="form-error" id="rejectionReason-error"></span>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button type="button" class="btn-primary btn-add" onclick="submitRejection()" style="background: #dc2626; border-color: #dc2626;">Confirm Rejection</button>
+                    <button type="button" class="btn-secondary btn-add" onclick="cancelRejectionForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step Indicator -->
+        <div style="display: flex; justify-content: space-between; margin: 24px 0 16px 0; position: relative;">
+            <div style="position: absolute; top: 15px; left: 0; right: 0; height: 2px; background: #e0e0e0; z-index: 0;"></div>
+            <div id="profileProgressBar" style="position: absolute; top: 15px; left: 0; height: 2px; background: var(--ism-blue); z-index: 1; width: 0%; transition: width 0.3s;"></div>
+            
+            <div class="step-item active" id="profileStepIndicator1" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--ism-blue); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">1</div>
+                <div style="font-size: 12px; color: var(--gray-700); font-weight: 500;">Sponsor Info</div>
+            </div>
+            <div class="step-item" id="profileStepIndicator2" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: var(--gray-600); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">2</div>
+                <div style="font-size: 12px; color: var(--gray-600);">User Account</div>
+            </div>
+            <div class="step-item" id="profileStepIndicator3" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: var(--gray-600); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">3</div>
+                <div style="font-size: 12px; color: var(--gray-600);">Attachment</div>
+            </div>
+        </div>
+        
+        <input type="hidden" id="profileSponsorIdHidden" />
+        
+        <div id="profileError" class="alert alert-error" style="display: none; margin-top: 16px;"></div>
+        <div id="profileSuccess" class="alert alert-success" style="display: none; margin-top: 16px;"></div>
+        
+        <form id="editProfileForm" enctype="multipart/form-data" style="margin-top: 16px;">
+            @Html.AntiForgeryToken()
+            
+            <!-- Step 1: Sponsor Information -->
+            <div class="profile-step" id="profileStep1" style="display: block;">
+                <h3 class="form-section-title">Sponsor Information</h3>
+                
+                <div class="form-group">
+                    <label class="field-label">Sponsor ID</label>
+                    <input type="text" id="editSponsorId" name="SponsorId" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
+                    <p class="help-text">Sponsor ID cannot be changed</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Sponsor Name <span class="required">*</span></label>
+                    <input type="text" id="editSponsorName" name="SponsorName" placeholder="Enter sponsor name" required />
+                    <span class="form-error" id="editSponsorName-error"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Legal Name <span class="required">*</span></label>
+                    <input type="text" id="editLegalName" name="LegalName" placeholder="Enter legal name" required />
+                    <span class="form-error" id="editLegalName-error"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Address</label>
+                    <textarea id="editAddress" name="Address" placeholder="Enter address" rows="3"></textarea>
+                    <p class="help-text">Full address of the sponsor organization</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Tax Identification Number (TIN)</label>
+                    <input type="text" id="editTin" name="Tin" placeholder="Enter TIN" />
+                    <p class="help-text">Tax identification number</p>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="button" class="btn-secondary btn-add" onclick="closeViewProfileModal()">Close</button>
+                    <button type="button" class="btn-primary btn-add" onclick="profileNextStep(2)">Next: User Account →</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: User Account Information -->
+            <div class="profile-step" id="profileStep2" style="display: none;">
+                <h3 class="form-section-title">User Account Information</h3>
+                <p class="help-text" style="margin-bottom: 1.5rem;">Update user account credentials for this sponsor</p>
+                
+                <div class="form-group">
+                    <label class="field-label">Username</label>
+                    <input type="text" id="editUsername" name="Username" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
+                    <p class="help-text">Username cannot be changed</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Display Name</label>
+                    <input type="text" id="editDisplayName" name="DisplayName" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
+                    <p class="help-text">Display name is auto-generated</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">New Password</label>
+                    <input type="password" id="editPassword" name="Password" placeholder="Leave blank to keep current password" />
+                    <span class="form-error" id="editPassword-error"></span>
+                    <p class="help-text">Optional: Enter new password (min 8 chars with uppercase, lowercase, digit, and special character)</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Confirm New Password</label>
+                    <input type="password" id="editConfirmPassword" name="ConfirmPassword" placeholder="Confirm new password" />
+                    <span class="form-error" id="editConfirmPassword-error"></span>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="button" class="btn-secondary btn-add" onclick="profilePrevStep(1)">← Back</button>
+                    <button type="button" class="btn-primary btn-add" onclick="profileNextStep(3)">Next: Attachment →</button>
+                </div>
+            </div>
+            
+            <!-- Step 3: Verification Document -->
+            <div class="profile-step" id="profileStep3" style="display: none;">
+                <h3 class="form-section-title">Verification Document</h3>
+                <p class="help-text" style="margin-bottom: 1.5rem;">Upload or replace verification document (PDF, JPG, PNG, DOC, or DOCX, max 10MB)</p>
+                
+                <div class="form-group">
+                    <label class="field-label">Current Document</label>
+                    <p style="margin: 8px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;" id="currentDocumentInfo">No document uploaded</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Replace Document</label>
+                    <input type="file" name="VerificationDocument" id="editVerificationDocument" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                    <span class="form-error" id="editVerificationDocument-error"></span>
+                    <p class="help-text">Optional: Upload a new document to replace the current one (PDF, JPG, PNG, DOC, DOCX - Max: 10MB)</p>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="button" class="btn-secondary btn-add" onclick="profilePrevStep(2)">← Back</button>
+                    <button type="submit" class="btn-primary btn-add" id="saveProfileBtn"> Save Changes</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Sponsor Contacts Modal -->
+<div id="contactsModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <div>
+                <h2 style="margin: 0;">Sponsor Contacts</h2>
+                <p style="color: var(--gray-600); margin: 4px 0 0 0; font-size: 14px;">
+                    Manage contact information for <strong id="contactsSponsorName"></strong>
+                </p>
+            </div>
+            <button type="button" class="close" onclick="closeContactsModal()">&times;</button>
+        </div>
+        
+        <!-- Step Indicator -->
+        <div style="display: flex; justify-content: space-between; margin: 24px 0 16px 0; position: relative;">
+            <div style="position: absolute; top: 15px; left: 0; right: 0; height: 2px; background: #e0e0e0; z-index: 0;"></div>
+            <div id="contactsProgressBar" style="position: absolute; top: 15px; left: 0; height: 2px; background: var(--ism-blue); z-index: 1; width: 0%; transition: width 0.3s;"></div>
+            
+            <div class="step-item active" id="contactsStepIndicator1" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--ism-blue); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">1</div>
+                <div style="font-size: 12px; color: var(--gray-700); font-weight: 500;">View Contacts</div>
+            </div>
+            <div class="step-item" id="contactsStepIndicator2" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: var(--gray-600); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">2</div>
+                <div style="font-size: 12px; color: var(--gray-600);">Add Contact</div>
+            </div>
+            <div class="step-item" id="contactsStepIndicator3" style="flex: 1; text-align: center; position: relative; z-index: 2;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: var(--gray-600); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 8px;">3</div>
+                <div style="font-size: 12px; color: var(--gray-600);">Edit Contact</div>
+            </div>
+        </div>
+        
+        <input type="hidden" id="contactsSponsorId" />
+        
+        <div id="contactsError" class="alert alert-error" style="display: none; margin-top: 16px;"></div>
+        <div id="contactsSuccess" class="alert alert-success" style="display: none; margin-top: 16px;"></div>
+        
+        <!-- Step 1: View Contacts List -->
+        <div class="contacts-step" id="contactsStep1" style="display: block; margin-top: 16px;">
+            <h3 class="form-section-title">Existing Contacts</h3>
+            
+            <div id="contactsListContainer">
+                <p style="text-align: center; padding: 20px; color: var(--gray-500);">Loading contacts...</p>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 24px;">
+                <button type="button" class="btn-secondary btn-add" onclick="closeContactsModal()">Close</button>
+                <button type="button" class="btn-primary btn-add" onclick="contactsNextStep(2)">+ Add New Contact</button>
+            </div>
+        </div>
+        
+        <!-- Step 2: Add New Contact Form -->
+        <div class="contacts-step" id="contactsStep2" style="display: none; margin-top: 16px;">
+            <h3 class="form-section-title">Add New Contact</h3>
+            
+            <form id="addContactForm">
+                @Html.AntiForgeryToken()
+                
+                <input type="hidden" id="contactSponsorId" name="sponsorId" />
+                
+                <div class="form-group">
+                    <label class="field-label">Contact Name <span class="required">*</span></label>
+                    <input type="text" id="contactName" name="name" placeholder="Enter full name" required />
+                    <span class="form-error" id="contactName-error"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Email Address <span class="required">*</span></label>
+                    <input type="email" id="contactEmail" name="email" placeholder="Enter email address" required />
+                    <span class="form-error" id="contactEmail-error"></span>
+                    <p class="help-text">Primary email for communication</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="contactPhone" name="phone" placeholder="e.g., +1 (555) 123-4567" required />
+                    <span class="form-error" id="contactPhone-error"></span>
+                    <p class="help-text">Include country code if international</p>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="button" class="btn-secondary btn-add" onclick="contactsPrevStep(1)">← Back to List</button>
+                    <button type="submit" class="btn-primary btn-add" id="addContactBtn"> Add Contact</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Step 3: Edit Contact Form -->
+        <div class="contacts-step" id="contactsStep3" style="display: none; margin-top: 16px;">
+            <h3 class="form-section-title">Edit Contact</h3>
+            
+            <form id="editContactForm">
+                @Html.AntiForgeryToken()
+                
+                <input type="hidden" id="editContactId" name="contactId" />
+                <input type="hidden" id="editContactSponsorId" name="sponsorId" />
+                
+                <div class="form-group">
+                    <label class="field-label">Contact Name <span class="required">*</span></label>
+                    <input type="text" id="editContactName" name="name" placeholder="Enter full name" required />
+                    <span class="form-error" id="editContactName-error"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Email Address <span class="required">*</span></label>
+                    <input type="email" id="editContactEmail" name="email" placeholder="Enter email address" required />
+                    <span class="form-error" id="editContactEmail-error"></span>
+                    <p class="help-text">Primary email for communication</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="editContactPhone" name="phone" placeholder="e.g., +1 (555) 123-4567" required />
+                    <span class="form-error" id="editContactPhone-error"></span>
+                    <p class="help-text">Include country code if international</p>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="button" class="btn-secondary btn-add" onclick="contactsPrevStep(1)">← Back to List</button>
+                    <button type="submit" class="btn-primary btn-add" id="updateContactBtn"> Update Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/search-debounce.js"></script>
+<script>
+    let currentStep = 1;
+
+    // Auto-populate Username and Display Name from Sponsor ID
+    const sponsorIdInput = document.getElementById('SponsorId');
+    if (sponsorIdInput) {
+        sponsorIdInput.addEventListener('input', function(e) {
+            const sponsorId = e.target.value.trim();
+            document.getElementById('Username').value = sponsorId;
+            document.getElementById('DisplayName').value = sponsorId;
+        });
+    }
+
+    window.openCreateSponsorModal = function() {
+        document.getElementById('createSponsorModal').classList.add('active');
+        document.getElementById('createSponsorForm').reset();
+        clearFormErrors();
+        goToStep(1);
+    };
+
+    window.closeCreateSponsorModal = function() {
+        document.getElementById('createSponsorModal').classList.remove('active');
+        document.getElementById('createSponsorForm').reset();
+        clearFormErrors();
+        goToStep(1);
+    };
+
+    function goToStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.form-step').forEach(el => el.style.display = 'none');
+        
+        // Show current step
+        document.getElementById('step' + step).style.display = 'block';
+        currentStep = step;
+        
+        // Update step indicators
+        for (let i = 1; i <= 3; i++) {
+            const indicator = document.getElementById('stepIndicator' + i);
+            const circle = indicator.querySelector('div:first-child');
+            const text = indicator.querySelector('div:last-child');
+            
+            if (i < step) {
+                // Completed step
+                circle.style.background = 'var(--ism-blue)';
+                circle.style.color = 'white';
+                text.style.color = 'var(--gray-700)';
+                text.style.fontWeight = '500';
+            } else if (i === step) {
+                // Active step
+                circle.style.background = 'var(--ism-blue)';
+                circle.style.color = 'white';
+                text.style.color = 'var(--gray-700)';
+                text.style.fontWeight = '600';
+            } else {
+                // Future step
+                circle.style.background = '#e0e0e0';
+                circle.style.color = 'var(--gray-600)';
+                text.style.color = 'var(--gray-600)';
+                text.style.fontWeight = '400';
+            }
+        }
+        
+        // Update progress bar
+        const progress = ((step - 1) / 2) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    function validateStep(step) {
+        clearFormErrors();
+        let isValid = true;
+        
+        console.log('Validating step:', step);
+        
+        if (step === 1) {
+            // Validate Sponsor Information
+            const fields = ['SponsorId', 'SponsorName', 'LegalName', 'Address', 'Tin'];
+            fields.forEach(field => {
+                const input = document.getElementById(field);
+                if (!input.value.trim()) {
+                    console.log(`Validation failed for field: ${field}`);
+                    document.getElementById(field + '-error').textContent = 'This field is required.';
+                    isValid = false;
+                }
+            });
+        } else if (step === 2) {
+            // Validate User Account Information
+            const password = document.getElementById('Password').value;
+            const confirmPassword = document.getElementById('ConfirmPassword').value;
+            
+            if (!password) {
+                console.log('Validation failed: Password is required');
+                document.getElementById('Password-error').textContent = 'Password is required.';
+                isValid = false;
+            } else if (password.length < 8) {
+                console.log('Validation failed: Password too short');
+                document.getElementById('Password-error').textContent = 'Password must be at least 8 characters.';
+                isValid = false;
+            } else if (!/[a-z]/.test(password)) {
+                console.log('Validation failed: Password missing lowercase');
+                document.getElementById('Password-error').textContent = 'Password must contain at least one lowercase letter.';
+                isValid = false;
+            } else if (!/[A-Z]/.test(password)) {
+                console.log('Validation failed: Password missing uppercase');
+                document.getElementById('Password-error').textContent = 'Password must contain at least one uppercase letter.';
+                isValid = false;
+            } else if (!/[0-9]/.test(password)) {
+                console.log('Validation failed: Password missing digit');
+                document.getElementById('Password-error').textContent = 'Password must contain at least one digit.';
+                isValid = false;
+            } else if (!/[^a-zA-Z0-9]/.test(password)) {
+                console.log('Validation failed: Password missing special character');
+                document.getElementById('Password-error').textContent = 'Password must contain at least one special character.';
+                isValid = false;
+            }
+            
+            if (!confirmPassword) {
+                console.log('Validation failed: Confirm password is required');
+                document.getElementById('ConfirmPassword-error').textContent = 'Please confirm your password.';
+                isValid = false;
+            } else if (password !== confirmPassword) {
+                console.log('Validation failed: Passwords do not match');
+                document.getElementById('ConfirmPassword-error').textContent = 'Passwords do not match.';
+                isValid = false;
+            }
+        } else if (step === 3) {
+            // Validate Verification Document
+            const fileInput = document.getElementById('VerificationDocument');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                console.log('Validation failed: No file selected');
+                document.getElementById('VerificationDocument-error').textContent = 'Please upload a verification document.';
+                isValid = false;
+            }
+        }
+        
+        console.log('Validation result:', isValid);
+        
+        if (!isValid) {
+            // Scroll to first error
+            const firstError = document.querySelector('.form-error:not(:empty)');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        return isValid;
+    }
+
+    function nextStep(step) {
+        console.log('nextStep called, moving from step', currentStep, 'to step', step);
+        if (validateStep(currentStep)) {
+            goToStep(step);
+        } else {
+            console.log('Validation failed, cannot proceed to next step');
+        }
+    }
+
+    function prevStep(step) {
+        clearFormErrors();
+        goToStep(step);
+    }
+
+    function clearFormErrors() {
+        document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+        const modalError = document.getElementById('modalError');
+        if (modalError) modalError.style.display = 'none';
+    }
+
+    const createForm = document.getElementById('createSponsorForm');
+    if (createForm) {
+        createForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validate final step before submitting
+            if (!validateStep(3)) {
+                return;
+            }
+            
+            clearFormErrors();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Creating...';
+
+            const formData = new FormData(this);
+
+            try {
+                const url = '/Sponsors/CreateModal';
+                console.log('Posting to URL:', url);
+                console.log('Form data entries:', Array.from(formData.entries()).map(([k, v]) => `${k}: ${v instanceof File ? v.name : v}`));
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('Response status:', response.status, response.statusText);
+
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Unexpected response type:', contentType);
+                    console.error('Response body:', text);
+                    throw new Error('Server returned non-JSON response. Check console for details.');
+                }
+
+                const result = await response.json();
+                console.log('Response result:', result);
+
+                if (result.success) {
+                    closeCreateSponsorModal();
+                    // Show success message and reload page
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'alert alert-success';
+                    successDiv.textContent = result.message;
+                    document.querySelector('.page-header').after(successDiv);
+                    
+                    // Reload page after a short delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    // Go back to the step with errors
+                    let errorStep = 1;
+                    
+                    // Show errors
+                    if (result.message) {
+                        const errorDiv = document.getElementById('modalError');
+                        errorDiv.textContent = result.message;
+                        errorDiv.style.display = 'block';
+                        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+
+                    if (result.errors) {
+                        for (const [field, messages] of Object.entries(result.errors)) {
+                            const errorSpan = document.getElementById(field + '-error');
+                            if (errorSpan) {
+                                errorSpan.textContent = Array.isArray(messages) ? messages[0] : messages;
+                                
+                                // Determine which step to show based on error field
+                                if (['SponsorId', 'SponsorName', 'LegalName', 'Address', 'Tin'].includes(field)) {
+                                    errorStep = 1;
+                                } else if (['Username', 'DisplayName', 'Password', 'ConfirmPassword'].includes(field)) {
+                                    errorStep = 2;
+                                } else if (field === 'VerificationDocument') {
+                                    errorStep = 3;
+                                }
+                            }
+                        }
+                        
+                        // Navigate to the step with errors
+                        goToStep(errorStep);
+                    }
+
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error creating sponsor:', error);
+                const errorDiv = document.getElementById('modalError');
+                errorDiv.textContent = 'An error occurred while creating the sponsor. Please check the console for details and try again.';
+                errorDiv.style.display = 'block';
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // =========== VIEW/EDIT PROFILE MODAL ===========
+    
+    let profileCurrentStep = 1;
+    
+    window.openViewProfileModal = async function(sponsorId) {
+        try {
+            const response = await fetch(`/Sponsors/GetProfileData?id=${sponsorId}`);
+            const sponsor = await response.json();
+            
+            if (!sponsor || !sponsor.sponsorId) {
+                alert('Failed to load sponsor data');
+                return;
+            }
+            
+            // Populate modal with sponsor data
+            document.getElementById('profileSponsorIdHidden').value = sponsor.sponsorId;
+            
+            // Step 1 fields
+            document.getElementById('editSponsorId').value = sponsor.sponsorId;
+            document.getElementById('editSponsorName').value = sponsor.sponsorName;
+            document.getElementById('editLegalName').value = sponsor.legalName;
+            document.getElementById('editAddress').value = sponsor.address || '';
+            document.getElementById('editTin').value = sponsor.tin || '';
+            
+            // Step 2 fields - populate with username data
+            document.getElementById('editUsername').value = sponsor.sponsorId; // Usually username matches sponsorId
+            document.getElementById('editDisplayName').value = sponsor.sponsorId;
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editConfirmPassword').value = '';
+            
+            // Step 3 - document info (will be loaded if available)
+            document.getElementById('currentDocumentInfo').textContent = 'Loading document information...';
+            // TODO: Add API call to check if document exists
+            
+            // Handle Approval Status (Admin Only)
+            const approvalStatus = sponsor.approvalStatus || 'Approved';
+            const approvalSection = document.getElementById('approvalStatusSection');
+            const pendingBanner = document.getElementById('approvalPendingBanner');
+            const approvedBanner = document.getElementById('approvalApprovedBanner');
+            const rejectedBanner = document.getElementById('approvalRejectedBanner');
+            
+            // Hide all banners first
+            pendingBanner.style.display = 'none';
+            approvedBanner.style.display = 'none';
+            rejectedBanner.style.display = 'none';
+            approvalSection.style.display = 'block'; // Show the approval section
+            
+            if (approvalStatus === 'PendingApproval') {
+                pendingBanner.style.display = 'block';
+            } else if (approvalStatus === 'Approved') {
+                approvedBanner.style.display = 'block';
+                const approvedOn = sponsor.approvedOn ? new Date(sponsor.approvedOn).toLocaleDateString() : '';
+                const approvedBy = sponsor.approvedByUserId || 'system';
+                document.getElementById('approvalDetailsText').textContent = approvedOn ? ` on ${approvedOn} by ${approvedBy}` : '';
+            } else if (approvalStatus === 'Rejected') {
+                rejectedBanner.style.display = 'block';
+                const rejectionNotes = sponsor.approvalNotes || 'No reason provided';
+                document.getElementById('rejectionDetailsText').textContent = ` - ${rejectionNotes}`;
+            }
+            
+            // Show modal and go to step 1
+            document.getElementById('viewProfileModal').classList.add('active');
+            profileGoToStep(1);
+            clearProfileErrors();
+        } catch (error) {
+            console.error('Error loading sponsor:', error);
+            alert('Failed to load sponsor profile');
+        }
+    };
+    
+    window.closeViewProfileModal = function() {
+        document.getElementById('viewProfileModal').classList.remove('active');
+        document.getElementById('editProfileForm').reset();
+        clearProfileErrors();
+        profileGoToStep(1);
+    };
+    
+    function clearProfileErrors() {
+        document.getElementById('profileError').style.display = 'none';
+        document.getElementById('profileSuccess').style.display = 'none';
+        document.querySelectorAll('#editProfileForm .form-error').forEach(el => el.textContent = '');
+    }
+    
+    // =========== APPROVAL/REJECTION FUNCTIONS ===========
+    
+    function showApprovalForm() {
+        document.getElementById('approvalPendingBanner').style.display = 'none';
+        document.getElementById('approvalForm').style.display = 'block';
+        document.getElementById('approvalNotes').value = '';
+    }
+    
+    function showReapprovalForm() {
+        document.getElementById('approvalRejectedBanner').style.display = 'none';
+        document.getElementById('approvalForm').style.display = 'block';
+        document.getElementById('approvalNotes').value = '';
+    }
+    
+    function showRejectionForm() {
+        document.getElementById('approvalPendingBanner').style.display = 'none';
+        document.getElementById('rejectionForm').style.display = 'block';
+        document.getElementById('rejectionReason').value = '';
+        document.getElementById('rejectionReason-error').textContent = '';
+    }
+    
+    function cancelApprovalForm() {
+        document.getElementById('approvalForm').style.display = 'none';
+        // Show the appropriate banner again
+        const sponsorId = document.getElementById('profileSponsorIdHidden').value;
+        // Re-open modal to refresh state
+        openViewProfileModal(sponsorId);
+    }
+    
+    function cancelRejectionForm() {
+        document.getElementById('rejectionForm').style.display = 'none';
+        // Show the appropriate banner again
+        const sponsorId = document.getElementById('profileSponsorIdHidden').value;
+        // Re-open modal to refresh state
+        openViewProfileModal(sponsorId);
+    }
+    
+    async function submitApproval() {
+        const sponsorId = document.getElementById('profileSponsorIdHidden').value;
+        const notes = document.getElementById('approvalNotes').value.trim();
+        
+        if (!sponsorId) {
+            alert('Invalid sponsor ID');
+            return;
+        }
+        
+        try {
+            const formData = new FormData();
+            formData.append('sponsorId', sponsorId);
+            formData.append('notes', notes);
+            
+            const response = await fetch('/Sponsors/ApproveSponsor', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message
+                const successDiv = document.getElementById('profileSuccess');
+                successDiv.textContent = 'Sponsor approved successfully!';
+                successDiv.style.display = 'block';
+                
+                // Reload the modal to show updated approval status
+                setTimeout(async () => {
+                    await openViewProfileModal(sponsorId);
+                    // Reload the main sponsor list to update badge
+                    location.reload();
+                }, 1500);
+            } else {
+                const errorDiv = document.getElementById('profileError');
+                errorDiv.textContent = result.message || 'Failed to approve sponsor.';
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error approving sponsor:', error);
+            alert('An error occurred while approving the sponsor.');
+        }
+    }
+    
+    async function submitRejection() {
+        const sponsorId = document.getElementById('profileSponsorIdHidden').value;
+        const reason = document.getElementById('rejectionReason').value.trim();
+        
+        // Validation
+        if (!reason) {
+            document.getElementById('rejectionReason-error').textContent = 'Rejection reason is required.';
+            return;
+        }
+        
+        if (!sponsorId) {
+            alert('Invalid sponsor ID');
+            return;
+        }
+        
+        try {
+            const formData = new FormData();
+            formData.append('sponsorId', sponsorId);
+            formData.append('reason', reason);
+            
+            const response = await fetch('/Sponsors/RejectSponsor', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message
+                const successDiv = document.getElementById('profileSuccess');
+                successDiv.textContent = 'Sponsor rejected.';
+                successDiv.style.display = 'block';
+                
+                // Reload the modal to show updated approval status
+                setTimeout(async () => {
+                    await openViewProfileModal(sponsorId);
+                    // Reload the main sponsor list to update badge
+                    location.reload();
+                }, 1500);
+            } else {
+                const errorDiv = document.getElementById('profileError');
+                errorDiv.textContent = result.message || 'Failed to reject sponsor.';
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error rejecting sponsor:', error);
+            alert('An error occurred while rejecting the sponsor.');
+        }
+    }
+    
+    // =========== END APPROVAL/REJECTION FUNCTIONS ===========
+    
+    function profileGoToStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.profile-step').forEach(el => el.style.display = 'none');
+        
+        // Show current step
+        document.getElementById('profileStep' + step).style.display = 'block';
+        profileCurrentStep = step;
+        
+        // Update step indicators
+        for (let i = 1; i <= 3; i++) {
+            const indicator = document.getElementById('profileStepIndicator' + i);
+            const circle = indicator.querySelector('div:first-child');
+            const text = indicator.querySelector('div:last-child');
+            
+            if (i < step) {
+                // Completed step
+                circle.style.background = 'var(--ism-blue)';
+                circle.style.color = 'white';
+                text.style.color = 'var(--gray-700)';
+                text.style.fontWeight = '500';
+            } else if (i === step) {
+                // Active step
+                circle.style.background = 'var(--ism-blue)';
+                circle.style.color = 'white';
+                text.style.color = 'var(--gray-700)';
+                text.style.fontWeight = '600';
+            } else {
+                // Future step
+                circle.style.background = '#e0e0e0';
+                circle.style.color = 'var(--gray-600)';
+                text.style.color = 'var(--gray-600)';
+                text.style.fontWeight = '400';
+            }
+        }
+        
+        // Update progress bar
+        const progress = ((step - 1) / 2) * 100;
+        document.getElementById('profileProgressBar').style.width = progress + '%';
+    }
+    
+    function validateProfileStep(step) {
+        clearProfileErrors();
+        let isValid = true;
+        
+        console.log('Validating profile step:', step);
+        
+        if (step === 1) {
+            // Validate Sponsor Information
+            const sponsorName = document.getElementById('editSponsorName').value.trim();
+            const legalName = document.getElementById('editLegalName').value.trim();
+            
+            if (!sponsorName) {
+                console.log('Validation failed: Sponsor name is required');
+                document.getElementById('editSponsorName-error').textContent = 'Sponsor name is required.';
+                isValid = false;
+            }
+            if (!legalName) {
+                console.log('Validation failed: Legal name is required');
+                document.getElementById('editLegalName-error').textContent = 'Legal name is required.';
+                isValid = false;
+            }
+        } else if (step === 2) {
+            // Validate User Account Information (only if password is provided)
+            const password = document.getElementById('editPassword').value;
+            const confirmPassword = document.getElementById('editConfirmPassword').value;
+            
+            // Password is optional, but if provided must be valid
+            if (password) {
+                if (password.length < 8) {
+                    console.log('Validation failed: Password too short');
+                    document.getElementById('editPassword-error').textContent = 'Password must be at least 8 characters.';
+                    isValid = false;
+                } else if (!/[a-z]/.test(password)) {
+                    console.log('Validation failed: Password missing lowercase');
+                    document.getElementById('editPassword-error').textContent = 'Password must contain at least one lowercase letter.';
+                    isValid = false;
+                } else if (!/[A-Z]/.test(password)) {
+                    console.log('Validation failed: Password missing uppercase');
+                    document.getElementById('editPassword-error').textContent = 'Password must contain at least one uppercase letter.';
+                    isValid = false;
+                } else if (!/[0-9]/.test(password)) {
+                    console.log('Validation failed: Password missing digit');
+                    document.getElementById('editPassword-error').textContent = 'Password must contain at least one digit.';
+                    isValid = false;
+                } else if (!/[^a-zA-Z0-9]/.test(password)) {
+                    console.log('Validation failed: Password missing special character');
+                    document.getElementById('editPassword-error').textContent = 'Password must contain at least one special character.';
+                    isValid = false;
+                }
+                
+                if (password !== confirmPassword) {
+                    console.log('Validation failed: Passwords do not match');
+                    document.getElementById('editConfirmPassword-error').textContent = 'Passwords do not match.';
+                    isValid = false;
+                }
+            } else if (confirmPassword) {
+                // If only confirm password is filled
+                console.log('Validation failed: Password required when confirm password is filled');
+                document.getElementById('editPassword-error').textContent = 'Please enter a new password.';
+                isValid = false;
+            }
+        }
+        // Step 3 has no required validation (document is optional)
+        
+        console.log('Profile validation result:', isValid);
+        
+        if (!isValid) {
+            // Scroll to first error
+            const firstError = document.querySelector('#editProfileForm .form-error:not(:empty)');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        return isValid;
+    }
+    
+    function profileNextStep(step) {
+        console.log('profileNextStep called, moving from step', profileCurrentStep, 'to step', step);
+        if (validateProfileStep(profileCurrentStep)) {
+            profileGoToStep(step);
+        } else {
+            console.log('Profile validation failed, cannot proceed to next step');
+        }
+    }
+    
+    function profilePrevStep(step) {
+        clearProfileErrors();
+        profileGoToStep(step);
+    }
+    
+    // Handle form submission
+    const editProfileForm = document.getElementById('editProfileForm');
+    if (editProfileForm) {
+        editProfileForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validate all steps before submitting
+            if (!validateProfileStep(1)) {
+                profileGoToStep(1);
+                return;
+            }
+            if (!validateProfileStep(2)) {
+                profileGoToStep(2);
+                return;
+            }
+            
+            clearProfileErrors();
+            
+            const saveBtn = document.getElementById('saveProfileBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = 'Saving...';
+            
+            const formData = new FormData(this);
+            
+            try {
+                const url = '/Sponsors/UpdateProfile';
+                console.log('Posting to URL:', url);
+                console.log('Form data entries:', Array.from(formData.entries()).map(([k, v]) => `${k}: ${v instanceof File ? v.name : v}`));
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Unexpected response type:', contentType);
+                    console.error('Response body:', text);
+                    throw new Error('Server returned non-JSON response. Check console for details.');
+                }
+                
+                const result = await response.json();
+                console.log('Response result:', result);
+                
+                if (result.success) {
+                    const successDiv = document.getElementById('profileSuccess');
+                    successDiv.textContent = result.message || 'Profile updated successfully!';
+                    successDiv.style.display = 'block';
+                    
+                    // Reload the page after a short delay to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    const errorDiv = document.getElementById('profileError');
+                    errorDiv.textContent = result.message || 'Failed to update profile.';
+                    errorDiv.style.display = 'block';
+                    profileGoToStep(1); // Go back to first step to show error
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                const errorDiv = document.getElementById('profileError');
+                errorDiv.textContent = 'An error occurred: ' + error.message;
+                errorDiv.style.display = 'block';
+                profileGoToStep(1);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            }
+        });
+    }
+    
+    // =========== TOGGLE SPONSOR STATUS ===========
+    
+    window.toggleSponsorStatus = async function(sponsorId, newStatus) {
+        const action = newStatus ? 'activate' : 'deactivate';
+        if (!confirm(`Are you sure you want to ${action} this sponsor?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/Sponsors/ToggleStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ SponsorId: sponsorId, IsActive: newStatus })
+            });
+            
+            if (!response.ok) {
+                console.error('Response status:', response.status, response.statusText);
+                const text = await response.text();
+                console.error('Response body:', text);
+                alert(`Error: Server returned ${response.status}`);
+                return;
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Sponsor ${action}d successfully!`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while updating sponsor status');
+        }
+    };
+    
+    // =========== TABLE FILTER AND SORT ===========
+    
+    // Initialize debounced search on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof setupDebouncedSearch !== 'undefined') {
+            setupDebouncedSearch('searchInput', filterTable, 300);
+        }
+    });
+    
+    function filterTable() {
+        const searchInput = document.getElementById('searchInput').value.toLowerCase();
+        const showInactive = document.getElementById('showInactiveSponsors').checked;
+        const approvalFilter = document.getElementById('approvalFilter').value;
+        const table = document.getElementById('sponsorsTable');
+        const tbody = document.getElementById('sponsorsTableBody');
+        const rows = tbody.getElementsByTagName('tr');
+        const noResultsMsg = document.getElementById('noResultsMessage');
+        let visibleCount = 0;
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const sponsorId = row.getAttribute('data-sponsor-id')?.toLowerCase() || '';
+            const sponsorName = row.getAttribute('data-sponsor-name')?.toLowerCase() || '';
+            const legalName = row.getAttribute('data-legal-name')?.toLowerCase() || '';
+            const status = row.getAttribute('data-status') || 'active';
+            const approval = row.getAttribute('data-approval') || 'Approved';
+            
+            const matchesSearch = sponsorId.includes(searchInput) || 
+                                sponsorName.includes(searchInput) || 
+                                legalName.includes(searchInput);
+            const matchesStatus = showInactive || status === 'active';
+            const matchesApproval = approvalFilter === 'all' || approval === approvalFilter;
+            
+            if (matchesSearch && matchesStatus && matchesApproval) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+        
+        // Show/hide no results message and table
+        if (visibleCount === 0) {
+            table.style.display = 'none';
+            noResultsMsg.style.display = 'block';
+        } else {
+            table.style.display = 'table';
+            noResultsMsg.style.display = 'none';
+        }
+    }
+    
+    function sortTable() {
+        const select = document.getElementById('sortSelect');
+        const [field, order] = select.value.split('-');
+        const tbody = document.getElementById('sponsorsTableBody');
+        const rows = Array.from(tbody.getElementsByTagName('tr'));
+        
+        rows.sort((a, b) => {
+            let aValue, bValue;
+            
+            if (field === 'sponsorId') {
+                aValue = a.getAttribute('data-sponsor-id') || '';
+                bValue = b.getAttribute('data-sponsor-id') || '';
+            } else if (field === 'sponsorName') {
+                aValue = a.getAttribute('data-sponsor-name') || '';
+                bValue = b.getAttribute('data-sponsor-name') || '';
+            } else if (field === 'legalName') {
+                aValue = a.getAttribute('data-legal-name') || '';
+                bValue = b.getAttribute('data-legal-name') || '';
+            }
+            
+            const comparison = aValue.localeCompare(bValue);
+            return order === 'asc' ? comparison : -comparison;
+        });
+        
+        // Clear and repopulate tbody
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+        
+        // Reapply filter if search is active
+        const searchInput = document.getElementById('searchInput').value;
+        if (searchInput) {
+            filterTable();
+        }
+    }
+    
+    function clearFilters() {
+        // Reset all filter controls
+        document.getElementById('searchInput').value = '';
+        document.getElementById('showInactiveSponsors').checked = false;
+        document.getElementById('approvalFilter').value = 'all';
+        document.getElementById('sortSelect').value = 'sponsorName-asc';
+        
+        // Reapply sorting and filtering
+        sortTable();
+        filterTable();
+    }
+    
+    // =========== CONTACTS MODAL ===========
+    
+    let contactsCurrentStep = 1;
+    let currentSponsorContacts = [];
+    
+    window.openContactsModal = async function(sponsorId) {
+        try {
+            // Load sponsor basic info
+            const sponsorResponse = await fetch(`/Sponsors/GetProfileData?id=${sponsorId}`);
+            const sponsor = await sponsorResponse.json();
+            
+            if (!sponsor || !sponsor.sponsorId) {
+                alert('Failed to load sponsor data');
+                return;
+            }
+            
+            document.getElementById('contactsSponsorId').value = sponsorId;
+            document.getElementById('contactsSponsorName').textContent = sponsor.sponsorName;
+            
+            // Show modal and load contacts
+            document.getElementById('contactsModal').classList.add('active');
+            contactsGoToStep(1);
+            await loadContacts(sponsorId);
+            clearContactsErrors();
+        } catch (error) {
+            console.error('Error opening contacts modal:', error);
+            alert('Failed to load contacts');
+        }
+    };
+    
+    window.closeContactsModal = function() {
+        document.getElementById('contactsModal').classList.remove('active');
+        document.getElementById('addContactForm').reset();
+        clearContactsErrors();
+        contactsGoToStep(1);
+    };
+    
+    function clearContactsErrors() {
+        document.getElementById('contactsError').style.display = 'none';
+        document.getElementById('contactsSuccess').style.display = 'none';
+        document.querySelectorAll('#addContactForm .form-error').forEach(el => el.textContent = '');
+    }
+    
+    function contactsGoToStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.contacts-step').forEach(el => el.style.display = 'none');
+        
+        // Show current step
+        document.getElementById('contactsStep' + step).style.display = 'block';
+        contactsCurrentStep = step;
+        
+        // Update step indicators
+        for (let i = 1; i <= 3; i++) {
+            const indicator = document.getElementById('contactsStepIndicator' + i);
+            const circle = indicator.querySelector('div:first-child');
+            const text = indicator.querySelector('div:last-child');
+            
+            if (i < step) {
+                // Completed step
+                circle.style.background = 'var(--ism-blue)';
+                circle.style.color = 'white';
+                text.style.color = 'var(--gray-700)';
+                text.style.fontWeight = '500';
+            } else if (i === step) {
+                // Active step
+                circle.style.background = 'var(--ism-blue)';
+                circle.style.color = 'white';
+                text.style.color = 'var(--gray-700)';
+                text.style.fontWeight = '600';
+            } else {
+                // Future step
+                circle.style.background = '#e0e0e0';
+                circle.style.color = 'var(--gray-600)';
+                text.style.color = 'var(--gray-600)';
+                text.style.fontWeight = '400';
+            }
+        }
+        
+        // Update progress bar
+        const progress = ((step - 1) / 2) * 100;
+        document.getElementById('contactsProgressBar').style.width = progress + '%';
+    }
+    
+    async function loadContacts(sponsorId) {
+        try {
+            console.log('Loading contacts for sponsor:', sponsorId);
+            const response = await fetch(`/Sponsors/GetContacts?sponsorId=${sponsorId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const contacts = await response.json();
+            console.log('Loaded contacts:', contacts);
+            currentSponsorContacts = contacts;
+            
+            const container = document.getElementById('contactsListContainer');
+            
+            if (!contacts || contacts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
+                        <p style="color: var(--gray-500); margin: 0; font-size: 15px; font-weight: 600;">No Existing Record</p>
+                        <p style="color: var(--gray-400); margin: 8px 0 0 0; font-size: 13px;">Click "Add New Contact" to add the first contact for this sponsor.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div style="display: grid; gap: 12px;">';
+            contacts.forEach(contact => {
+                const isActive = contact.isActive;
+                const statusBadge = isActive 
+                    ? '<span style="display: inline-block; padding: 2px 8px; background: #dff3e8; color: #0f6b41; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px;">Active</span>'
+                    : '<span style="display: inline-block; padding: 2px 8px; background: #f3f4f6; color: #6b7280; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px;">Inactive</span>';
+                
+                const editButton = isActive 
+                    ? `<button type="button" onclick="editContact(${contact.sponsorContactId}, '${escapeHtml(contact.name)}', '${escapeHtml(contact.email)}', '${escapeHtml(contact.phone)}')" 
+                            style="padding: 6px 12px; background: white; color: var(--ism-blue); border: 1px solid var(--ism-blue); border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500;">
+                        ✎ Edit
+                    </button>`
+                    : '';
+                
+                const actionButton = isActive 
+                    ? `<button type="button" onclick="deactivateContact(${contact.sponsorContactId})" 
+                            style="padding: 6px 12px; background: white; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500;">
+                        ⊗ Deactivate
+                    </button>`
+                    : `<button type="button" onclick="reactivateContact(${contact.sponsorContactId})" 
+                            style="padding: 6px 12px; background: white; color: #059669; border: 1px solid #059669; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500;">
+                         Reactivate
+                    </button>`;
+                
+                html += `
+                    <div style="padding: 16px; background: ${isActive ? '#f9fafb' : '#fafafa'}; border-radius: 8px; border: 1px solid ${isActive ? '#e5e7eb' : '#e0e0e0'}; ${!isActive ? 'opacity: 0.8;' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 8px 0; color: var(--gray-900); font-size: 15px; font-weight: 600; display: flex; align-items: center;">
+                                    ${escapeHtml(contact.name)}
+                                    ${statusBadge}
+                                </h4>
+                                <p style="margin: 4px 0; color: var(--gray-600); font-size: 13px;">
+                                    📧 ${escapeHtml(contact.email)}
+                                </p>
+                                <p style="margin: 4px 0; color: var(--gray-600); font-size: 13px;">
+                                    📞 ${escapeHtml(contact.phone)}
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                ${editButton}
+                                ${actionButton}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading contacts:', error);
+            const container = document.getElementById('contactsListContainer');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--danger);">
+                    <p style="font-weight: 600; margin-bottom: 8px;">Error loading contacts</p>
+                    <p style="font-size: 13px; color: var(--gray-600);">${error.message || 'Please try again.'}</p>
+                </div>
+            `;
+        }
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function contactsNextStep(step) {
+        // Set sponsor ID in hidden field when going to add contact step
+        if (step === 2) {
+            const sponsorId = document.getElementById('contactsSponsorId').value;
+            document.getElementById('contactSponsorId').value = sponsorId;
+        }
+        clearContactsErrors();
+        contactsGoToStep(step);
+    }
+    
+    function contactsPrevStep(step) {
+        clearContactsErrors();
+        contactsGoToStep(step);
+    }
+    
+    // Handle add contact form submission
+    const addContactForm = document.getElementById('addContactForm');
+    if (addContactForm) {
+        addContactForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            clearContactsErrors();
+            
+            const sponsorId = document.getElementById('contactsSponsorId').value;
+            const name = document.getElementById('contactName').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            const phone = document.getElementById('contactPhone').value.trim();
+            
+            // Validation
+            let hasError = false;
+            if (!name) {
+                document.getElementById('contactName-error').textContent = 'Name is required.';
+                hasError = true;
+            }
+            if (!email) {
+                document.getElementById('contactEmail-error').textContent = 'Email is required.';
+                hasError = true;
+            } else if (!/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email)) {
+                document.getElementById('contactEmail-error').textContent = 'Please enter a valid email address.';
+                hasError = true;
+            }
+            if (!phone) {
+                document.getElementById('contactPhone-error').textContent = 'Phone is required.';
+                hasError = true;
+            }
+            
+            if (hasError) {
+                return;
+            }
+            
+            const addBtn = document.getElementById('addContactBtn');
+            const originalText = addBtn.innerHTML;
+            addBtn.disabled = true;
+            addBtn.innerHTML = 'Adding...';
+            
+            try {
+                const formData = new FormData(document.getElementById('addContactForm'));
+                
+                console.log('Submitting contact:', {
+                    sponsorId: formData.get('sponsorId'),
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone')
+                });
+                
+                const response = await fetch('/Sponsors/AddContact', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const successDiv = document.getElementById('contactsSuccess');
+                    successDiv.textContent = 'Contact added successfully!';
+                    successDiv.style.display = 'block';
+                    
+                    // Reset form and reload contacts
+                    document.getElementById('addContactForm').reset();
+                    await loadContacts(sponsorId);
+                    
+                    // Go back to step 1 after short delay
+                    setTimeout(() => {
+                        contactsGoToStep(1);
+                    }, 1500);
+                } else {
+                    const errorDiv = document.getElementById('contactsError');
+                    errorDiv.textContent = result.message || 'Failed to add contact.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error adding contact:', error);
+                const errorDiv = document.getElementById('contactsError');
+                errorDiv.textContent = `An error occurred: ${error.message || 'Please try again.'}`;
+                errorDiv.style.display = 'block';
+            } finally {
+                addBtn.disabled = false;
+                addBtn.innerHTML = originalText;
+            }
+        });
+    }
+    
+    function editContact(contactId, name, email, phone) {
+        // Populate edit form
+        document.getElementById('editContactId').value = contactId;
+        document.getElementById('editContactSponsorId').value = document.getElementById('contactsSponsorId').value;
+        document.getElementById('editContactName').value = name;
+        document.getElementById('editContactEmail').value = email;
+        document.getElementById('editContactPhone').value = phone;
+        
+        // Clear errors and go to edit step
+        clearContactsErrors();
+        contactsGoToStep(3);
+    }
+    
+    async function deactivateContact(contactId) {
+        if (!confirm('Are you sure you want to deactivate this contact? The contact will be marked as inactive.')) {
+            return;
+        }
+        
+        try {
+            const sponsorId = document.getElementById('contactsSponsorId').value;
+            const response = await fetch(`/Sponsors/DeactivateContact?id=${contactId}`, {
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const successDiv = document.getElementById('contactsSuccess');
+                successDiv.textContent = 'Contact deactivated successfully!';
+                successDiv.style.display = 'block';
+                
+                // Reload contacts
+                await loadContacts(sponsorId);
+                
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            } else {
+                alert(result.message || 'Failed to deactivate contact.');
+            }
+        } catch (error) {
+            console.error('Error deactivating contact:', error);
+            alert('An error occurred while deactivating the contact.');
+        }
+    }
+    
+    async function reactivateContact(contactId) {
+        if (!confirm('Are you sure you want to reactivate this contact?')) {
+            return;
+        }
+        
+        try {
+            const sponsorId = document.getElementById('contactsSponsorId').value;
+            const response = await fetch(`/Sponsors/ReactivateContact?id=${contactId}`, {
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const successDiv = document.getElementById('contactsSuccess');
+                successDiv.textContent = 'Contact reactivated successfully!';
+                successDiv.style.display = 'block';
+                
+                // Reload contacts
+                await loadContacts(sponsorId);
+                
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            } else {
+                alert(result.message || 'Failed to reactivate contact.');
+            }
+        } catch (error) {
+            console.error('Error reactivating contact:', error);
+            alert('An error occurred while reactivating the contact.');
+        }
+    }
+    
+    // Handle edit contact form submission
+    const editContactForm = document.getElementById('editContactForm');
+    if (editContactForm) {
+        editContactForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            clearContactsErrors();
+            
+            const contactId = document.getElementById('editContactId').value;
+            const sponsorId = document.getElementById('editContactSponsorId').value;
+            const name = document.getElementById('editContactName').value.trim();
+            const email = document.getElementById('editContactEmail').value.trim();
+            const phone = document.getElementById('editContactPhone').value.trim();
+            
+            // Validation
+            let hasError = false;
+            if (!name) {
+                document.getElementById('editContactName-error').textContent = 'Name is required.';
+                hasError = true;
+            }
+            if (!email) {
+                document.getElementById('editContactEmail-error').textContent = 'Email is required.';
+                hasError = true;
+            } else if (!/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email)) {
+                document.getElementById('editContactEmail-error').textContent = 'Please enter a valid email address.';
+                hasError = true;
+            }
+            if (!phone) {
+                document.getElementById('editContactPhone-error').textContent = 'Phone is required.';
+                hasError = true;
+            }
+            
+            if (hasError) {
+                return;
+            }
+            
+            const updateBtn = document.getElementById('updateContactBtn');
+            const originalText = updateBtn.innerHTML;
+            updateBtn.disabled = true;
+            updateBtn.innerHTML = 'Updating...';
+            
+            try {
+                const formData = new FormData(document.getElementById('editContactForm'));
+                
+                console.log('Updating contact:', {
+                    contactId: formData.get('contactId'),
+                    sponsorId: formData.get('sponsorId'),
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone')
+                });
+                
+                const response = await fetch('/Sponsors/UpdateContact', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const successDiv = document.getElementById('contactsSuccess');
+                    successDiv.textContent = 'Contact updated successfully!';
+                    successDiv.style.display = 'block';
+                    
+                    // Reset form and reload contacts
+                    document.getElementById('editContactForm').reset();
+                    await loadContacts(sponsorId);
+                    
+                    // Go back to step 1 after short delay
+                    setTimeout(() => {
+                        contactsGoToStep(1);
+                    }, 1500);
+                } else {
+                    const errorDiv = document.getElementById('contactsError');
+                    errorDiv.textContent = result.message || 'Failed to update contact.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error updating contact:', error);
+                const errorDiv = document.getElementById('contactsError');
+                errorDiv.textContent = `An error occurred: ${error.message || 'Please try again.'}`;
+                errorDiv.style.display = 'block';
+            } finally {
+                updateBtn.disabled = false;
+                updateBtn.innerHTML = originalText;
+            }
+        });
+    }
+</script>
+}

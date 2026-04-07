@@ -1,0 +1,155 @@
+@model ISMSponsor.Models.Domain.SponsorChangeRequest
+@{
+    ViewData["Title"] = $"Request #{Model.RequestId}";
+}
+
+<div class="page-header">
+    <h2>Change Request #@Model.RequestId</h2>
+    <div class="actions">
+        <a asp-action="Index" class="btn-secondary">Back to List</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error">@TempData["Error"]</div>
+}
+
+<div class="card">
+    <h3 class="card-title">Request Information</h3>
+    
+    <div class="data-grid">
+        <div class="data-item">
+            <label class="data-label">Sponsor</label>
+            <div class="data-value">@Model.Sponsor?.SponsorName</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Field</label>
+            <div class="data-value">@Model.RequestField</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Status</label>
+            <div class="data-value">
+                <span class="badge badge-@GetStatusClass(Model.Status)">@Model.Status</span>
+            </div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Submitted By</label>
+            <div class="data-value">@Model.SubmittedByUserDisplay</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Submitted On</label>
+            <div class="data-value">@Model.SubmittedOn.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Requested Change</h3>
+    
+    <div class="data-grid">
+        <div class="data-item">
+            <label class="data-label">Current Value</label>
+            <div class="data-value">@(Model.CurrentValue ?? "-")</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Requested Value</label>
+            <div class="data-value" style="font-weight: bold;">@Model.RequestedValue</div>
+        </div>
+    </div>
+    
+    @if (!string.IsNullOrEmpty(Model.RequestReason))
+    {
+        <div class="data-item" style="margin-top: 1rem;">
+            <label class="data-label">Reason</label>
+            <div class="data-value">@Model.RequestReason</div>
+        </div>
+    }
+</div>
+
+@if (Model.ReviewedOn.HasValue)
+{
+    <div class="card">
+        <h3 class="card-title">Review Information</h3>
+        
+        <div class="data-grid">
+            <div class="data-item">
+                <label class="data-label">Reviewed By</label>
+                <div class="data-value">@Model.ReviewedByUserDisplay</div>
+            </div>
+            
+            <div class="data-item">
+                <label class="data-label">Reviewed On</label>
+                <div class="data-value">@Model.ReviewedOn.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+            </div>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.ReviewNotes))
+        {
+            <div class="data-item" style="margin-top: 1rem;">
+                <label class="data-label">Review Notes</label>
+                <div class="data-value">@Model.ReviewNotes</div>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.AppliedOn.HasValue)
+{
+    <div class="card">
+        <h3 class="card-title">Application Information</h3>
+        
+        <div class="data-grid">
+            <div class="data-item">
+                <label class="data-label">Applied By</label>
+                <div class="data-value">@Model.AppliedByUserDisplay</div>
+            </div>
+            
+            <div class="data-item">
+                <label class="data-label">Applied On</label>
+                <div class="data-value">@Model.AppliedOn.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+            </div>
+            
+            <div class="data-item">
+                <label class="data-label">Applied Value</label>
+                <div class="data-value">@Model.AppliedValue</div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Status == "Pending")
+{
+    <div class="card">
+        <h3 class="card-title">Actions</h3>
+        <form asp-action="Cancel" method="post" onsubmit="return confirm('Are you sure you want to cancel this request?');">
+            <input type="hidden" name="id" value="@Model.RequestId" />
+            <button type="submit" class="btn-danger">Cancel Request</button>
+        </form>
+    </div>
+}
+
+@functions {
+    string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "warning",
+            "Approved" => "info",
+            "Applied" => "success",
+            "Rejected" => "danger",
+            "Cancelled" => "secondary",
+            _ => "secondary"
+        };
+    }
+}

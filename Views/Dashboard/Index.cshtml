@@ -3,20 +3,26 @@
     ViewData["Title"] = "Dashboard";
 
     var logs = ViewBag.Logs as List<ISMSponsor.Models.Domain.LogCoverage> ?? new List<ISMSponsor.Models.Domain.LogCoverage>();
-    var changeRequests = ViewBag.ChangeRequests as List<ISMSponsor.Models.Domain.ChangeRequest> ?? new List<ISMSponsor.Models.Domain.ChangeRequest>();
-    var activityLogs = ViewBag.ActivityLogs as List<ISMSponsor.Models.Domain.ActivityLog> ?? new List<ISMSponsor.Models.Domain.ActivityLog>();
+    var selectedSchoolYear = ViewBag.SelectedSchoolYear as ISMSponsor.Models.Domain.SchoolYear;
+    var activeLoGsCount = (int)(ViewBag.ActiveLoGsCount ?? 0);
+    var sponsorLoGsCount = (int)(ViewBag.SponsorLoGsCount ?? 0);
 
     var pendingLogs = logs.Count(l => !string.Equals(l.LogStatus, "Approved", StringComparison.OrdinalIgnoreCase));
-    var pendingRequests = changeRequests.Count(cr => !string.Equals(cr.Status, "approved", StringComparison.OrdinalIgnoreCase));
     var approvedLogs = logs.Count(l => string.Equals(l.LogStatus, "Approved", StringComparison.OrdinalIgnoreCase));
 }
 
 <div class="page-header">
     <h1>Dashboard</h1>
-    <p class="page-subtitle">Summary of LoGs, requests, and recent sponsor operations.</p>
+    <p class="page-subtitle">
+        Summary for school year: <strong>@(selectedSchoolYear?.Name ?? "Not Selected")</strong>
+    </p>
 </div>
 
 <div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Active LoGs</div>
+        <div class="stat-value">@(User.IsInRole("sponsor") ? sponsorLoGsCount : activeLoGsCount)</div>
+    </div>
     <div class="stat-card">
         <div class="stat-label">Pending LoGs</div>
         <div class="stat-value">@pendingLogs</div>
@@ -25,18 +31,10 @@
         <div class="stat-label">Approved LoGs</div>
         <div class="stat-value">@approvedLogs</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">Pending Change Requests</div>
-        <div class="stat-value">@pendingRequests</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Today</div>
-        <div class="stat-value stat-value-sm">@DateTime.Now.ToString("MMMM d, yyyy")</div>
-    </div>
 </div>
 
 <div class="card">
-    <h2 class="table-title">Recent LoGs Records</h2>
+    <h2 class="table-title">Recent LoGs Records (@Math.Min(logs.Count, 6) of @logs.Count)</h2>
     <div class="table-wrap">
         <table>
             <thead>
@@ -58,47 +56,9 @@
                     foreach (var log in logs.Take(6))
                     {
                         <tr>
-                            <td>@log.StudentId</td>
-                            <td>@log.LogStatus</td>
-                            <td>@(log.AttachmentUploadedOn?.ToString("MMMM d, yyyy") ?? "Not uploaded")</td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card">
-    <h2 class="table-title">Activity Logs</h2>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Item</th>
-                    <th>Details</th>
-                    <th>User</th>
-                    <th>Role</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!activityLogs.Any())
-                {
-                    <tr>
-                        <td colspan="5" class="empty-state">No activity logs available.</td>
-                    </tr>
-                }
-                else
-                {
-                    foreach (var activity in activityLogs)
-                    {
-                        <tr>
-                            <td>@activity.Date.ToString("MMM d, yyyy h:mm tt")</td>
-                            <td>@activity.Item</td>
-                            <td>@activity.Details</td>
-                            <td>@activity.UserDisplay</td>
-                            <td><span class="role-badge">@activity.RoleName</span></td>
+                            <td data-label="Student ID">@log.StudentId</td>
+                            <td data-label="Status">@log.LogStatus</td>
+                            <td data-label="Last Uploaded">@(log.AttachmentUploadedOn?.ToShortDateString() ?? "N/A")</td>
                         </tr>
                     }
                 }

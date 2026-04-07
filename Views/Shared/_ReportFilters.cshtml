@@ -1,0 +1,121 @@
+@model ISMSponsor.ViewModels.ReportFilterViewModel
+@{
+    var schoolYears = ViewBag.SchoolYears as List<ISMSponsor.Models.Domain.SchoolYear> ?? new List<ISMSponsor.Models.Domain.SchoolYear>();
+    var sponsors = ViewBag.Sponsors as List<ISMSponsor.Models.Domain.Sponsor> ?? new List<ISMSponsor.Models.Domain.Sponsor>();
+    var showSponsorFilter = ViewBag.ShowSponsorFilter ?? true;
+    var showStudentFilter = ViewBag.ShowStudentFilter ?? false;
+    var showStatusFilter = ViewBag.ShowStatusFilter ?? true;
+    var showDateRangeFilter = ViewBag.ShowDateRangeFilter ?? true;
+    var showExportFormat = ViewBag.ShowExportFormat ?? true;
+    var formAction = ViewBag.FormAction as string ?? Url.Action();
+}
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="margin: 0 0 1rem 0; padding: 1rem 1rem 0 1rem; font-size: 1.1rem;"> Report Filters</h3>
+    <form method="get" action="@formAction" style="padding: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            
+            <!-- School Year Filter -->
+            @if (schoolYears.Any())
+            {
+                <div class="form-group" style="margin: 0;">
+                    <label for="schoolYearId" class="field-label">School Year</label>
+                    <select id="schoolYearId" name="SchoolYearId" class="form-control">
+                        <option value="">All School Years</option>
+                        @foreach (var year in schoolYears)
+                        {
+                            <option value="@year.SchoolYearId" selected="@(Model?.SchoolYearId?.ToString() == year.SchoolYearId)">
+                                @year.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+            
+            <!-- Sponsor Filter -->
+            @if (showSponsorFilter && sponsors.Any())
+            {
+                <div class="form-group" style="margin: 0;">
+                    <label for="sponsorId" class="field-label">Sponsor</label>
+                    <select id="sponsorId" name="SponsorId" class="form-control">
+                        <option value="">All Sponsors</option>
+                        @foreach (var sponsor in sponsors.OrderBy(s => s.SponsorName))
+                        {
+                            <option value="@sponsor.SponsorId" selected="@(Model?.SponsorId == sponsor.SponsorId)">
+                                @sponsor.SponsorName
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+            
+            <!-- Student Filter -->
+            @if (showStudentFilter)
+            {
+                <div class="form-group" style="margin: 0;">
+                    <label for="studentId" class="field-label">Student ID</label>
+                    <input type="text" id="studentId" name="StudentId" value="@Model?.StudentId" placeholder="Enter Student ID..." class="form-control" />
+                </div>
+            }
+            
+            <!-- Status Filter -->
+            @if (showStatusFilter)
+            {
+                <div class="form-group" style="margin: 0;">
+                    <label for="status" class="field-label">Status</label>
+                    <select id="status" name="Status" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="Active" selected="@(Model?.Status == "Active")">Active</option>
+                        <option value="Inactive" selected="@(Model?.Status == "Inactive")">Inactive</option>
+                        <option value="Draft" selected="@(Model?.Status == "Draft")">Draft</option>
+                        <option value="Submitted" selected="@(Model?.Status == "Submitted")">Submitted</option>
+                        <option value="Under Review" selected="@(Model?.Status == "Under Review")">Under Review</option>
+                        <option value="Approved" selected="@(Model?.Status == "Approved")">Approved</option>
+                        <option value="Rejected" selected="@(Model?.Status == "Rejected")">Rejected</option>
+                    </select>
+                </div>
+            }
+        </div>
+        
+        <!-- Date Range Filter -->
+        @if (showDateRangeFilter)
+        {
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group" style="margin: 0;">
+                    <label for="startDate" class="field-label">Start Date</label>
+                    <input type="date" id="startDate" name="StartDate" value="@Model?.StartDate?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                
+                <div class="form-group" style="margin: 0;">
+                    <label for="endDate" class="field-label">End Date</label>
+                    <input type="date" id="endDate" name="EndDate" value="@Model?.EndDate?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+            </div>
+        }
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="@formAction" class="btn btn-secondary">Clear Filters</a>
+            
+            @if (showExportFormat)
+            {
+                <div style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center;">
+                    <span style="color: #666; font-size: 0.9rem;">Export:</span>
+                    <input type="hidden" name="ExportFormat" value="" id="exportFormat" />
+                    <button type="button" onclick="exportReport('csv')" class="btn btn-secondary"> CSV</button>
+                </div>
+            }
+        </div>
+    </form>
+</div>
+
+@if (showExportFormat)
+{
+    <script>
+    function exportReport(format) {
+        document.getElementById('exportFormat').value = format;
+        document.querySelector('form').submit();
+    }
+    </script>
+}

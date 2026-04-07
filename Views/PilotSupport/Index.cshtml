@@ -1,0 +1,140 @@
+@{
+    ViewData["Title"] = "Pilot Support Center";
+    Layout = "_Layout";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Pilot Support Center</h1>
+        <p class="page-subtitle">UAT resources, demo accounts, and pilot readiness tools for administrators</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Pilot Resources</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+        <div class="resource-card">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--ism-green-dark); margin-bottom: 0.5rem;">Demo Accounts</h3>
+            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 1rem;">View demo user accounts and test credentials for UAT environments.</p>
+            <a href="@Url.Action("DemoAccounts", "PilotSupport")" class="btn-primary" style="width: 100%;">View Accounts</a>
+        </div>
+        
+        <div class="resource-card">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--ism-green-dark); margin-bottom: 0.5rem;">UAT Test Scripts</h3>
+            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 1rem;">Access UAT test scenarios (UT01-UT10) and execution templates.</p>
+            <a href="@Url.Action("UATScripts", "PilotSupport")" class="btn-primary" style="width: 100%;">View Scripts</a>
+        </div>
+        
+        <div class="resource-card">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--ism-green-dark); margin-bottom: 0.5rem;">Pilot Checklist</h3>
+            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 1rem;">Review pilot readiness checklist and sign-off status for deployment.</p>
+            <a href="@Url.Action("PilotChecklist", "PilotSupport")" class="btn-primary" style="width: 100%;">View Checklist</a>
+        </div>
+        
+        <div class="resource-card">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--ism-green-dark); margin-bottom: 0.5rem;">Test Data</h3>
+            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 1rem;">View demo sponsors, students, LoGs, and test scenarios for validation.</p>
+            <a href="@Url.Action("TestData", "PilotSupport")" class="btn-primary" style="width: 100%;">Browse Data</a>
+        </div>
+        
+        <div class="resource-card">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--ism-green-dark); margin-bottom: 0.5rem;">Documentation</h3>
+            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 1rem;">Access training guides, demo scripts, and operational runbooks.</p>
+            <a href="@Url.Action("Documentation", "PilotSupport")" class="btn-primary" style="width: 100%;">View Docs</a>
+        </div>
+        
+        <div class="resource-card" style="border: 2px solid var(--danger);">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--danger); margin-bottom: 0.5rem;">Defect Template</h3>
+            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 1rem;">Download defect reporting template for UAT issue tracking and bugs.</p>
+            <a href="~/docs/DEFECT_TEMPLATE.md" class="btn-danger" style="width: 100%;" download>Download Template</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Quick Links</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <a href="/Operations/Dashboard" class="quick-link" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 8px; text-decoration: none; transition: all 0.2s;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--gray-900); font-size: 14px; margin-bottom: 4px;">Operations Dashboard</div>
+                <div style="font-size: 12px; color: var(--gray-500);">System health monitoring</div>
+            </div>
+        </a>
+        
+        <a href="/Operations/SmokeTest" class="quick-link" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 8px; text-decoration: none; transition: all 0.2s;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--gray-900); font-size: 14px; margin-bottom: 4px;">Smoke Test Checklist</div>
+                <div style="font-size: 12px; color: var(--gray-500);">Post-deployment verification</div>
+            </div>
+        </a>
+        
+        <a href="/Operations/Runbooks" class="quick-link" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 8px; text-decoration: none; transition: all 0.2s;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--gray-900); font-size: 14px; margin-bottom: 4px;">Operational Runbooks</div>
+                <div style="font-size: 12px; color: var(--gray-500);">Common issue resolution</div>
+            </div>
+        </a>
+        
+        <a href="/AdminReports/Index" class="quick-link" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 8px; text-decoration: none; transition: all 0.2s;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--gray-900); font-size: 14px; margin-bottom: 4px;">Admin Reports</div>
+                <div style="font-size: 12px; color: var(--gray-500);">Sponsor, LoG, coverage reports</div>
+            </div>
+        </a>
+        
+        <a href="/Feedback/List" class="quick-link" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 8px; text-decoration: none; transition: all 0.2s;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--gray-900); font-size: 14px; margin-bottom: 4px;">User Feedback</div>
+                <div style="font-size: 12px; color: var(--gray-500);">Review pilot user feedback</div>
+            </div>
+        </a>
+        
+        <a href="/Audit/Index" class="quick-link" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--gray-200); border-radius: 8px; text-decoration: none; transition: all 0.2s;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--gray-900); font-size: 14px; margin-bottom: 4px;">Security Audit Log</div>
+                <div style="font-size: 12px; color: var(--gray-500);">View system audit trail</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Important Information</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+        <div>
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 0.75rem;">Demo Credentials</h3>
+            <div style="font-size: 14px; color: var(--gray-600); line-height: 1.6;">
+                <p style="margin-bottom: 0.5rem;"><strong>Password:</strong> All demo users use <code>Demo@2026!</code></p>
+                <p style="margin-bottom: 0.5rem;"><strong>Prefix:</strong> All demo entities use <code>DEMO-</code> prefix</p>
+                <p style="margin-bottom: 0.5rem;"><strong>Environment:</strong> This is a pilot/staging environment</p>
+                <p style="margin-bottom: 0;"><strong>Data:</strong> Do not use production data in UAT</p>
+            </div>
+        </div>
+        
+        <div>
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 0.75rem;">Important Guidelines</h3>
+            <div style="font-size: 14px; color: var(--gray-600); line-height: 1.6;">
+                <p style="margin-bottom: 0.5rem;">• <strong>Defect Reporting:</strong> Use the defect template for all UAT issues</p>
+                <p style="margin-bottom: 0.5rem;">• <strong>Test Coverage:</strong> Complete all UT01-UT10 scenarios</p>
+                <p style="margin-bottom: 0.5rem;">• <strong>Support:</strong> Contact IT support for technical issues</p>
+                <p style="margin-bottom: 0;">• <strong>Sign-off:</strong> Review pilot checklist before go-live</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .resource-card {
+        padding: 1.5rem;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .quick-link:hover {
+        border-color: var(--ism-green);
+        box-shadow: 0 2px 8px rgba(13, 95, 59, 0.1);
+        transform: translateY(-2px);
+    }
+</style>

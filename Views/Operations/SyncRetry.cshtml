@@ -1,0 +1,232 @@
+@model List<ISMSponsor.Models.Domain.SyncLog>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Integration Retry Dashboard";
+    var statusFilter = ViewBag.StatusFilter as string ?? "";
+    var targetSystemFilter = ViewBag.TargetSystemFilter as string ?? "";
+    var entityTypeFilter = ViewBag.EntityTypeFilter as string ?? "";
+    var availableStatuses = ViewBag.AvailableStatuses as List<string> ?? new List<string>();
+    var availableTargetSystems = ViewBag.AvailableTargetSystems as List<string> ?? new List<string>();
+    var availableEntityTypes = ViewBag.AvailableEntityTypes as List<string> ?? new List<string>();
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Integration Retry Dashboard</h1>
+            <p class="page-subtitle">Monitor and retry failed integration sync attempts</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Dashboard")" class="btn-secondary">Operations Dashboard</a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-error">@TempData["ErrorMessage"]</div>
+}
+
+<div class="alert alert-info">
+    <div style="font-weight: 600; margin-bottom: 0.25rem;">Integration Sync Management</div>
+    <div style="font-size: 13px;">
+        This dashboard shows integration sync attempts with external systems (PowerSchool, NetSuite, Student Charging Portal, Online Billing System).
+        Failed syncs can be retried manually. <strong>Note:</strong> Current implementation uses mock adapters for demonstration.
+    </div>
+</div>
+
+<div class="card">
+    <form method="get" action="@Url.Action("SyncRetry")" class="filter-form">
+        <div class="filter-group" style="min-width: 180px;">
+            <label for="status" class="field-label">Status</label>
+            <select id="status" name="status" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                @foreach (var status in availableStatuses)
+                {
+                    <option value="@status" selected="@(status == statusFilter)">@status</option>
+                }
+            </select>
+        </div>
+        
+        <div class="filter-group" style="min-width: 180px;">
+            <label for="targetSystem" class="field-label">Target System</label>
+            <select id="targetSystem" name="targetSystem" onchange="this.form.submit()">
+                <option value="">All Systems</option>
+                @foreach (var system in availableTargetSystems)
+                {
+                    <option value="@system" selected="@(system == targetSystemFilter)">@system</option>
+                }
+            </select>
+        </div>
+        
+        <div class="filter-group" style="min-width: 180px;">
+            <label for="entityType" class="field-label">Entity Type</label>
+            <select id="entityType" name="entityType" onchange="this.form.submit()">
+                <option value="">All Types</option>
+                @foreach (var type in availableEntityTypes)
+                {
+                    <option value="@type" selected="@(type == entityTypeFilter)">@type</option>
+                }
+            </select>
+        </div>
+        
+        <a href="@Url.Action("SyncRetry")" class="btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Sync Log (@Model.Count records, showing last 100)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Entity</th>
+                    <th>Target System</th>
+                    <th>Event Type</th>
+                    <th>Attempted At</th>
+                    <th>Retry Count</th>
+                    <th>Error Message</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    ViewData["EmptyIcon"] = "";
+                    ViewData["EmptyTitle"] = string.IsNullOrEmpty(statusFilter) ? "No failed syncs found" : "No sync logs match your filters";
+                    ViewData["EmptyMessage"] = string.IsNullOrEmpty(statusFilter) ? "All integrations are healthy!" : "Try adjusting your filters or clearing them.";
+                    <tr>
+                        <td colspan="8">
+                            @await Html.PartialAsync("_EmptyState")
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td data-label="Status">
+                                @if (log.Status == "Succeeded")
+                                {
+                                    <span class="status-badge status-active">@log.Status</span>
+                                }
+                                else if (log.Status == "Failed")
+                                {
+                                    <span class="status-badge status-inactive">@log.Status</span>
+                                }
+                                else if (log.Status == "InProgress")
+                                {
+                                    <span class="status-badge status-pending">@log.Status</span>
+                                }
+                                else if (log.Status == "Pending")
+                                {
+                                    <span class="status-badge status-draft">@log.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge">@log.Status</span>
+                                }
+                            </td>
+                            <td data-label="Entity">
+                                <strong>@log.EntityType</strong><br />
+                                <span style="font-size: 12px; color: #6b7280;">ID: @log.EntityId</span>
+                            </td>
+                            <td data-label="Target System">@log.TargetSystem</td>
+                            <td data-label="Event Type">@log.EventType</td>
+                            <td data-label="Attempted At">
+                                @log.AttemptedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                @if (log.LastSucceededAt.HasValue)
+                                {
+                                    <br />
+                                    <span style="font-size: 12px; color: #059669;">Succeeded: @log.LastSucceededAt.Value.ToLocalTime().ToString("HH:mm:ss")</span>
+                                }
+                            </td>
+                            <td data-label="Retry Count">
+                                @if (log.RetryCount > 0)
+                                {
+                                    <span style="color: #dc2626; font-weight: 600;">@log.RetryCount @(log.RetryCount == 1 ? "retry" : "retries")</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #6b7280;">0</span>
+                                }
+                            </td>
+                            <td data-label="Error Message">
+                                @if (!string.IsNullOrEmpty(log.ErrorMessage))
+                                {
+                                    <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@log.ErrorMessage">
+                                        @log.ErrorMessage
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color: #9ca3af;">—</span>
+                                }
+                            </td>
+                            <td data-label="Actions" class="action-cell">
+                                @if (log.Status == "Failed" && log.RetryCount < 5)
+                                {
+                                    <form method="post" action="@Url.Action("RetrySync")" style="display: inline;">
+                                        <input type="hidden" name="syncLogId" value="@log.SyncLogId" />
+                                        <button type="submit" class="btn-link" onclick="return confirm('Retry sync for @log.EntityType @log.EntityId to @log.TargetSystem?')">
+                                            Retry
+                                        </button>
+                                    </form>
+                                }
+                                else if (log.Status == "Failed" && log.RetryCount >= 5)
+                                {
+                                    <span style="color: #dc2626; font-size: 13px;">Max retries</span>
+                                }
+                                else if (log.Status == "Succeeded")
+                                {
+                                    <span style="color: #059669; font-size: 13px;">Completed</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #6b7280; font-size: 13px;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model.Count > 0)
+{
+    var totalFailed = Model.Count(l => l.Status == "Failed");
+    var totalSucceeded = Model.Count(l => l.Status == "Succeeded");
+    var totalRetries = Model.Sum(l => l.RetryCount);
+    var avgRetries = Model.Where(l => l.RetryCount > 0).Any() ? Model.Where(l => l.RetryCount > 0).Average(l => l.RetryCount) : 0;
+
+    <div class="card">
+        <h2 class="table-title">Sync Statistics (Current View)</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+            <div class="stat-card stat-card-danger">
+                <div class="stat-value">@totalFailed</div>
+                <div class="stat-label">Failed Syncs</div>
+            </div>
+            <div class="stat-card stat-card-success">
+                <div class="stat-value">@totalSucceeded</div>
+                <div class="stat-label">Successful Syncs</div>
+            </div>
+            <div class="stat-card stat-card-warning">
+                <div class="stat-value">@totalRetries</div>
+                <div class="stat-label">Total Retry Attempts</div>
+            </div>
+            <div class="stat-card stat-card-info">
+                <div class="stat-value">@avgRetries.ToString("F1")</div>
+                <div class="stat-label">Avg Retries per Failed Sync</div>
+            </div>
+        </div>
+    </div>
+}

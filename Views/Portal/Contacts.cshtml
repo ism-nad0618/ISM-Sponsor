@@ -1,0 +1,175 @@
+@model ISMSponsor.ViewModels.PortalContactsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Contacts";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Sponsor Contacts</h1>
+        <p class="page-subtitle">Manage contact persons for @Model.SponsorName</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <button type="button" onclick="openAddContactModal()" class="btn btn-success">+ Add Contact</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to Portal Home</a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="alert alert-success">@successMsg</div>
+}
+
+<!-- Summary Stats -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Total Contacts</div>
+        <div class="stat-value">@Model.Contacts.Count</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Contacts</div>
+        <div class="stat-value">@Model.ActiveContactsCount</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Inactive Contacts</div>
+        <div class="stat-value">@(Model.Contacts.Count - Model.ActiveContactsCount)</div>
+    </div>
+</div>
+
+<!-- Contacts Table -->
+<div class="card">
+    <h2 class="table-title">Contact Persons (@Model.Contacts.Count)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Contacts.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            No contacts found. Click "Add Contact" to add your first contact person.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var contact in Model.Contacts)
+                    {
+                        <tr>
+                            <td><strong>@contact.Name</strong></td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(contact.Email))
+                                {
+                                    <a href="mailto:@contact.Email">@contact.Email</a>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">No email</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(contact.Phone))
+                                {
+                                    <a href="tel:@contact.Phone">@contact.Phone</a>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">No phone</span>
+                                }
+                            </td>
+                            <td>
+                                @if (contact.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (contact.IsActive)
+                                {
+                                    <span style="color: #666;">Contact is active</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">Contact is inactive</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Help Text -->
+<div class="card" style="background-color: #f8f9fa; border-left: 4px solid #0066cc;">
+    <p style="margin: 0;">
+        <strong>📌 Note:</strong> Contact information is used by school administrators to communicate about student matters, 
+        Letters of Guarantee, and billing inquiries. Please keep this information up to date. To modify or remove a contact, 
+        please submit a change request.
+    </p>
+</div>
+
+<!-- Add Contact Modal -->
+<div id="addContactModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2>Add New Contact</h2>
+            <button class="modal-close" onclick="closeAddContactModal()">&times;</button>
+        </div>
+        <form method="post" action="@Url.Action("AddContact")" id="addContactForm">
+            @Html.AntiForgeryToken()
+            
+            <div class="form-group">
+                <label for="name" class="field-label">Full Name <span class="required">*</span></label>
+                <input type="text" id="name" name="name" required placeholder="e.g., John Doe" />
+            </div>
+            
+            <div class="form-group">
+                <label for="email" class="field-label">Email Address <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required placeholder="e.g., john.doe@example.com" />
+            </div>
+            
+            <div class="form-group">
+                <label for="phone" class="field-label">Phone Number <span class="required">*</span></label>
+                <input type="tel" id="phone" name="phone" required placeholder="e.g., +63 917 123 4567" />
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" onclick="closeAddContactModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Contact</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddContactModal() {
+    document.getElementById('addContactModal').style.display = 'flex';
+    document.getElementById('addContactForm').reset();
+}
+
+function closeAddContactModal() {
+    document.getElementById('addContactModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('addContactModal');
+    if (event.target === modal) {
+        closeAddContactModal();
+    }
+}
+</script>

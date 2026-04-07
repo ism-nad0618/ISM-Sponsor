@@ -8,5 +8,14 @@ namespace ISMSponsor.Controllers
         {
             return View();
         }
+
+        /// <summary>
+        /// Demo page for testing UI/UX components
+        /// Route: /Home/UiDemo
+        /// </summary>
+        public IActionResult UiDemo()
+        {
+            return View();
+        }
     }
 }

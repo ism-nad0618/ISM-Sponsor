@@ -2,44 +2,130 @@
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Students";
+    var schoolYears = ViewBag.SchoolYears as List<string> ?? new List<string>();
+    var statuses = ViewBag.Statuses as List<string> ?? new List<string>();
+    var sponsors = ViewBag.Sponsors as List<ISMSponsor.Models.Domain.Sponsor> ?? new List<ISMSponsor.Models.Domain.Sponsor>();
+    var allSchoolYears = ViewBag.AllSchoolYears as List<ISMSponsor.Models.Domain.SchoolYear> ?? new List<ISMSponsor.Models.Domain.SchoolYear>();
+    var search = ViewBag.Search as string ?? "";
+    var selectedSchoolYear = ViewBag.SchoolYear as string ?? "";
+    var selectedStatus = ViewBag.Status as string ?? "";
+    var sortBy = ViewBag.SortBy as string ?? "LastName";
+    var sortOrder = ViewBag.SortOrder as string ?? "asc";
 }
 
 <div class="page-header">
-    <h1>Student Management</h1>
-    <p class="page-subtitle">Manage student records and assignments</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>Student Management</h1>
+            <p class="page-subtitle">Manage student records and assignments</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" onclick="openImportModal()" class="btn-secondary">Import CSV</button>
+            <a href="@Url.Action("ExportTemplate")" class="btn-secondary">Download Template</a>
+            <button type="button" onclick="openCreateModal()" class="btn-primary">+ New Student</button>
+        </div>
+    </div>
 </div>
 
 <div class="card">
-    <h2 class="table-title">Students Directory</h2>
+    <form method="get" action="@Url.Action("Index")" class="filter-form">
+        <div class="filter-group" style="flex: 2; min-width: 250px;">
+            <label for="search" class="field-label">Search</label>
+            <input type="text" id="search" name="search" value="@search" placeholder="Student ID, Name, or Sponsor..." />
+        </div>
+        <div class="filter-group" style="min-width: 150px;">
+            <label for="schoolYear" class="field-label">School Year</label>
+            <select id="schoolYear" name="schoolYear">
+                <option value="">All Years</option>
+                @foreach (var year in schoolYears)
+                {
+                    <option value="@year" selected="@(year == selectedSchoolYear)">@year</option>
+                }
+            </select>
+        </div>
+        <div class="filter-group" style="min-width: 150px;">
+            <label for="status" class="field-label">Status</label>
+            <select id="status" name="status">
+                <option value="">All Statuses</option>
+                @foreach (var st in statuses)
+                {
+                    <option value="@st" selected="@(st == selectedStatus)">@st</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn-secondary">Apply</button>
+        <a href="@Url.Action("Index")" class="btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Students Directory (@Model.Count)</h2>
     <div class="table-wrap">
         <table>
         <thead>
             <tr>
-                <th>School Year</th>
-                <th>Student ID</th>
-                <th>Full Name</th>
-                <th>Grade</th>
+                <th><a href="?search=@search&schoolYear=@selectedSchoolYear&status=@selectedStatus&sortBy=SchoolYearId&sortOrder=@(sortBy == "SchoolYearId" && sortOrder == "asc" ? "desc" : "asc")">School Year @(sortBy == "SchoolYearId" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th><a href="?search=@search&schoolYear=@selectedSchoolYear&status=@selectedStatus&sortBy=StudentId&sortOrder=@(sortBy == "StudentId" && sortOrder == "asc" ? "desc" : "asc")">Student ID @(sortBy == "StudentId" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th><a href="?search=@search&schoolYear=@selectedSchoolYear&status=@selectedStatus&sortBy=LastName&sortOrder=@(sortBy == "LastName" && sortOrder == "asc" ? "desc" : "asc")">Full Name @(sortBy == "LastName" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th><a href="?search=@search&schoolYear=@selectedSchoolYear&status=@selectedStatus&sortBy=GradeLevel&sortOrder=@(sortBy == "GradeLevel" && sortOrder == "asc" ? "desc" : "asc")">Grade @(sortBy == "GradeLevel" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
                 <th>Sponsor</th>
-                <th>Status</th>
+                <th><a href="?search=@search&schoolYear=@selectedSchoolYear&status=@selectedStatus&sortBy=Status&sortOrder=@(sortBy == "Status" && sortOrder == "asc" ? "desc" : "asc")">Status @(sortBy == "Status" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th class="text-center">Actions</th>
             </tr>
         </thead>
         <tbody>
             @if(Model.Count == 0){
+                ViewData["EmptyIcon"] = "";
+                ViewData["EmptyTitle"] = "No Students Found";
+                ViewData["EmptyMessage"] = "No students match your search criteria. Try adjusting your filters or add a new student.";
+                ViewData["EmptyAction"] = "+ New Student";
+                ViewData["EmptyActionUrl"] = "javascript:openCreateModal()";
                 <tr>
-                    <td colspan="6" class="empty-state">No students found</td>
+                    <td colspan="7">
+                        @await Html.PartialAsync("_EmptyState")
+                    </td>
                 </tr>
             }else{
                 @foreach(var s in Model){
-                    <tr>
+                    <tr data-year="@s.SchoolYearId" data-id="@s.StudentId">
                         <td><strong>@s.SchoolYearId</strong></td>
-                        <td>@s.StudentId</td>
-                        <td>@s.LastName, @s.FirstName</td>
-                        <td>@s.GradeLevel</td>
-                        <td>@s.SponsorId</td>
+                        <td><strong>@s.StudentId</strong></td>
                         <td>
-                            <span class="status-badge @(s.StudentStatus?.ToLower() == "active" ? "status-active" : "status-inactive")">
-                                @s.StudentStatus
+                            <span class="view-mode">@s.LastName, @s.FirstName</span>
+                            <div class="edit-mode" style="display:none;">
+                                <input type="text" value="@s.LastName" data-field="LastName" placeholder="Last Name" style="width: 48%; margin-right: 2%;" />
+                                <input type="text" value="@s.FirstName" data-field="FirstName" placeholder="First Name" style="width: 48%;" />
+                            </div>
+                        </td>
+                        <td>
+                            <span class="view-mode">@s.GradeLevel</span>
+                            <input type="text" class="edit-mode" value="@s.GradeLevel" data-field="GradeLevel" style="display:none; width: 100%;" />
+                        </td>
+                        <td>
+                            <span class="view-mode">@s.SponsorId</span>
+                            <input type="text" class="edit-mode" value="@s.SponsorId" data-field="SponsorId" style="display:none; width: 100%;" />
+                        </td>
+                        <td>
+                            <span class="view-mode">
+                                <span class="status-badge @(s.StudentStatus?.ToLower() == "active" ? "status-active" : "status-inactive")">
+                                    @s.StudentStatus
+                                </span>
                             </span>
+                            <select class="edit-mode" data-field="StudentStatus" style="display:none; width: 100%;">
+                                <option value="Active" selected="@(s.StudentStatus == "Active")">Active</option>
+                                <option value="Inactive" selected="@(s.StudentStatus == "Inactive")">Inactive</option>
+                                <option value="Graduated" selected="@(s.StudentStatus == "Graduated")">Graduated</option>
+                                <option value="Withdrawn" selected="@(s.StudentStatus == "Withdrawn")">Withdrawn</option>
+                            </select>
+                        </td>
+                        <td data-label="Actions" class="action-cell">
+                            <div class="view-mode">
+                                <a href="javascript:void(0)" class="btn-link btn-edit" data-year="@s.SchoolYearId" data-id="@s.StudentId">Edit</a>
+                            </div>
+                            <div class="edit-mode" style="display:none;">
+                                <a href="javascript:void(0)" class="btn-link btn-save" data-year="@s.SchoolYearId" data-id="@s.StudentId" style="color: green;">Save</a>
+                                <a href="javascript:void(0)" class="btn-link btn-cancel" data-year="@s.SchoolYearId" data-id="@s.StudentId" style="color: red;">Cancel</a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -48,3 +134,452 @@
     </table>
     </div>
 </div>
+
+<!-- Create Student Modal -->
+<div id="createStudentModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Add New Student</h2>
+            <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+        </div>
+        <form id="createStudentForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="createSchoolYearId" class="field-label">School Year <span class="required">*</span></label>
+                    <select id="createSchoolYearId" name="SchoolYearId" required>
+                        <option value="">-- Select --</option>
+                        @foreach (var year in allSchoolYears)
+                        {
+                            <option value="@year.SchoolYearId">@year.SchoolYearId</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createStudentId" class="field-label">Student ID <span class="required">*</span></label>
+                    <input type="text" id="createStudentId" name="StudentId" required />
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="createFirstName" class="field-label">First Name <span class="required">*</span></label>
+                    <input type="text" id="createFirstName" name="FirstName" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="createLastName" class="field-label">Last Name <span class="required">*</span></label>
+                    <input type="text" id="createLastName" name="LastName" required />
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="createGradeLevel" class="field-label">Grade Level <span class="required">*</span></label>
+                    <input type="text" id="createGradeLevel" name="GradeLevel" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="createSponsorId" class="field-label">Sponsor ID</label>
+                    <select id="createSponsorId" name="SponsorId">
+                        <option value="">-- Select --</option>
+                        @foreach (var sponsor in sponsors)
+                        {
+                            <option value="@sponsor.SponsorId">@sponsor.SponsorId - @sponsor.SponsorName</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="createStudentStatus" class="field-label">Status <span class="required">*</span></label>
+                    <select id="createStudentStatus" name="StudentStatus" required>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Graduated">Graduated</option>
+                        <option value="Withdrawn">Withdrawn</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="createError" class="alert alert-danger" style="display: none; margin-top: 1rem;"></div>
+            
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" onclick="closeCreateModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2>Import Students from CSV</h2>
+            <button class="modal-close" onclick="closeImportModal()">&times;</button>
+        </div>
+        
+        <!-- Step 1: Upload File -->
+        <div id="uploadStep">
+            <form id="importForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="importFile" class="field-label">CSV File <span class="required">*</span></label>
+                    <input type="file" id="importFile" name="file" accept=".csv" required />
+                    <small style="display: block; margin-top: 0.5rem; color: #666;">
+                        Upload a CSV file with columns: SchoolYearId, StudentId, FirstName, LastName, GradeLevel, SponsorId, StudentStatus
+                    </small>
+                </div>
+                
+                <div id="importError" class="alert alert-danger" style="display: none;"></div>
+                
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" onclick="closeImportModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Validate & Preview</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Step 2: Preview & Confirm -->
+        <div id="previewStep" style="display: none;">
+            <div id="previewSummary" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+                <h3 style="margin: 0 0 0.5rem 0;">Import Summary</h3>
+                <div style="display: flex; gap: 2rem;">
+                    <div><strong>Total:</strong> <span id="summaryTotal">0</span></div>
+                    <div style="color: #28a745;"><strong>Will Add:</strong> <span id="summaryAdd">0</span></div>
+                    <div style="color: #ffc107;"><strong>Will Update:</strong> <span id="summaryUpdate">0</span></div>
+                    <div style="color: #dc3545;"><strong>Errors:</strong> <span id="summaryErrors">0</span></div>
+                </div>
+            </div>
+            
+            <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                    <thead style="position: sticky; top: 0; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <tr>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Action</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">School Year</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Student ID</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Name</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Grade</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Sponsor</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="confirmError" class="alert alert-danger" style="display: none;"></div>
+            <div id="confirmSuccess" class="alert alert-success" style="display: none;"></div>
+            
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" onclick="resetImportModal()" class="btn btn-secondary">Back</button>
+                <button type="button" id="confirmImportBtn" onclick="confirmImport()" class="btn btn-success">Confirm & Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCreateModal() {
+    document.getElementById('createStudentModal').style.display = 'flex';
+    document.getElementById('createStudentForm').reset();
+    document.getElementById('createError').style.display = 'none';
+}
+
+function closeCreateModal() {
+    document.getElementById('createStudentModal').style.display = 'none';
+}
+
+function openImportModal() {
+    document.getElementById('importModal').style.display = 'flex';
+    resetImportModal();
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+    resetImportModal();
+}
+
+function resetImportModal() {
+    document.getElementById('uploadStep').style.display = 'block';
+    document.getElementById('previewStep').style.display = 'none';
+    document.getElementById('importForm').reset();
+    document.getElementById('importError').style.display = 'none';
+    document.getElementById('confirmError').style.display = 'none';
+    document.getElementById('confirmSuccess').style.display = 'none';
+}
+
+let validatedStudentFile = null;
+
+async function confirmImport() {
+    if (!validatedStudentFile) {
+        alert('No file to import');
+        return;
+    }
+    
+    const confirmBtn = document.getElementById('confirmImportBtn');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Importing...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', validatedStudentFile);
+        
+        const response = await fetch('@Url.Action("BulkImport")', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('confirmSuccess').textContent = result.message;
+            document.getElementById('confirmSuccess').style.display = 'block';
+            document.getElementById('confirmError').style.display = 'none';
+            
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            document.getElementById('confirmError').textContent = result.message || 'Import failed';
+            document.getElementById('confirmError').style.display = 'block';
+            document.getElementById('confirmSuccess').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Import error:', error);
+        document.getElementById('confirmError').textContent = `An error occurred during import: ${error.message}`;
+        document.getElementById('confirmError').style.display = 'block';
+        document.getElementById('confirmSuccess').style.display = 'none';
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+    }
+}
+
+// Create student form submission
+document.getElementById('createStudentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const data = {
+        SchoolYearId: document.getElementById('createSchoolYearId').value,
+        StudentId: document.getElementById('createStudentId').value,
+        FirstName: document.getElementById('createFirstName').value,
+        LastName: document.getElementById('createLastName').value,
+        GradeLevel: document.getElementById('createGradeLevel').value,
+        SponsorId: document.getElementById('createSponsorId').value,
+        StudentStatus: document.getElementById('createStudentStatus').value
+    };
+    
+    try {
+        const response = await fetch('@Url.Action("Create")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            closeCreateModal();
+            location.reload();
+        } else {
+            document.getElementById('createError').textContent = result.message;
+            document.getElementById('createError').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('createError').textContent = 'An error occurred while creating the student';
+        document.getElementById('createError').style.display = 'block';
+    }
+});
+
+// Import form submission - validate and preview
+document.getElementById('importForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const fileInput = document.getElementById('importFile');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        document.getElementById('importError').textContent = 'Please select a CSV file to upload';
+        document.getElementById('importError').style.display = 'block';
+        return;
+    }
+    
+    validatedStudentFile = fileInput.files[0];
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Validating...';
+    
+    try {
+        const response = await fetch('@Url.Action("ValidateImport")', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show preview
+            document.getElementById('uploadStep').style.display = 'none';
+            document.getElementById('previewStep').style.display = 'block';
+            
+            // Update summary
+            document.getElementById('summaryTotal').textContent = result.summary.total;
+            document.getElementById('summaryAdd').textContent = result.summary.willAdd;
+            document.getElementById('summaryUpdate').textContent = result.summary.willUpdate;
+            document.getElementById('summaryErrors').textContent = result.summary.hasErrors;
+            
+            // Populate preview table
+            const tbody = document.getElementById('previewTableBody');
+            tbody.innerHTML = '';
+            
+            result.items.forEach(item => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = item.hasError ? '#fff5f5' : 'white';
+                
+                let actionBadge = '';
+                if (item.action === 'Add') {
+                    actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.85em;">Add</span>';
+                } else if (item.action === 'Update') {
+                    actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.85em;">Update</span>';
+                } else {
+                    actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.85em;">Skip</span>';
+                }
+                
+                let errorText = '';
+                if (item.errors && item.errors.length > 0) {
+                    errorText = '<br><small style="color: #dc3545;">' + item.errors.join(', ') + '</small>';
+                }
+                
+                row.innerHTML = `
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${actionBadge}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.schoolYearId || ''}${errorText}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.studentId || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.firstName || ''} ${item.lastName || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.gradeLevel || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.sponsorId || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.studentStatus || ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Disable confirm button if there are errors
+            const confirmBtn = document.getElementById('confirmImportBtn');
+            if (result.summary.hasErrors > 0) {
+                confirmBtn.disabled = true;
+                confirmBtn.title = 'Fix validation errors before importing';
+                document.getElementById('confirmError').textContent = 'Please fix validation errors before importing';
+                document.getElementById('confirmError').style.display = 'block';
+            } else {
+                confirmBtn.disabled = false;
+                confirmBtn.title = '';
+            }
+        } else {
+            document.getElementById('importError').textContent = result.message || 'Validation failed';
+            document.getElementById('importError').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Validation error:', error);
+        document.getElementById('importError').textContent = `An error occurred during validation: ${error.message}`;
+        document.getElementById('importError').style.display = 'block';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
+
+// Existing inline edit functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit button click
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const year = this.getAttribute('data-year');
+            const id = this.getAttribute('data-id');
+            const row = document.querySelector(`tr[data-year="${year}"][data-id="${id}"]`);
+            
+            row.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
+            row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'inline-block');
+        });
+    });
+    
+    // Cancel button click
+    document.querySelectorAll('.btn-cancel').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const year = this.getAttribute('data-year');
+            const id = this.getAttribute('data-id');
+            const row = document.querySelector(`tr[data-year="${year}"][data-id="${id}"]`);
+            
+            row.querySelectorAll('.view-mode').forEach(el => el.style.display = '');
+            row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
+        });
+    });
+    
+    // Save button click
+    document.querySelectorAll('.btn-save').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const year = this.getAttribute('data-year');
+            const id = this.getAttribute('data-id');
+            const row = document.querySelector(`tr[data-year="${year}"][data-id="${id}"]`);
+            
+            const data = {
+                SchoolYearId: year,
+                StudentId: id,
+                LastName: row.querySelector('[data-field="LastName"]').value,
+                FirstName: row.querySelector('[data-field="FirstName"]').value,
+                GradeLevel: row.querySelector('[data-field="GradeLevel"]').value,
+                SponsorId: row.querySelector('[data-field="SponsorId"]').value,
+                StudentStatus: row.querySelector('[data-field="StudentStatus"]').value
+            };
+            
+            try {
+                const response = await fetch('@Url.Action("EditInline")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    row.querySelectorAll('.view-mode')[0].textContent = data.LastName + ', ' + data.FirstName;
+                    row.querySelectorAll('.view-mode')[1].textContent = data.GradeLevel;
+                    row.querySelectorAll('.view-mode')[2].textContent = data.SponsorId;
+                    
+                    const statusBadge = row.querySelectorAll('.view-mode')[3].querySelector('.status-badge');
+                    statusBadge.textContent = data.StudentStatus;
+                    statusBadge.className = 'status-badge ' + (data.StudentStatus.toLowerCase() === 'active' ? 'status-active' : 'status-inactive');
+                    
+                    row.querySelectorAll('.view-mode').forEach(el => el.style.display = '');
+                    row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
+                    
+                    alert(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while saving');
+            }
+        });
+    });
+});
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+</script>

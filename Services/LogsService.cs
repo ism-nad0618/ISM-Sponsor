@@ -125,6 +125,21 @@ namespace ISMSponsor.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task LogActivityAsync(string item, string details, string userDisplay, string roleName, string schoolYearId)
+        {
+            _context.ActivityLogs.Add(new ActivityLog
+            {
+                Date = DateTime.UtcNow,
+                Item = item,
+                Details = details,
+                UserDisplay = userDisplay,
+                RoleName = roleName,
+                SchoolYearId = schoolYearId
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
         private static void ValidateUpload(IFormFile file)
         {
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();

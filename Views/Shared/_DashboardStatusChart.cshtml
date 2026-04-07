@@ -1,0 +1,37 @@
+@model ISMSponsor.ViewModels.StatusDistribution
+@{
+    var title = ViewBag.ChartTitle as string ?? "Status Distribution";
+}
+
+@if (Model != null && Model.StatusCounts.Any())
+{
+    <div class="status-chart">
+        <h4>@title</h4>
+        <div class="status-bars">
+            @foreach (var status in Model.StatusCounts.OrderByDescending(s => s.Value))
+            {
+                var percentage = Model.GetPercentage(status.Key);
+                var barClass = status.Key.ToLower() switch
+                {
+                    "approved" => "status-bar-success",
+                    "pending" => "status-bar-warning",
+                    "rejected" => "status-bar-error",
+                    _ => "status-bar-info"
+                };
+                
+                <div class="status-bar-container">
+                    <div class="status-bar-label">
+                        <span>@status.Key</span>
+                        <span>@status.Value (@percentage.ToString("F1")%)</span>
+                    </div>
+                    <div class="status-bar-track">
+                        <div class="status-bar-fill @barClass" style="width: @percentage%"></div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="status-total">
+            Total: <strong>@Model.Total</strong>
+        </div>
+    </div>
+}

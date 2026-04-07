@@ -44,6 +44,32 @@ namespace ISMSponsor.Controllers.Settings
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("Settings/SchoolYears/CreateModal")]
+        public async Task<IActionResult> CreateModal(SchoolYear schoolYear)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                    );
+                
+                return Json(new { success = false, message = "Please correct the validation errors.", validationErrors = errors });
+            }
+
+            var success = await _service.CreateAsync(schoolYear);
+            if (!success)
+            {
+                return Json(new { success = false, message = "School year with this ID already exists." });
+            }
+
+            return Json(new { success = true, message = "School year created successfully!" });
+        }
+
         public async Task<IActionResult> Edit(string id)
         {
             var schoolYear = await _service.GetByIdAsync(id);
@@ -86,6 +112,24 @@ namespace ISMSponsor.Controllers.Settings
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [Route("Settings/SchoolYears/EditInline")]
+        public async Task<IActionResult> EditInline([FromBody] SchoolYear schoolYear)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid data" });
+            }
+
+            var success = await _service.UpdateAsync(schoolYear);
+            if (!success)
+            {
+                return Json(new { success = false, message = "Failed to update school year" });
+            }
+
+            return Json(new { success = true, message = "School year updated successfully" });
         }
 
         [HttpPost]

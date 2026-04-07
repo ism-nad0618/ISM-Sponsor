@@ -1,0 +1,78 @@
+@model ISMSponsor.ViewModels.SponsorChangeRequestViewModel
+@{
+    ViewData["Title"] = "Request Change";
+}
+
+<div class="page-header">
+    <h2>Request Change</h2>
+    <p class="subtitle">Sponsor: @Model.SponsorName</p>
+</div>
+
+<div class="card">
+    <form asp-action="Create" method="post" id="requestForm">
+        <input type="hidden" asp-for="SponsorId" />
+        <input type="hidden" asp-for="SponsorName" />
+        <input type="hidden" asp-for="CurrentValue" id="currentValueHidden" />
+
+        <div class="form-group">
+            <label asp-for="RequestField" class="field-label">Field to Update <span class="required">*</span></label>
+            <select asp-for="RequestField" class="form-control" id="requestField" asp-items="Html.GetEnumSelectList<ISMSponsor.Models.Domain.SponsorRequestField>()" required>
+                <option value="">-- Select Field --</option>
+            </select>
+            <span asp-validation-for="RequestField" class="text-danger"></span>
+        </div>
+
+        <div class="form-group" id="currentValueGroup" style="display: none;">
+            <label class="field-label">Current Value</label>
+            <input type="text" class="form-control" id="currentValueDisplay" readonly style="background-color: #f5f5f5;" />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="RequestedValue" class="field-label">Requested Value <span class="required">*</span></label>
+            <input asp-for="RequestedValue" class="form-control" maxlength="500" required />
+            <span asp-validation-for="RequestedValue" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="RequestReason" class="field-label">Reason for Change</label>
+            <textarea asp-for="RequestReason" class="form-control" rows="4" maxlength="1000" placeholder="Optional: Explain why you need this change"></textarea>
+            <span asp-validation-for="RequestReason" class="text-danger"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Submit Request</button>
+            <a asp-action="Index" class="btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.getElementById('requestField').addEventListener('change', function() {
+            const field = this.value;
+            const sponsorId = '@Model.SponsorId';
+            
+            if (field) {
+                fetch(`/SponsorRequest/GetCurrentValue?sponsorId=${sponsorId}&field=${field}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('currentValueDisplay').value = data.currentValue;
+                            document.getElementById('currentValueHidden').value = data.currentValue;
+                            document.getElementById('currentValueGroup').style.display = 'block';
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to load current value');
+                    });
+            } else {
+                document.getElementById('currentValueGroup').style.display = 'none';
+            }
+        });
+    </script>
+}

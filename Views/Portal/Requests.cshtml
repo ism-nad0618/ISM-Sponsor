@@ -1,0 +1,231 @@
+@model ISMSponsor.ViewModels.PortalRequestsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Change Requests";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Change Requests</h1>
+        <p class="page-subtitle">View and submit change requests for @Model.SponsorName</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <button type="button" onclick="openSubmitRequestModal()" class="btn btn-success">+ Submit New Request</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to Portal Home</a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="alert alert-success">@successMsg</div>
+}
+
+<!-- Summary Stats -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value">@Model.PendingCount</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Approved</div>
+        <div class="stat-value">@Model.ApprovedCount</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Rejected</div>
+        <div class="stat-value">@Model.RejectedCount</div>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="get" action="@Url.Action("Requests")" style="display: flex; gap: 1rem; align-items: end;">
+        <div class="form-group" style="margin: 0; flex: 1;">
+            <label for="status" class="field-label">Filter by Status</label>
+            <select id="status" name="status" class="form-control">
+                <option value="">All Statuses</option>
+                <option value="pending" selected="@(Model.StatusFilter == "pending")">Pending</option>
+                <option value="approved" selected="@(Model.StatusFilter == "approved")">Approved</option>
+                <option value="rejected" selected="@(Model.StatusFilter == "rejected")">Rejected</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Apply Filter</button>
+        <a href="@Url.Action("Requests")" class="btn btn-secondary">Clear</a>
+    </form>
+</div>
+
+<!-- Requests Table -->
+<div class="card">
+    <h2 class="table-title">Change Requests (@Model.ChangeRequests.Count)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Current Value</th>
+                    <th>Requested Value</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Requested On</th>
+                    <th>Resolved On</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.ChangeRequests.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            No change requests found. Click "Submit New Request" to create one.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var request in Model.ChangeRequests)
+                    {
+                        <tr>
+                            <td><strong>@request.FieldLabel</strong></td>
+                            <td>@request.CurrentValue</td>
+                            <td><strong>@request.NewValue</strong></td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(request.Reason))
+                                {
+                                    <small>@request.Reason</small>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">No reason provided</span>
+                                }
+                            </td>
+                            <td>
+                                @if (request.Status == "pending")
+                                {
+                                    <span class="status-badge" style="background-color: #ffc107; color: #000;">PENDING</span>
+                                }
+                                else if (request.Status == "approved")
+                                {
+                                    <span class="status-badge status-active">APPROVED</span>
+                                }
+                                else if (request.Status == "rejected")
+                                {
+                                    <span class="status-badge" style="background-color: #dc3545; color: #fff;">REJECTED</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge">@request.Status.ToUpper()</span>
+                                }
+                            </td>
+                            <td>
+                                @request.RequestedOn.ToString("MMM d, yyyy")<br />
+                                <small style="color: #666;">@request.RequestedOn.ToString("h:mm tt")</small>
+                            </td>
+                            <td>
+                                @if (request.ResolvedOn.HasValue)
+                                {
+                                    @request.ResolvedOn.Value.ToString("MMM d, yyyy")<br />
+                                    <small style="color: #666;">@request.ResolvedOn.Value.ToString("h:mm tt")</small>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">Not resolved</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(request.ResolutionComment))
+                                {
+                                    <small>@request.ResolutionComment</small>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">-</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Submit Request Modal -->
+<div id="submitRequestModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Submit Change Request</h2>
+            <button class="modal-close" onclick="closeSubmitRequestModal()">&times;</button>
+        </div>
+        <form method="post" action="@Url.Action("SubmitRequest")" id="submitRequestForm">
+            @Html.AntiForgeryToken()
+            
+            <div class="form-group">
+                <label for="field" class="field-label">Field to Change <span class="required">*</span></label>
+                <select id="field" name="field" required onchange="updateFieldLabel()">
+                    <option value="">-- Select Field --</option>
+                    <option value="SponsorName" data-label="Sponsor Name" data-current="@Model.SponsorName">Sponsor Name</option>
+                    <option value="LegalName" data-label="Legal Name">Legal Name</option>
+                    <option value="Address" data-label="Address">Address</option>
+                    <option value="Tin" data-label="Tax ID (TIN)">Tax ID (TIN)</option>
+                    <option value="ContactInfo" data-label="Contact Information">Contact Information</option>
+                    <option value="Other" data-label="Other">Other</option>
+                </select>
+            </div>
+            
+            <input type="hidden" id="fieldLabel" name="fieldLabel" />
+            
+            <div class="form-group">
+                <label for="currentValue" class="field-label">Current Value <span class="required">*</span></label>
+                <input type="text" id="currentValue" name="currentValue" required />
+                <small class="help-text">Enter the current value you see in your profile</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="newValue" class="field-label">Requested New Value <span class="required">*</span></label>
+                <input type="text" id="newValue" name="newValue" required />
+                <small class="help-text">Enter the new value you want this changed to</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="reason" class="field-label">Reason for Change</label>
+                <textarea id="reason" name="reason" rows="3" placeholder="Explain why this change is needed..."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" onclick="closeSubmitRequestModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openSubmitRequestModal() {
+    document.getElementById('submitRequestModal').style.display = 'flex';
+    document.getElementById('submitRequestForm').reset();
+}
+
+function closeSubmitRequestModal() {
+    document.getElementById('submitRequestModal').style.display = 'none';
+}
+
+function updateFieldLabel() {
+    const select = document.getElementById('field');
+    const selectedOption = select.options[select.selectedIndex];
+    const fieldLabel = selectedOption.getAttribute('data-label') || '';
+    const currentValue = selectedOption.getAttribute('data-current') || '';
+    
+    document.getElementById('fieldLabel').value = fieldLabel;
+    
+    if (currentValue) {
+        document.getElementById('currentValue').value = currentValue;
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('submitRequestModal');
+    if (event.target === modal) {
+        closeSubmitRequestModal();
+    }
+}
+</script>

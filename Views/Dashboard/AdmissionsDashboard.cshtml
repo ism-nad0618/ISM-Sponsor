@@ -1,0 +1,110 @@
+@model ISMSponsor.ViewModels.AdmissionsDashboardViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Admissions Dashboard";
+}
+
+<div class="page-header">
+    <h1>Admissions Dashboard</h1>
+    <p class="page-subtitle">
+        Student enrollment for school year: <strong>@(Model.SelectedSchoolYear?.Name ?? "Not Selected")</strong>
+    </p>
+</div>
+
+@if (Model.Alerts?.Any() == true)
+{
+    @await Html.PartialAsync("_DashboardAlerts", Model.Alerts)
+}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">@Model.TotalStudents</div>
+        <div class="stat-sub">@Model.StudentsWithActiveLoGs with active LoGs</div>
+    </div>
+    <div class="stat-card @(Model.LogsAwaitingReview > 0 ? "stat-card-warning" : "")">
+        <div class="stat-label">Awaiting Review</div>
+        <div class="stat-value">@Model.LogsAwaitingReview</div>
+        <div class="stat-sub">LoGs pending</div>
+    </div>
+    <div class="stat-card stat-card-success">
+        <div class="stat-label">Approved Today</div>
+        <div class="stat-value">@Model.LogsApprovedToday</div>
+    </div>
+    <div class="stat-card @(Model.LogsRejectedToday > 0 ? "stat-card-error" : "")">
+        <div class="stat-label">Rejected Today</div>
+        <div class="stat-value">@Model.LogsRejectedToday</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">LoGs for Review (@Model.LogsForReview.Count())</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Sponsor</th>
+                    <th>Coverage</th>
+                    <th>Submitted</th>
+                    <th>Attachment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.LogsForReview.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">No LoGs awaiting review - Great job!</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in Model.LogsForReview.Take(8))
+                    {
+                        var avgCoverage = log.CoverageRules?.Any() == true 
+                            ? log.CoverageRules.Where(r => r.CoveragePercentage.HasValue).Average(r => r.CoveragePercentage) ?? 0
+                            : 0;
+                        <tr>
+                            <td data-label="Student">@log.Student?.FirstName @log.Student?.LastName</td>
+                            <td data-label="Sponsor">@log.Sponsor?.SponsorName</td>
+                            <td data-label="Coverage">@avgCoverage.ToString("F0")%</td>
+                            <td data-label="Submitted">@log.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td data-label="Attachment">
+                                @if (!string.IsNullOrEmpty(log.AttachmentFileName))
+                                {
+                                    <span class="status-badge status-active">Uploaded</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-pending">Missing</span>
+                                }
+                            </td>
+                            <td data-label="Actions" class="action-cell">
+                                <a href="/LetterOfGuarantee/Details/@log.LogId" class="btn-link">Review</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.LogsForReview.Count() > 8)
+    {
+        <div style="padding: 1rem; text-align: center; border-top: 1px solid var(--gray-200);">
+            <a href="/LetterOfGuarantee" class="btn-secondary">View All LoGs</a>
+        </div>
+    }
+</div>
+
+<style>
+.stat-card-warning {
+    border-left: 4px solid #f59e0b;
+}
+.stat-card-success {
+    border-left: 4px solid #10b981;
+}
+.stat-card-error {
+    border-left: 4px solid #ef4444;
+}
+</style>

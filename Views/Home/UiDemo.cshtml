@@ -1,0 +1,259 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "UI Component Demo";
+    
+    // Set TempData for demo purposes (remove after testing)
+    TempData["Success"] = "This is a success notification from TempData!";
+}
+
+<div class="page-header">
+    <h1>UI/UX Component Demo</h1>
+    <p class="page-subtitle">Test all new UI components and improvements</p>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Toast Notifications</h2>
+    <p style="margin-bottom: 16px; color: var(--gray-600);">Click buttons below to test different toast types:</p>
+    
+    <div class="button-group">
+        <button type="button" class="btn-success" onclick="showToast('Operation completed successfully!', 'success')">
+            Show Success Toast
+        </button>
+        <button type="button" class="btn-danger" onclick="showToast('An error occurred while processing your request.', 'error')">
+            Show Error Toast
+        </button>
+        <button type="button" class="btn-warning" onclick="showToast('Warning: This action cannot be undone.', 'warning')">
+            Show Warning Toast
+        </button>
+        <button type="button" class="btn-info" onclick="showToast('Did you know? You can use keyboard shortcuts!', 'info')">
+            Show Info Toast
+        </button>
+        <button type="button" class="btn-secondary" onclick="testMultipleToasts()">
+            Show Multiple Toasts
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Loading Indicator</h2>
+    <p style="margin-bottom: 16px; color: var(--gray-600);">Test the loading overlay that appears during async operations:</p>
+    
+    <div class="button-group">
+        <button type="button" class="btn-primary" onclick="showLoading('default')">
+            Show Default Loading
+        </button>
+        <button type="button" class="btn-primary" onclick="showLoading('small')">
+            Show Small Loading
+        </button>
+        <button type="button" class="btn-primary" onclick="showLoading('large')">
+            Show Large Loading
+        </button>
+        <button type="button" class="btn-primary" onclick="showLoadingTimed()">
+            Show for 3 Seconds
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Empty States</h2>
+    <div style="border: 1px dashed var(--gray-300); border-radius: 8px; margin-top: 16px;">
+        @{
+            ViewData["EmptyIcon"] = "";
+            ViewData["EmptyTitle"] = "No items found";
+            ViewData["EmptyMessage"] = "Get started by adding your first item to the system.";
+            ViewData["EmptyAction"] = "+ Add Item";
+            ViewData["EmptyActionUrl"] = "javascript:showToast('Add button clicked!', 'info')";
+        }
+        @await Html.PartialAsync("_EmptyState")
+    </div>
+    
+    <div style="border: 1px dashed var(--gray-300); border-radius: 8px; margin-top: 16px;">
+        @{
+            ViewData["EmptyIcon"] = "";
+            ViewData["EmptyTitle"] = "No search results";
+            ViewData["EmptyMessage"] = "Try adjusting your search filters to find what you're looking for.";
+            ViewData["EmptyAction"] = null; // No action button
+        }
+        @await Html.PartialAsync("_EmptyState")
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Search Debouncing</h2>
+    <p style="margin-bottom: 16px; color: var(--gray-600);">Type in the search box to see debounced search in action. Check the console for search counts.</p>
+    
+    <div style="position: relative; max-width: 500px;">
+        <input type="text" id="demoSearchInput" placeholder=" Type to search... (watch console)" 
+               style="width: 100%; padding: 12px 14px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px;" />
+        <span id="demoSearchLoader" class="search-loader" style="display:none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);"></span>
+    </div>
+    
+    <div style="margin-top: 12px; padding: 12px; background: var(--gray-50); border-radius: 8px; font-size: 13px; color: var(--gray-700);">
+        <strong>Search Count:</strong> <span id="searchCount">0</span><br>
+        <strong>Last Search Term:</strong> <span id="lastSearch">-</span><br>
+        <em>Without debouncing, typing "test" would trigger 4 searches. With debouncing: just 1!</em>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Form Validation Feedback</h2>
+    <p style="margin-bottom: 16px; color: var(--gray-600);">See visual feedback for form validation states:</p>
+    
+    <div class="form-group">
+        <label class="field-label">Normal Input</label>
+        <input type="text" placeholder="Standard input field" />
+    </div>
+    
+    <div class="form-group">
+        <label class="field-label">Valid Input</label>
+        <input type="text" class="is-valid" value="valid@@example.com" />
+        <div class="field-success">Email format is correct</div>
+    </div>
+    
+    <div class="form-group">
+        <label class="field-label">Invalid Input</label>
+        <input type="text" class="is-invalid" value="invalid-email" />
+        <div class="field-error">Please enter a valid email address</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Button Loading States</h2>
+    <p style="margin-bottom: 16px; color: var(--gray-600);">Test button loading animation:</p>
+    
+    <div class="button-group">
+        <button type="button" class="btn-primary" onclick="testButtonLoading(this)">
+            Click to Test Loading
+        </button>
+        <button type="button" class="btn-success" onclick="testButtonLoading(this)">
+            Save Changes
+        </button>
+        <button type="button" class="btn-danger" onclick="testButtonLoading(this)">
+            Delete Item
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Accessibility Features</h2>
+    <ul style="color: var(--gray-700); line-height: 1.8;">
+        <li><strong>Keyboard Navigation:</strong> All interactive elements accessible via Tab key</li>
+        <li><strong>Focus States:</strong> 2px green outline on all focused elements</li>
+        <li><strong>Touch Targets:</strong> All buttons/inputs minimum 44px height</li>
+        <li><strong>ARIA Labels:</strong> Navigation menu, mobile toggle, and modals properly labeled</li>
+        <li><strong>Screen Readers:</strong> Toast notifications announced as alerts</li>
+        <li><strong>Mobile Menu:</strong> Escape key closes, focus returns to toggle button</li>
+        <li><strong>Font Size:</strong> Minimum 14px for inputs (prevents mobile zoom)</li>
+    </ul>
+</div>
+
+@* Loading Indicators (all three sizes for demo) *@
+<div id="loadingDefault" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p class="loading-message">Processing your request...</p>
+    </div>
+</div>
+
+<div id="loadingSmall" class="loading-overlay" style="display: none;">
+    <div class="loading-content loading-small">
+        <div class="spinner"></div>
+        <p class="loading-message">Saving...</p>
+    </div>
+</div>
+
+<div id="loadingLarge" class="loading-overlay" style="display: none;">
+    <div class="loading-content loading-large">
+        <div class="spinner"></div>
+        <p class="loading-message">Importing data, please wait...</p>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/search-debounce.js"></script>
+<script>
+    // Demo: Multiple toasts
+    function testMultipleToasts() {
+        showToast('First notification', 'info');
+        setTimeout(() => showToast('Second notification', 'success'), 300);
+        setTimeout(() => showToast('Third notification', 'warning'), 600);
+    }
+    
+    // Demo: Loading overlays
+    function showLoading(size) {
+        const overlay = document.getElementById('loading' + size.charAt(0).toUpperCase() + size.slice(1));
+        overlay.style.display = 'flex';
+        
+        // Auto-hide after 2 seconds for demo
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            showToast('Loading complete!', 'success');
+        }, 2000);
+    }
+    
+    function showLoadingTimed() {
+        const overlay = document.getElementById('loadingDefault');
+        overlay.style.display = 'flex';
+        
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            showToast('Operation completed!', 'success');
+        }, 3000);
+    }
+    
+    // Demo: Button loading state
+    function testButtonLoading(btn) {
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+        
+        setTimeout(() => {
+            btn.classList.remove('btn-loading');
+            btn.disabled = false;
+            showToast('Action completed!', 'success');
+        }, 2000);
+    }
+    
+    // Demo: Debounced search
+    let searchCounter = 0;
+    
+    function demoSearch() {
+        const searchTerm = document.getElementById('demoSearchInput').value;
+        searchCounter++;
+        
+        document.getElementById('searchCount').textContent = searchCounter;
+        document.getElementById('lastSearch').textContent = searchTerm || '-';
+        
+        console.log(`Search #${searchCounter}: "${searchTerm}"`);
+        
+        // Simulate loading indicator
+        const loader = document.getElementById('demoSearchLoader');
+        loader.style.display = 'inline-block';
+        
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 500);
+    }
+    
+    // Initialize debounced search
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof setupDebouncedSearch !== 'undefined') {
+            setupDebouncedSearch('demoSearchInput', demoSearch, 300);
+            console.log('Debounced search initialized with 300ms delay');
+        } else {
+            console.error('search-debounce.js not loaded');
+        }
+        
+        // Show TempData toast on page load (already handled by _Toast.cshtml)
+        console.log('TempData success toast should appear automatically');
+    });
+    
+    // Close loading on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.loading-overlay').forEach(overlay => {
+                overlay.style.display = 'none';
+            });
+        }
+    });
+</script>
+}

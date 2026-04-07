@@ -1,0 +1,145 @@
+@model ISMSponsor.ViewModels.PortalStudentsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Students";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Your Students</h1>
+        <p class="page-subtitle">Students sponsored by @Model.SponsorName for @Model.SelectedSchoolYearName</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to Portal Home</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="get" action="@Url.Action("Students")" style="display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 1rem; align-items: end;">
+        <div class="form-group" style="margin: 0;">
+            <label for="schoolYear" class="field-label">School Year</label>
+            <select id="schoolYear" name="schoolYear" class="form-control">
+                @foreach (var year in Model.AvailableSchoolYears)
+                {
+                    <option value="@year.SchoolYearId" selected="@(year.SchoolYearId == Model.SelectedSchoolYearId)">
+                        @year.Name
+                    </option>
+                }
+            </select>
+        </div>
+        
+        <div class="form-group" style="margin: 0;">
+            <label for="search" class="field-label">Search</label>
+            <input type="text" id="search" name="search" value="@Model.SearchQuery" placeholder="Student ID or Name..." class="form-control" />
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
+        <a href="@Url.Action("Students")" class="btn btn-secondary">Clear</a>
+    </form>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">@Model.Students.Count</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">With Active LoG</div>
+        <div class="stat-value">@Model.Students.Count(s => s.HasActiveLoG)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Without LoG</div>
+        <div class="stat-value">@Model.Students.Count(s => s.LetterOfGuarantee == null)</div>
+    </div>
+</div>
+
+<!-- Students Table -->
+<div class="card">
+    <h2 class="table-title">Students (@Model.Students.Count)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Grade Level</th>
+                    <th>Status</th>
+                    <th>LoG Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Students.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            No students found for this school year. Students will appear here once they are assigned to your sponsorship.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model.Students)
+                    {
+                        var student = item.Student;
+                        var log = item.LetterOfGuarantee;
+                        
+                        <tr>
+                            <td><strong>@student.StudentId</strong></td>
+                            <td>
+                                <strong>@student.FirstName @student.LastName</strong>
+                            </td>
+                            <td>
+                                <span class="grade-badge">Grade @student.GradeLevel</span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-@student.StudentStatus.ToLower()">
+                                    @student.StudentStatus
+                                </span>
+                            </td>
+                            <td>
+                                @if (log != null)
+                                {
+                                    if (item.HasActiveLoG)
+                                    {
+                                        <span class="status-badge status-active">Active LoG</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge status-inactive">Inactive LoG</span>
+                                    }
+                                    <br />
+                                    <small style="color: #666;">@log.LogStatus</small>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">No LoG</span>
+                                }
+                            </td>
+                            <td>
+                                @if (log != null)
+                                {
+                                    <a href="@Url.Action("LoGDetail", new { id = log.LogId })" class="link">View LoG</a>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">No LoG available</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Help Text -->
+<div class="card" style="background-color: #f8f9fa; border-left: 4px solid #0066cc;">
+    <p style="margin: 0;">
+        <strong>📌 Note:</strong> Letters of Guarantee (LoGs) are created and managed by school administrators. 
+        If you need to add a student or request changes to a LoG, please contact the admissions office or submit a change request.
+    </p>
+</div>

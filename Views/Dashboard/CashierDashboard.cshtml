@@ -1,0 +1,109 @@
+@model ISMSponsor.ViewModels.CashierDashboardViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Cashier Dashboard";
+}
+
+<div class="page-header">
+    <h1>Cashier Dashboard</h1>
+    <p class="page-subtitle">
+        Financial overview for school year: <strong>@(Model.SelectedSchoolYear?.Name ?? "Not Selected")</strong>
+    </p>
+</div>
+
+@if (Model.Alerts?.Any() == true)
+{
+    @await Html.PartialAsync("_DashboardAlerts", Model.Alerts)
+}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Active LoGs</div>
+        <div class="stat-value">@Model.ActiveLoGs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Full Coverage</div>
+        <div class="stat-value">@Model.FullCoverageCount</div>
+        <div class="stat-sub">100% covered</div>
+    </div>
+    <div class="stat-card @(Model.LogsWithPaymentIssues > 0 ? "stat-card-warning" : "")">
+        <div class="stat-label">Payment Issues</div>
+        <div class="stat-value">@Model.LogsWithPaymentIssues</div>
+        <div class="stat-sub">Missing attachments</div>
+    </div>
+    <div class="stat-card @(Model.ExpiringLoGsThisMonth > 0 ? "stat-card-warning" : "")">
+        <div class="stat-label">Expiring Soon</div>
+        <div class="stat-value">@Model.ExpiringLoGsThisMonth</div>
+        <div class="stat-sub">This month</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">LoGs Requiring Attention (@Model.LogsRequiringAttention.Count())</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Sponsor</th>
+                    <th>Status</th>
+                    <th>Coverage</th>
+                    <th>Attachment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.LogsRequiringAttention.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">No LoGs requiring attention - All caught up!</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in Model.LogsRequiringAttention.Take(8))
+                    {
+                        var avgCoverage = log.CoverageRules?.Any() == true 
+                            ? log.CoverageRules.Where(r => r.CoveragePercentage.HasValue).Average(r => r.CoveragePercentage) ?? 0
+                            : 0;
+                        <tr>
+                            <td data-label="Student">@log.Student?.FirstName @log.Student?.LastName</td>
+                            <td data-label="Sponsor">@log.Sponsor?.SponsorName</td>
+                            <td data-label="Status">
+                                <span class="status-badge @(log.LogStatus == "Approved" ? "status-active" : "status-pending")">
+                                    @log.LogStatus
+                                </span>
+                            </td>
+                            <td data-label="Coverage">@avgCoverage.ToString("F0")%</td>
+                            <td data-label="Attachment">
+                                @if (!string.IsNullOrEmpty(log.AttachmentFileName))
+                                {
+                                    <span class="status-badge status-active">Uploaded</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Missing</span>
+                                }
+                            </td>
+                            <td data-label="Actions" class="action-cell">
+                                <a href="/LetterOfGuarantee/Details/@log.LogId" class="btn-link">Review</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.LogsRequiringAttention.Count() > 8)
+    {
+        <div style="padding: 1rem; text-align: center; border-top: 1px solid var(--gray-200);">
+            <a href="/LetterOfGuarantee" class="btn-secondary">View All LoGs</a>
+        </div>
+    }
+</div>
+
+<style>
+.stat-card-warning {
+    border-left: 4px solid #f59e0b;
+}
+</style>

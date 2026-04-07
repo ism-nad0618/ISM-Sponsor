@@ -1,0 +1,24 @@
+@* Reusable Empty State Component *@
+@{
+    var icon = ViewData["EmptyIcon"]?.ToString() ?? "";
+    var title = ViewData["EmptyTitle"]?.ToString() ?? "No items found";
+    var message = ViewData["EmptyMessage"]?.ToString() ?? "Get started by adding your first item.";
+    var actionText = ViewData["EmptyAction"]?.ToString();
+    var actionUrl = ViewData["EmptyActionUrl"]?.ToString();
+    var showAction = !string.IsNullOrEmpty(actionText) && !string.IsNullOrEmpty(actionUrl);
+}
+
+<div class="empty-state">
+    @if (!string.IsNullOrEmpty(icon))
+    {
+        <div class="empty-state-icon">@icon</div>
+    }
+    <h3 class="empty-state-title">@title</h3>
+    <p class="empty-state-message">@message</p>
+    @if (showAction)
+    {
+        <a href="@actionUrl" class="btn-primary empty-state-action">
+            @actionText
+        </a>
+    }
+</div>

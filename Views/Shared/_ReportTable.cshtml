@@ -1,0 +1,72 @@
+@model dynamic
+@{
+    var headers = ViewBag.TableHeaders as string[] ?? Array.Empty<string>();
+    var rows = ViewBag.TableRows as IEnumerable<object> ?? Enumerable.Empty<object>();
+    var rowRenderer = ViewBag.RowRenderer as Func<object, string[]>;
+    var emptyMessage = ViewBag.EmptyMessage as string ?? "No data available for the selected filters.";
+}
+
+<div class="card">
+    <h2 class="table-title">@ViewBag.TableTitle</h2>
+    
+    @if (ViewBag.TableDescription != null)
+    {
+        <p style="padding: 0 1rem; color: #666;">@ViewBag.TableDescription</p>
+    }
+    
+    <div class="table-wrap">
+        <table>
+            @if (headers.Any())
+            {
+                <thead>
+                    <tr>
+                        @foreach (var header in headers)
+                        {
+                            <th>@header</th>
+                        }
+                    </tr>
+                </thead>
+            }
+            <tbody>
+                @if (!rows.Any())
+                {
+                    <tr>
+                        <td colspan="@headers.Length" class="empty-state">@emptyMessage</td>
+                    </tr>
+                }
+                else if (rowRenderer != null)
+                {
+                    foreach (var row in rows)
+                    {
+                        <tr>
+                            @foreach (var cell in rowRenderer(row))
+                            {
+                                <td>@Html.Raw(cell)</td>
+                            }
+                        </tr>
+                    }
+                }
+                else
+                {
+                    foreach (var row in rows)
+                    {
+                        <tr>
+                            @foreach (var prop in row.GetType().GetProperties())
+                            {
+                                var value = prop.GetValue(row);
+                                <td>@(value?.ToString() ?? "")</td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    @if (rows.Any() && ViewBag.ShowRowCount != false)
+    {
+        <div style="padding: 1rem; text-align: center; color: #666; font-size: 0.9rem;">
+            Showing @rows.Count() record@(rows.Count() != 1 ? "s" : "")
+        </div>
+    }
+</div>

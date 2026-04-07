@@ -1,0 +1,180 @@
+@model ISMSponsor.ViewModels.SponsorMergeViewModel
+@{
+    ViewData["Title"] = "Merge Sponsors";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-code-branch"></i> Merge Sponsors</h2>
+            <p class="text-muted mb-0">Review and confirm sponsor merge operation</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Duplicates
+        </a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Primary Sponsor (Will Survive)</h5>
+                </div>
+                <div class="card-body">
+                    <h4>@Model.PrimarySponsorName</h4>
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Email:</th>
+                            <td>@(Model.PrimarySponsorEmail ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>@(Model.PrimarySponsorPhone ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <th>Organization:</th>
+                            <td>@(Model.PrimaryOrganization ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <th>Students:</th>
+                            <td><span class="badge bg-info">@ViewBag.PrimaryStudentCount</span></td>
+                        </tr>
+                        <tr>
+                            <th>Contacts:</th>
+                            <td><span class="badge bg-info">@ViewBag.PrimaryContactCount</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-times-circle"></i> Secondary Sponsor (Will Be Merged)</h5>
+                </div>
+                <div class="card-body">
+                    <h4>@Model.SecondarySponsorName</h4>
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Email:</th>
+                            <td>@(Model.SecondarySponsorEmail ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>@(Model.SecondarySponsorPhone ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <th>Organization:</th>
+                            <td>@(Model.SecondaryOrganization ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <th>Students:</th>
+                            <td><span class="badge bg-info">@ViewBag.SecondaryStudentCount</span></td>
+                        </tr>
+                        <tr>
+                            <th>Contacts:</th>
+                            <td><span class="badge bg-info">@ViewBag.SecondaryContactCount</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.FieldConflicts.Any())
+    {
+        <div class="alert alert-warning mt-4">
+            <h5><i class="fas fa-exclamation-triangle"></i> Field Conflicts Detected</h5>
+            <p>The following fields have different values between the two sponsors:</p>
+            <ul>
+                @foreach (var conflict in Model.FieldConflicts)
+                {
+                    <li><strong>@conflict.Key:</strong> @conflict.Value</li>
+                }
+            </ul>
+            <p class="mb-0"><em>The merge will keep values from the Primary Sponsor.</em></p>
+        </div>
+    }
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Merge Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle"></i> What will happen during merge:</h6>
+                <ul class="mb-0">
+                    <li>All students from secondary sponsor will be transferred to primary sponsor</li>
+                    <li>All contacts from secondary sponsor will be transferred to primary sponsor</li>
+                    <li>All Letters of Guarantee will be updated to reference primary sponsor</li>
+                    <li>All change requests will be updated to reference primary sponsor</li>
+                    <li>Secondary sponsor record will be marked as merged (soft delete)</li>
+                    <li>A merge operation record will be created for audit purposes</li>
+                </ul>
+            </div>
+
+            <form asp-action="ExecuteMerge" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="PrimarySponsorId" />
+                <input type="hidden" asp-for="PrimarySponsorName" />
+                <input type="hidden" asp-for="SecondarySponsorId" />
+                <input type="hidden" asp-for="SecondarySponsorName" />
+
+                <div class="mb-3">
+                    <label asp-for="MergeReason" class="form-label">Merge Reason <span class="text-danger">*</span></label>
+                    <select asp-for="MergeReason" class="form-select" required>
+                        <option value="">- Select reason -</option>
+                        <option value="Duplicate Entry">Duplicate Entry</option>
+                        <option value="Name Change">Name Change</option>
+                        <option value="Data Consolidation">Data Consolidation</option>
+                        <option value="Organizational Merge">Organizational Merge</option>
+                        <option value="Error Correction">Error Correction</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <span asp-validation-for="MergeReason" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="MergeNotes" class="form-label">Additional Notes</label>
+                    <textarea asp-for="MergeNotes" class="form-control" rows="3" 
+                              placeholder="Optional: Add any additional context or notes about this merge..."></textarea>
+                </div>
+
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Warning: This action cannot be undone!</h6>
+                    <p class="mb-0">
+                        Please verify that you want to merge <strong>@Model.SecondarySponsorName</strong> 
+                        into <strong>@Model.PrimarySponsorName</strong>. This operation is permanent.
+                    </p>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger" onclick="return confirmMerge()">
+                        <i class="fas fa-code-branch"></i> Execute Merge
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function confirmMerge() {
+            return confirm('Are you absolutely sure you want to merge these sponsors? This action CANNOT be undone!');
+        }
+    </script>
+}

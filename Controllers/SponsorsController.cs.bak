@@ -1,0 +1,852 @@
+using ISMSponsor.Services;
+using ISMSponsor.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ISMSponsor.Data;
+using System.Linq;
+
+namespace ISMSponsor.Controllers
+{
+    [Authorize]
+    public class SponsorsController : Controller
+    {
+        private readonly SponsorService _sponsorService;
+        private readonly ChangeRequestService _changeService;
+        private readonly AdminUserService _adminUserService;
+        private readonly LogsService _logsService;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<ISMSponsor.Models.ApplicationUser> _userManager;
+        private readonly Microsoft.Extensions.Logging.ILogger<SponsorsController> _logger;
+        private readonly AppDbContext _context;
+
+        public SponsorsController(
+            SponsorService sponsorService, 
+            ChangeRequestService changeService,
+            AdminUserService adminUserService,
+            LogsService logsService,
+            Microsoft.AspNetCore.Identity.UserManager<ISMSponsor.Models.ApplicationUser> userManager, 
+            Microsoft.Extensions.Logging.ILogger<SponsorsController> logger,
+            AppDbContext context)
+        {
+            _sponsorService = sponsorService;
+            _changeService = changeService;
+            _adminUserService = adminUserService;
+            _logsService = logsService;
+            _userManager = userManager;
+            _logger = logger;
+            _context = context;
+        }
+
+        public async Task<IActionResult> Profile(string? id = null)
+        {
+            // administrators and cashiers may view arbitrary sponsor by id
+            if (User.IsInRole("admin") || User.IsInRole("cashier"))
+            {
+                if (!string.IsNullOrEmpty(id))
+                {
+                    var adminSponsor = await _sponsorService.GetByIdAsync(id);
+                    if (adminSponsor == null) return NotFound($"Sponsor with ID {id} not found.");
+                    return View(adminSponsor);
+                }
+                return RedirectToAction("Index");
+            }
+
+            // Try claim first
+            string sponsorId = User.FindFirst("SponsorId")?.Value ?? string.Empty;
+
+            // If claim missing, attempt to resolve from the authenticated user record
+            if (string.IsNullOrEmpty(sponsorId))
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId) && _userManager != null)
+                {
+                    var appUser = await _userManager.FindByIdAsync(userId);
+                    sponsorId = appUser?.SponsorId ?? string.Empty;
+                }
+            }
+
+            if (string.IsNullOrEmpty(sponsorId))
+            {
+                // if user not in sponsor role, deny access rather than error
+                if (!User.IsInRole("sponsor"))
+                {
+                    _logger?.LogInformation("Non-sponsor user {User} attempted Sponsor/Profile", User.Identity?.Name);
+                    return Forbid();
+                }
+                // Diagnostic information for development troubleshooting
+                var claimsList = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+                var userName = User.Identity?.Name ?? "(null)";
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "(null)";
+                var appUser = (string.IsNullOrEmpty(userId) || _userManager == null) ? null : await _userManager.FindByIdAsync(userId);
+                var userSponsor = appUser?.SponsorId ?? "(null)";
+
+                var details = new
+                {
+                    Message = "Sponsor ID not found in user claims or user profile.",
+                    UserName = userName,
+                    UserId = userId,
+                    UserSponsorId = userSponsor,
+                    Claims = claimsList
+                };
+                // Log details for diagnostics
+                try { _logger?.LogWarning("SponsorId missing: {Details}", System.Text.Json.JsonSerializer.Serialize(details)); } catch {}
+
+                if (HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment)) is Microsoft.AspNetCore.Hosting.IWebHostEnvironment env && env.IsDevelopment())
+                {
+                    return BadRequest(System.Text.Json.JsonSerializer.Serialize(details));
+                }
+
+                return BadRequest("Sponsor ID not found in user claims or user profile.");
+            }
+
+            var sponsor = await _sponsorService.GetByIdAsync(sponsorId);
+
+            if (sponsor == null)
+            {
+                return NotFound($"Sponsor with ID {sponsorId} not found.");
+            }
+
+            return View(sponsor);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RequestChange(ChangeRequestViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var cr = new ISMSponsor.Models.Domain.ChangeRequest
+                {
+                    SponsorId = model.SponsorId,
+                    Field = model.Field,
+                    FieldLabel = model.FieldLabel,
+                    CurrentValue = model.CurrentValue,
+                    NewValue = model.NewValue,
+                    RequestedByUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "",
+                    Status = "pending"
+                };
+                await _changeService.SubmitAsync(cr);
+            }
+            return RedirectToAction("Profile");
+        }
+
+        public async Task<PartialViewResult> Contacts(string sponsorId)
+        {
+            var contacts = await _sponsorService.GetContactsAsync(sponsorId);
+            return PartialView("_ContactsModal", contacts);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Contacts(ISMSponsor.Models.Domain.SponsorContact contact)
+        {
+            if (ModelState.IsValid)
+            {
+                await _sponsorService.AddContactAsync(contact);
+            }
+            return RedirectToAction("Profile");
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        public async Task<IActionResult> Index()
+        {
+            var list = await _sponsorService.GetAllAsync();
+            return View(list);
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View(new CreateSponsorViewModel());
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateSponsorViewModel model)
+        {
+            var result = await ValidateAndCreateSponsorAsync(model);
+            
+            if (!result.Success)
+            {
+                if (result.ValidationErrors != null)
+                {
+                    foreach (var error in result.ValidationErrors)
+                    {
+                        ModelState.AddModelError(error.Key, error.Value.First());
+                    }
+                }
+                return View(model);
+            }
+
+            TempData["Success"] = result.Message;
+            return RedirectToAction("Index");
+        }
+
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateModal(CreateSponsorViewModel model)
+        {
+            var result = await ValidateAndCreateSponsorAsync(model);
+            
+            if (!result.Success)
+            {
+                return Json(new { success = false, errors = result.ValidationErrors, message = result.Message });
+            }
+
+            return Json(new { success = true, message = result.Message });
+        }
+
+        private async Task<SponsorCreationResult> ValidateAndCreateSponsorAsync(CreateSponsorViewModel model)
+        {
+            // Validate model state
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+                return new SponsorCreationResult { Success = false, ValidationErrors = errors };
+            }
+
+            // Check if sponsor ID already exists
+            if (await _sponsorService.SponsorExistsAsync(model.SponsorId))
+            {
+                return new SponsorCreationResult 
+                { 
+                    Success = false, 
+                    ValidationErrors = new Dictionary<string, string[]> 
+                    { 
+                        { "SponsorId", new[] { "A sponsor with this ID already exists." } } 
+                    } 
+                };
+            }
+
+            // Check if username already exists
+            var existingUser = await _userManager.FindByNameAsync(model.Username);
+            if (existingUser != null)
+            {
+                return new SponsorCreationResult 
+                { 
+                    Success = false, 
+                    ValidationErrors = new Dictionary<string, string[]> 
+                    { 
+                        { "Username", new[] { "This username is already taken." } } 
+                    } 
+                };
+            }
+
+            // Validate file upload
+            if (model.VerificationDocument == null || model.VerificationDocument.Length == 0)
+            {
+                return new SponsorCreationResult 
+                { 
+                    Success = false, 
+                    ValidationErrors = new Dictionary<string, string[]> 
+                    { 
+                        { "VerificationDocument", new[] { "Verification document is required." } } 
+                    } 
+                };
+            }
+
+            var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
+            var fileExtension = Path.GetExtension(model.VerificationDocument.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return new SponsorCreationResult 
+                { 
+                    Success = false, 
+                    ValidationErrors = new Dictionary<string, string[]> 
+                    { 
+                        { "VerificationDocument", new[] { "Invalid file type. Allowed: PDF, JPG, PNG, DOC, DOCX" } } 
+                    } 
+                };
+            }
+
+            if (model.VerificationDocument.Length > 10 * 1024 * 1024) // 10MB limit
+            {
+                return new SponsorCreationResult 
+                { 
+                    Success = false, 
+                    ValidationErrors = new Dictionary<string, string[]> 
+                    { 
+                        { "VerificationDocument", new[] { "File size must not exceed 10MB." } } 
+                    } 
+                };
+            }
+
+            try
+            {
+                // Create the sponsor
+                var sponsor = new ISMSponsor.Models.Domain.Sponsor
+                {
+                    SponsorId = model.SponsorId,
+                    SponsorName = model.SponsorName,
+                    LegalName = model.LegalName,
+                    Address = model.Address,
+                    Tin = model.Tin
+                };
+                await _sponsorService.CreateAsync(sponsor);
+
+                // Save verification document
+                var fileName = await _sponsorService.SaveVerificationDocumentAsync(model.SponsorId, model.VerificationDocument);
+
+                // Create the user account
+                var user = new ISMSponsor.Models.ApplicationUser
+                {
+                    UserName = model.Username,
+                    DisplayName = model.DisplayName,
+                    SponsorId = model.SponsorId,
+                    IsActive = true
+                };
+                var userResult = await _adminUserService.CreateUserAsync(user, model.Password, "sponsor");
+
+                if (!userResult.Succeeded)
+                {
+                    var errors = string.Join(", ", userResult.Errors.Select(e => e.Description));
+                    _logger.LogError("Failed to create user for sponsor {SponsorId}: {Errors}", model.SponsorId, errors);
+                    return new SponsorCreationResult 
+                    { 
+                        Success = false, 
+                        Message = $"User account creation failed: {errors}"
+                    };
+                }
+
+                // Log the activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _logsService.LogActivityAsync(
+                    item: "New Sponsor",
+                    details: $"Created sponsor '{model.SponsorName}' (ID: {model.SponsorId}) with user account '{model.Username}'. Verification document: {fileName}",
+                    userDisplay: currentUser?.DisplayName ?? User.Identity?.Name ?? "System",
+                    roleName = User.IsInRole("admin") ? "admin" : "cashier",
+                    schoolYearId: ""
+                );
+
+                return new SponsorCreationResult 
+                { 
+                    Success = true, 
+                    Message = $"Sponsor '{model.SponsorName}' and user account '{model.Username}' created successfully." 
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating sponsor {SponsorId}", model.SponsorId);
+                return new SponsorCreationResult 
+                { 
+                    Success = false, 
+                    Message = "An error occurred while creating the sponsor. Please try again."
+                };
+            }
+        }
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState
+                        .Where(x => x.Value.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        );
+                    _logger.LogWarning("CreateModal validation failed: {Errors}", string.Join(", ", errors.Select(e => $"{e.Key}: {string.Join(", ", e.Value)}")));
+                    return Json(new { success = false, errors = errors });
+                }
+
+                // Check if sponsor ID already exists
+                var existingSponsor = await _sponsorService.GetByIdAsync(model.SponsorId);
+                if (existingSponsor != null)
+                {
+                    _logger.LogWarning("Sponsor ID {SponsorId} already exists", model.SponsorId);
+                    return Json(new { 
+                        success = false, 
+                        errors = new Dictionary<string, string[]> { 
+                            { "SponsorId", new[] { "A sponsor with this ID already exists." } } 
+                        } 
+                    });
+                }
+
+                // Check if username already exists
+                var existingUser = await _userManager.FindByNameAsync(model.Username);
+                if (existingUser != null)
+                {
+                    _logger.LogWarning("Username {Username} already exists", model.Username);
+                    return Json(new { 
+                        success = false, 
+                        errors = new Dictionary<string, string[]> { 
+                            { "Username", new[] { "This username is already taken." } } 
+                        } 
+                    });
+                }
+
+                // Validate file upload
+                if (model.VerificationDocument == null || model.VerificationDocument.Length == 0)
+                {
+                    _logger.LogWarning("No verification document provided for sponsor {SponsorId}", model.SponsorId);
+                    return Json(new { 
+                        success = false, 
+                        errors = new Dictionary<string, string[]> { 
+                            { "VerificationDocument", new[] { "Verification document is required." } } 
+                        } 
+                    });
+                }
+
+                var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
+                var fileExtension = Path.GetExtension(model.VerificationDocument.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    _logger.LogWarning("Invalid file extension {Extension} for sponsor {SponsorId}", fileExtension, model.SponsorId);
+                    return Json(new { 
+                        success = false, 
+                        errors = new Dictionary<string, string[]> { 
+                            { "VerificationDocument", new[] { "Invalid file type. Allowed: PDF, JPG, PNG, DOC, DOCX" } } 
+                        } 
+                    });
+                }
+
+                if (model.VerificationDocument.Length > 10 * 1024 * 1024) // 10MB limit
+                {
+                    _logger.LogWarning("File size {Size} exceeds limit for sponsor {SponsorId}", model.VerificationDocument.Length, model.SponsorId);
+                    return Json(new { 
+                        success = false, 
+                        errors = new Dictionary<string, string[]> { 
+                            { "VerificationDocument", new[] { "File size must not exceed 10MB." } } 
+                        } 
+                    });
+                }
+
+                _logger.LogInformation("Starting sponsor creation for {SponsorId}", model.SponsorId);
+
+                // Use transaction to ensure both sponsor and user are created successfully
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                
+                try
+                {
+                    // Create the sponsor
+                    var sponsor = new ISMSponsor.Models.Domain.Sponsor
+                    {
+                        SponsorId = model.SponsorId,
+                        SponsorName = model.SponsorName,
+                        LegalName = model.LegalName,
+                        Address = model.Address,
+                        Tin = model.Tin
+                    };
+                    await _sponsorService.CreateAsync(sponsor);
+                    _logger.LogInformation("Sponsor {SponsorId} created successfully", model.SponsorId);
+
+                    // Create the user account
+                    var user = new ISMSponsor.Models.ApplicationUser
+                    {
+                        UserName = model.Username,
+                        DisplayName = model.DisplayName,
+                        SponsorId = model.SponsorId,
+                        IsActive = true
+                    };
+                    
+                    _logger.LogInformation("Creating user account {Username} for sponsor {SponsorId}", model.Username, model.SponsorId);
+                    var result = await _adminUserService.CreateUserAsync(user, model.Password, "sponsor");
+
+                    if (!result.Succeeded)
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        _logger.LogError("Failed to create user for sponsor {SponsorId}: {Errors}", model.SponsorId, errors);
+                        await transaction.RollbackAsync();
+                        return Json(new { 
+                            success = false, 
+                            message = $"User account creation failed: {errors}"
+                        });
+                    }
+
+                    _logger.LogInformation("User account {Username} created successfully", model.Username);
+
+                    // Commit transaction before saving document
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("Transaction committed for sponsor {SponsorId}", model.SponsorId);
+                    
+                    // Save verification document (after transaction commits)
+                    var fileName = await _sponsorService.SaveVerificationDocumentAsync(model.SponsorId, model.VerificationDocument);
+                    _logger.LogInformation("Verification document saved for {SponsorId}: {FileName}", model.SponsorId, fileName);
+
+                    // Log the activity
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    await _logsService.LogActivityAsync(
+                        item: "New Sponsor",
+                        details: $"Created sponsor '{model.SponsorName}' (ID: {model.SponsorId}) with user account '{model.Username}'. Verification document: {fileName}",
+                        userDisplay: currentUser?.DisplayName ?? User.Identity?.Name ?? "System",
+                        roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                        schoolYearId: ""
+                    );
+
+                    _logger.LogInformation("Sponsor creation completed successfully for {SponsorId}", model.SponsorId);
+
+                    return Json(new { 
+                        success = true, 
+                        message = $"Sponsor '{model.SponsorName}' and user account '{model.Username}' created successfully." 
+                    });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Transaction rolled back for sponsor {SponsorId}", model.SponsorId);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating sponsor {SponsorId}. Exception: {Message}", model?.SponsorId ?? "Unknown", ex.Message);
+                return Json(new { 
+                    success = false, 
+                    message = $"An error occurred while creating the sponsor: {ex.Message}" 
+                });
+            }
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpGet]
+        public async Task<IActionResult> GetProfileData(string id)
+        {
+            var sponsor = await _sponsorService.GetByIdAsync(id);
+            if (sponsor == null)
+            {
+                return Json(new { success = false, message = "Sponsor not found" });
+            }
+
+            return Json(new
+            {
+                sponsorId = sponsor.SponsorId,
+                sponsorName = sponsor.SponsorName,
+                legalName = sponsor.LegalName,
+                address = sponsor.Address,
+                tin = sponsor.Tin
+            });
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile([FromForm] UpdateSponsorProfileViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = "Validation failed", errors });
+            }
+
+            try
+            {
+                // Get the sponsor
+                var sponsor = await _sponsorService.GetByIdAsync(model.SponsorId);
+                if (sponsor == null)
+                {
+                    return Json(new { success = false, message = "Sponsor not found" });
+                }
+
+                // Update sponsor information
+                sponsor.SponsorName = model.SponsorName;
+                sponsor.LegalName = model.LegalName;
+                sponsor.Address = model.Address;
+                sponsor.Tin = model.Tin;
+                await _sponsorService.UpdateAsync(sponsor);
+
+                // Update password if provided
+                if (!string.IsNullOrEmpty(model.Password))
+                {
+                    // Validate password confirmation
+                    if (model.Password != model.ConfirmPassword)
+                    {
+                        return Json(new { success = false, message = "Passwords do not match" });
+                    }
+
+                    // Find user by sponsor ID
+                    var users = _context.Users.Where(u => u.SponsorId == model.SponsorId).ToList();
+                    if (users.Any())
+                    {
+                        var user = users.First();
+                        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                        var passwordResult = await _userManager.ResetPasswordAsync(user, token, model.Password);
+                        
+                        if (!passwordResult.Succeeded)
+                        {
+                            var errors = string.Join(", ", passwordResult.Errors.Select(e => e.Description));
+                            return Json(new { success = false, message = $"Sponsor updated but password change failed: {errors}" });
+                        }
+                    }
+                }
+
+                // Handle verification document upload
+                if (model.VerificationDocument != null && model.VerificationDocument.Length > 0)
+                {
+                    // Validate file
+                    var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
+                    var fileExtension = Path.GetExtension(model.VerificationDocument.FileName).ToLowerInvariant();
+                    
+                    if (!allowedExtensions.Contains(fileExtension))
+                    {
+                        return Json(new { success = false, message = "Invalid file type. Allowed: PDF, JPG, PNG, DOC, DOCX" });
+                    }
+
+                    if (model.VerificationDocument.Length > 10 * 1024 * 1024)
+                    {
+                        return Json(new { success = false, message = "File size must not exceed 10MB" });
+                    }
+
+                    // Save the new document
+                    await _sponsorService.SaveVerificationDocumentAsync(model.SponsorId, model.VerificationDocument);
+                }
+
+                // Log the activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _logsService.LogActivityAsync(
+                    item: "Sponsor Update",
+                    details: $"Updated sponsor '{model.SponsorName}' (ID: {model.SponsorId})",
+                    userDisplay: currentUser?.DisplayName ?? User.Identity?.Name ?? "System",
+                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    schoolYearId: ""
+                );
+
+                return Json(new { success = true, message = "Sponsor profile updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating sponsor profile {SponsorId}", model.SponsorId);
+                return Json(new { success = false, message = "An error occurred while updating the profile" });
+            }
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        public async Task<IActionResult> EditProfile([FromBody] SponsorUpdateModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid data" });
+            }
+
+            var sponsor = await _sponsorService.GetByIdAsync(model.SponsorId);
+            if (sponsor == null)
+            {
+                return Json(new { success = false, message = "Sponsor not found" });
+            }
+
+            try
+            {
+                sponsor.SponsorName = model.SponsorName;
+                sponsor.LegalName = model.LegalName;
+                sponsor.Address = model.Address;
+                sponsor.Tin = model.Tin;
+
+                await _sponsorService.UpdateAsync(sponsor);
+
+                // Log the activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _logsService.LogActivityAsync(
+                    item: "Sponsor Update",
+                    details: $"Updated sponsor '{model.SponsorName}' (ID: {model.SponsorId})",
+                    userDisplay: currentUser?.DisplayName ?? User.Identity?.Name ?? "System",
+                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    schoolYearId: ""
+                );
+
+                _logger.LogInformation("Sponsor {SponsorId} updated successfully by {User}", model.SponsorId, User.Identity?.Name);
+
+                return Json(new { success = true, message = "Sponsor profile updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating sponsor {SponsorId}", model.SponsorId);
+                return Json(new { success = false, message = "Failed to update sponsor profile" });
+            }
+        }
+        
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpGet]
+        public async Task<IActionResult> GetContacts(string sponsorId)
+        {
+            try
+            {
+                var contacts = await _sponsorService.GetContactsAsync(sponsorId);
+                return Json(contacts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting contacts for sponsor {SponsorId}", sponsorId);
+                return Json(new List<object>());
+            }
+        }
+        
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddContact(string sponsorId, string name, string email, string phone)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sponsorId) || string.IsNullOrWhiteSpace(name) || 
+                    string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone))
+                {
+                    _logger.LogWarning("AddContact called with missing fields for sponsor {SponsorId}", sponsorId);
+                    return Json(new { success = false, message = "All fields are required" });
+                }
+                
+                var contact = new ISMSponsor.Models.Domain.SponsorContact
+                {
+                    SponsorId = sponsorId,
+                    Name = name,
+                    Email = email,
+                    Phone = phone,
+                    IsActive = true
+                };
+                
+                await _sponsorService.AddContactAsync(contact);
+                _logger.LogInformation("Contact {Name} added for sponsor {SponsorId} by {User}", 
+                    name, sponsorId, User.Identity?.Name);
+                
+                return Json(new { success = true, message = "Contact added successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding contact for sponsor {SponsorId}", sponsorId);
+                return Json(new { success = false, message = "Failed to add contact" });
+            }
+        }
+        
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateContact(int contactId, string sponsorId, string name, string email, string phone)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone))
+                {
+                    _logger.LogWarning("UpdateContact called with missing fields for contact {ContactId}", contactId);
+                    return Json(new { success = false, message = "All fields are required" });
+                }
+                
+                var success = await _sponsorService.UpdateContactAsync(contactId, name, email, phone);
+                if (!success)
+                {
+                    return Json(new { success = false, message = "Contact not found" });
+                }
+                
+                _logger.LogInformation("Contact {Id} updated by {User}", contactId, User.Identity?.Name);
+                return Json(new { success = true, message = "Contact updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating contact {Id}", contactId);
+                return Json(new { success = false, message = "Failed to update contact" });
+            }
+        }
+        
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpPost]
+        public async Task<IActionResult> DeactivateContact(int id)
+        {
+            try
+            {
+                var success = await _sponsorService.SetContactStatusAsync(id, false);
+                if (!success)
+                {
+                    return Json(new { success = false, message = "Contact not found" });
+                }
+                
+                _logger.LogInformation("Contact {Id} deactivated by {User}", id, User.Identity?.Name);
+                return Json(new { success = true, message = "Contact deactivated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating contact {Id}", id);
+                return Json(new { success = false, message = "Failed to deactivate contact" });
+            }
+        }
+        
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpPost]
+        public async Task<IActionResult> ReactivateContact(int id)
+        {
+            try
+            {
+                var success = await _sponsorService.SetContactStatusAsync(id, true);
+                if (!success)
+                {
+                    return Json(new { success = false, message = "Contact not found" });
+                }
+                
+                _logger.LogInformation("Contact {Id} reactivated by {User}", id, User.Identity?.Name);
+                return Json(new { success = true, message = "Contact reactivated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating contact {Id}", id);
+                return Json(new { success = false, message = "Failed to reactivate contact" });
+            }
+        }
+
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus([FromBody] SponsorToggleStatusModel model)
+        {
+            try
+            {
+                var sponsor = await _sponsorService.GetByIdAsync(model.SponsorId);
+                if (sponsor == null)
+                {
+                    return Json(new { success = false, message = "Sponsor not found" });
+                }
+
+                sponsor.IsActive = model.IsActive;
+                await _sponsorService.UpdateAsync(sponsor);
+
+                // Log the activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _logsService.LogActivityAsync(
+                    item: "Sponsor Status Change",
+                    details: $"Sponsor '{sponsor.SponsorName}' (ID: {model.SponsorId}) {(model.IsActive ? "activated" : "deactivated")}",
+                    userDisplay: currentUser?.DisplayName ?? User.Identity?.Name ?? "System",
+                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    schoolYearId: ""
+                );
+
+                _logger.LogInformation("Sponsor {SponsorId} {Action} by {User}", 
+                    model.SponsorId, model.IsActive ? "activated" : "deactivated", User.Identity?.Name);
+
+                return Json(new { success = true, message = $"Sponsor {(model.IsActive ? "activated" : "deactivated")} successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling sponsor status {SponsorId}", model.SponsorId);
+                return Json(new { success = false, message = "Failed to update sponsor status" });
+            }
+        }
+    }
+
+    public class SponsorToggleStatusModel
+    {
+        public string SponsorId { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+    }
+
+    public class SponsorUpdateModel
+    {
+        public string SponsorId { get; set; } = string.Empty;
+        public string SponsorName { get; set; } = string.Empty;
+        public string LegalName { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? Tin { get; set; }
+    }
+
+    public class UpdateSponsorProfileViewModel
+    {
+        public string SponsorId { get; set; } = string.Empty;
+        public string SponsorName { get; set; } = string.Empty;
+        public string LegalName { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? Tin { get; set; }
+        public string? Username { get; set; }
+        public string? DisplayName { get; set; }
+        public string? Password { get; set; }
+        public string? ConfirmPassword { get; set; }
+        public IFormFile? VerificationDocument { get; set; }
+    }
+}

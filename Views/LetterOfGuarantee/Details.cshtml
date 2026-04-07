@@ -1,0 +1,249 @@
+@model ISMSponsor.Models.Domain.LogCoverage
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = $"LoG #{Model.LogId} Details";
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Letter of Guarantee #@Model.LogId</h1>
+            <p class="page-subtitle">Detailed view and activation management</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a asp-action="Coverage" asp-route-id="@Model.LogId" class="btn-primary btn-add">View Coverage Rules</a>
+            @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+            {
+                <a asp-action="Edit" asp-route-id="@Model.LogId" class="btn-secondary btn-add">Edit LoG</a>
+            }
+            <a asp-action="Index" class="btn-secondary btn-add">Back to List</a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="alert alert-success">@successMsg</div>
+}
+@if (TempData["Error"] is string errorMsg)
+{
+    <div class="alert alert-error">@errorMsg</div>
+}
+
+<div class="card">
+    <h2 class="table-title">Status and Activation</h2>
+    
+    <div class="data-grid" style="margin-bottom: 1.5rem;">
+        <div>
+            <p class="field-label">Current Status</p>
+            <p><span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span></p>
+        </div>
+        <div>
+            <p class="field-label">Activation State</p>
+            <p>
+                @if (Model.IsActive)
+                {
+                    <span class="status-badge status-active">Active</span>
+                }
+                else
+                {
+                    <span class="status-badge status-inactive">Inactive</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    @if (Model.IsActive && Model.ActivatedOn.HasValue)
+    {
+        <div class="alert alert-success">
+            <strong> Active Coverage</strong><br />
+            Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")
+            @if (Model.ActivatedByUser != null)
+            {
+                <text> by @Model.ActivatedByUser.DisplayName</text>
+            }
+        </div>
+    }
+    else if (Model.DeactivatedOn.HasValue)
+    {
+        <div class="alert alert-error">
+            <strong> Deactivated</strong><br />
+            Deactivated on @Model.DeactivatedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")
+            @if (Model.DeactivatedByUser != null)
+            {
+                <text> by @Model.DeactivatedByUser.DisplayName</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.DeactivationReason))
+            {
+                <br /><strong>Reason:</strong> @Model.DeactivationReason
+            }
+        </div>
+    }
+
+    @if (User.IsInRole("admin"))
+    {
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
+            <p class="field-label" style="margin-bottom: 0.5rem;">Admin Actions</p>
+            @if (!Model.IsActive)
+            {
+                @if (Model.LogStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                {
+                    <form asp-action="Activate" asp-route-id="@Model.LogId" method="post" style="display: inline;">
+                        <button type="submit" class="btn-primary" onclick="return confirm('Activate this Letter of Guarantee?');">
+                             Activate LoG
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="help-text" style="color: var(--gray-500);">LoG must be in Approved status to activate</p>
+                }
+            }
+            else
+            {
+                <button type="button" class="btn-danger" onclick="document.getElementById('deactivateModal').style.display='block';">
+                     Deactivate LoG
+                </button>
+            }
+        </div>
+    }
+</div>
+
+<div class="card">
+    <h2 class="table-title">Student and Sponsor Information</h2>
+    <div class="data-grid">
+        <div>
+            <p class="field-label">School Year</p>
+            <p><strong>@Model.SchoolYearId</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Student ID</p>
+            <p><strong>@Model.StudentId</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Student Name</p>
+            <p><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Grade Level</p>
+            <p><strong>@(Model.Student?.GradeLevel ?? "N/A")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Sponsor ID</p>
+            <p><strong>@Model.SponsorId</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Sponsor Name</p>
+            <p><strong>@(Model.Sponsor?.SponsorName ?? "N/A")</strong></p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Coverage Dates</h2>
+    <div class="data-grid">
+        <div>
+            <p class="field-label">Effective From</p>
+            <p><strong>@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Effective To</p>
+            <p><strong>@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></p>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Notes) || !string.IsNullOrEmpty(Model.ReviewComments))
+{
+    <div class="card">
+        <h2 class="table-title">Notes and Comments</h2>
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div style="margin-bottom: 1.5rem;">
+                <p class="field-label">Notes</p>
+                <p style="white-space: pre-wrap;">@Model.Notes</p>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Model.ReviewComments))
+        {
+            <div>
+                <p class="field-label">Review Comments</p>
+                <p style="white-space: pre-wrap;">@Model.ReviewComments</p>
+            </div>
+        }
+    </div>
+}
+
+<div class="card">
+    <h2 class="table-title">Attachment</h2>
+    @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
+    {
+        <div class="data-grid">
+            <div>
+                <p class="field-label">File Name</p>
+                <p><strong>@Model.AttachmentFileName</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Uploaded On</p>
+                <p><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="help-text" style="color: var(--gray-500);">No attachment</p>
+    }
+</div>
+
+<div class="card">
+    <h2 class="table-title">Audit Trail</h2>
+    <div class="data-grid">
+        <div>
+            <p class="field-label">Created On</p>
+            <p><strong>@Model.CreatedOn.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Created By</p>
+            <p><strong>@(Model.CreatedByUser?.DisplayName ?? "System")</strong></p>
+        </div>
+        @if (Model.ModifiedOn.HasValue)
+        {
+            <div>
+                <p class="field-label">Modified On</p>
+                <p><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Modified By</p>
+                <p><strong>@(Model.ModifiedByUser?.DisplayName ?? "System")</strong></p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Deactivation Modal -->
+@if (User.IsInRole("admin") && Model.IsActive)
+{
+    <div id="deactivateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div class="card" style="max-width: 500px; margin: 2rem;">
+            <h2>Deactivate Letter of Guarantee</h2>
+            <form asp-action="Deactivate" asp-route-id="@Model.LogId" method="post">
+                <div class="form-group">
+                    <label for="reason" class="field-label">Reason for Deactivation <span class="required">*</span></label>
+                    <textarea name="reason" id="reason" rows="4" placeholder="Explain why this LoG is being deactivated" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-danger"> Confirm Deactivation</button>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('deactivateModal').style.display='none';">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('deactivateModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+    </script>
+}

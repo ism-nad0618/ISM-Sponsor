@@ -1,0 +1,214 @@
+@model ISMSponsor.ViewModels.AllContactsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "All Sponsor Contacts";
+}
+
+<div class="page-header">
+    <h1>All Sponsor Contacts</h1>
+    <p class="page-subtitle">View and manage all sponsor contact information across the system.</p>
+</div>
+
+@if (TempData["Success"] is string successText)
+{
+    <div class="alert alert-success">@successText</div>
+}
+
+@if (TempData["Error"] is string errorText)
+{
+    <div class="alert alert-error">@errorText</div>
+}
+
+<div class="card">
+    <div class="page-header-actions">
+        <h2 class="table-title">Contact Directory</h2>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="font-size: 14px; color: var(--gray-600);">
+                <strong style="color: var(--ism-green);">@Model.TotalContacts</strong> Total Contacts
+                <span style="margin: 0 8px;">|</span>
+                <strong style="color: #0d9f67;">@Model.ActiveContacts</strong> Active
+                <span style="margin: 0 8px;">|</span>
+                <strong style="color: #6b7280;">@Model.InactiveContacts</strong> Inactive
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and Filter Controls -->
+    <div style="padding: 16px; border-bottom: 1px solid var(--gray-200); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px;">
+            <input type="text" id="searchInput" placeholder="Search by Name, Email, Phone, or Sponsor..." 
+                   style="width: 100%; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px;"
+                   onkeyup="filterTable()" />
+        </div>
+        <div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showInactiveContacts" onchange="filterTable()" />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Show Inactive</span>
+            </label>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 13px; color: var(--gray-600); font-weight: 500;">Sort by:</label>
+            <select id="sortSelect" onchange="sortTable()" 
+                    style="padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                <option value="name-asc" selected>Contact Name (A-Z)</option>
+                <option value="name-desc">Contact Name (Z-A)</option>
+                <option value="sponsorName-asc">Sponsor Name (A-Z)</option>
+                <option value="sponsorName-desc">Sponsor Name (Z-A)</option>
+                <option value="email-asc">Email (A-Z)</option>
+                <option value="email-desc">Email (Z-A)</option>
+                <option value="sponsorId-asc">Sponsor ID (A-Z)</option>
+                <option value="sponsorId-desc">Sponsor ID (Z-A)</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="table-wrap">
+        <table id="contactsTable">
+            <thead>
+                <tr>
+                    <th>Contact Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Sponsor ID</th>
+                    <th>Sponsor Name</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="contactsTableBody">
+                @foreach (var contact in Model.Contacts)
+                {
+                    <tr data-name="@contact.Name" 
+                        data-email="@contact.Email" 
+                        data-phone="@contact.Phone" 
+                        data-sponsor-id="@contact.SponsorId" 
+                        data-sponsor-name="@contact.SponsorName" 
+                        data-status="@(contact.IsActive ? "active" : "inactive")" 
+                        class="@(contact.IsActive ? "" : "inactive-row")" 
+                        style="@(contact.IsActive ? "" : "opacity: 0.6;")">
+                        <td data-label="Contact Name">
+                            <strong>@contact.Name</strong>
+                        </td>
+                        <td data-label="Email">
+                            <a href="mailto:@contact.Email" style="color: var(--ism-blue); text-decoration: none;">
+                                @contact.Email
+                            </a>
+                        </td>
+                        <td data-label="Phone">
+                            <a href="tel:@contact.Phone" style="color: var(--ism-blue); text-decoration: none;">
+                                @contact.Phone
+                            </a>
+                        </td>
+                        <td data-label="Sponsor ID">
+                            <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px;">@contact.SponsorId</code>
+                        </td>
+                        <td data-label="Sponsor Name">@contact.SponsorName</td>
+                        <td data-label="Status">
+                            <span class="status-badge @(contact.IsActive ? "status-active" : "status-inactive")">
+                                @(contact.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div id="noResultsMessage" style="display: none; padding: 40px; text-align: center; color: var(--gray-500);">
+            <p style="font-size: 16px; margin: 0;">No contacts found matching your search.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Client-side search and filter
+    function filterTable() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const showInactive = document.getElementById('showInactiveContacts').checked;
+        const rows = document.querySelectorAll('#contactsTableBody tr');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name').toLowerCase();
+            const email = row.getAttribute('data-email').toLowerCase();
+            const phone = row.getAttribute('data-phone').toLowerCase();
+            const sponsorId = row.getAttribute('data-sponsor-id').toLowerCase();
+            const sponsorName = row.getAttribute('data-sponsor-name').toLowerCase();
+            const status = row.getAttribute('data-status');
+            
+            const matchesSearch = name.includes(searchTerm) || 
+                                  email.includes(searchTerm) || 
+                                  phone.includes(searchTerm) ||
+                                  sponsorId.includes(searchTerm) ||
+                                  sponsorName.includes(searchTerm);
+            
+            const matchesFilter = showInactive || status === 'active';
+            
+            if (matchesSearch && matchesFilter) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Show/hide no results message
+        if (visibleCount === 0) {
+            noResultsMessage.style.display = 'block';
+        } else {
+            noResultsMessage.style.display = 'none';
+        }
+    }
+
+    // Client-side sorting
+    function sortTable() {
+        const select = document.getElementById('sortSelect');
+        const [field, direction] = select.value.split('-');
+        const tbody = document.getElementById('contactsTableBody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        rows.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(field) {
+                case 'name':
+                    aValue = a.getAttribute('data-name');
+                    bValue = b.getAttribute('data-name');
+                    break;
+                case 'email':
+                    aValue = a.getAttribute('data-email');
+                    bValue = b.getAttribute('data-email');
+                    break;
+                case 'sponsorId':
+                    aValue = a.getAttribute('data-sponsor-id');
+                    bValue = b.getAttribute('data-sponsor-id');
+                    break;
+                case 'sponsorName':
+                    aValue = a.getAttribute('data-sponsor-name');
+                    bValue = b.getAttribute('data-sponsor-name');
+                    break;
+                default:
+                    aValue = a.getAttribute('data-name');
+                    bValue = b.getAttribute('data-name');
+            }
+
+            aValue = aValue.toLowerCase();
+            bValue = bValue.toLowerCase();
+
+            if (direction === 'asc') {
+                return aValue.localeCompare(bValue);
+            } else {
+                return bValue.localeCompare(aValue);
+            }
+        });
+
+        // Re-append rows in sorted order
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Initialize: hide inactive by default
+    document.addEventListener('DOMContentLoaded', function() {
+        filterTable();
+    });
+</script>
+}

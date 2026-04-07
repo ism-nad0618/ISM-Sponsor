@@ -1,0 +1,87 @@
+@model List<ISMSponsor.Models.Domain.SponsorChangeRequest>
+@{
+    ViewData["Title"] = "My Change Requests";
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>My Change Requests</h1>
+            <p class="page-subtitle">Sponsor: <strong>@ViewBag.SponsorName</strong></p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a asp-action="Create" class="btn-primary btn-add">+ Request Change</a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error">@TempData["Error"]</div>
+}
+
+<div class="card">
+    <h2 class="table-title">Change Requests (@Model.Count)</h2>
+    
+    @if (Model.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Field</th>
+                        <th>Requested Value</th>
+                        <th>Status</th>
+                        <th>Submitted On</th>
+                        <th>Reviewed On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var request in Model)
+                    {
+                        <tr>
+                            <td data-label="Request ID"><strong>#@request.RequestId</strong></td>
+                            <td data-label="Field">@request.RequestField</td>
+                            <td data-label="Requested Value">@request.RequestedValue</td>
+                            <td data-label="Status">
+                                @{
+                                    var statusClass = request.Status switch
+                                    {
+                                        "Pending" => "status-pending",
+                                        "Approved" => "status-approved",
+                                        "Applied" => "status-active",
+                                        "Rejected" => "status-inactive",
+                                        "Cancelled" => "status-draft",
+                                        _ => "status-draft"
+                                    };
+                                }
+                                <span class="status-badge @statusClass">@request.Status</span>
+                            </td>
+                            <td data-label="Submitted On">@request.SubmittedOn.ToLocalTime().ToString("MMM d, yyyy")</td>
+                            <td data-label="Reviewed On">@(request.ReviewedOn?.ToLocalTime().ToString("MMM d, yyyy") ?? "—")</td>
+                            <td data-label="Actions" class="action-cell">
+                                <a asp-action="Details" asp-route-id="@request.RequestId" class="btn-link">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        ViewData["EmptyIcon"] = "";
+        ViewData["EmptyTitle"] = "No change requests yet";
+        ViewData["EmptyMessage"] = "Submit a request to update your sponsor profile information.";
+        ViewData["EmptyAction"] = "+ Submit Your First Request";
+        ViewData["EmptyActionUrl"] = Url.Action("Create");
+        @await Html.PartialAsync("_EmptyState")
+    }
+</div>

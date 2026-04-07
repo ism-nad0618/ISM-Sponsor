@@ -156,12 +156,18 @@ namespace ISMSponsor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("RequestedByUserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("RequestedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ResolutionComment")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ResolvedByUserId")
                         .HasColumnType("nvarchar(450)");
@@ -188,10 +194,130 @@ namespace ISMSponsor.Migrations
                     b.ToTable("ChangeRequests");
                 });
 
+            modelBuilder.Entity("ISMSponsor.Models.Domain.CoverageEvaluationAudit", b =>
+                {
+                    b.Property<int>("AuditId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AuditId"));
+
+                    b.Property<string>("BillTo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("CategoryId")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("ChargeDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("EvaluatedByRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("EvaluatedByUserDisplay")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EvaluatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("EvaluatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ItemId")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("LogId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MatchedRuleId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ParentAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ReasonCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("RequestedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RuleVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SchoolYearId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("SponsorAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SponsorId")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit");
+
+                    b.HasKey("AuditId");
+
+                    b.HasIndex("EvaluatedByUserId");
+
+                    b.HasIndex("LogId");
+
+                    b.HasIndex("MatchedRuleId");
+
+                    b.ToTable("CoverageEvaluationAudits");
+                });
+
             modelBuilder.Entity("ISMSponsor.Models.Domain.Item", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CategoryId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("GradeLevel")
                         .IsRequired()
@@ -204,23 +330,155 @@ namespace ISMSponsor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("ItemId");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Items");
                 });
 
-            modelBuilder.Entity("ISMSponsor.Models.Domain.LogCoverage", b =>
+            modelBuilder.Entity("ISMSponsor.Models.Domain.ItemCategory", b =>
                 {
-                    b.Property<string>("SchoolYearId")
+                    b.Property<string>("CategoryId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("StudentId")
+                    b.Property<string>("CategoryName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.HasKey("CategoryId");
+
+                    b.ToTable("ItemCategories");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.LoGCoverageRule", b =>
+                {
+                    b.Property<int>("RuleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RuleId"));
+
+                    b.Property<decimal?>("CapAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CategoryId")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("CoverageFixedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("CoveragePercentage")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CoverageTarget")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CoverageType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExceptionNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("LogId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("RuleId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LogId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.ToTable("LoGCoverageRules");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.LogCoverage", b =>
+                {
+                    b.Property<int>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LogId"));
+
+                    b.Property<string>("ActivatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ActivatedOn")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("AttachmentFileName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("AttachmentUploadedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeactivatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeactivatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeactivationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
@@ -230,15 +488,133 @@ namespace ISMSponsor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ModifiedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReviewComments")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SchoolYearId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("SponsorId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("SchoolYearId", "StudentId");
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("LogId");
+
+                    b.HasIndex("ActivatedByUserId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("DeactivatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
 
                     b.HasIndex("SponsorId");
 
+                    b.HasIndex("SchoolYearId", "StudentId")
+                        .IsUnique();
+
                     b.ToTable("LogCoverages");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.MergeOperation", b =>
+                {
+                    b.Property<int>("MergeOperationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MergeOperationId"));
+
+                    b.Property<int>("ChildRecordsReassigned")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("FieldSelections")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InitiatedByUserDisplay")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("InitiatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("InitiatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LogsReassigned")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MergeReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MergedSponsorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MergedSponsorSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("RequestsReassigned")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SurvivingSponsorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SurvivorBeforeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UsersReassigned")
+                        .HasColumnType("int");
+
+                    b.HasKey("MergeOperationId");
+
+                    b.HasIndex("InitiatedByUserId");
+
+                    b.HasIndex("InitiatedOn");
+
+                    b.HasIndex("MergedSponsorId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SurvivingSponsorId");
+
+                    b.ToTable("MergeOperations");
                 });
 
             modelBuilder.Entity("ISMSponsor.Models.Domain.SchoolYear", b =>
@@ -273,21 +649,224 @@ namespace ISMSponsor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ApprovalNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovalStatus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalSystemId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsMerged")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("MergeOperationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MergedIntoSponsorId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("MergedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NetSuiteId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OnlineBillingSystemId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PowerSchoolId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SponsorName")
                         .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("StudentChargingPortalId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Tin")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("SponsorId");
 
+                    b.HasIndex("SponsorName");
+
+                    b.HasIndex("Tin");
+
                     b.ToTable("Sponsors");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorAddress", b =>
+                {
+                    b.Property<int>("SponsorAddressId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SponsorAddressId"));
+
+                    b.Property<string>("AddressLine1")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AddressLine2")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AddressType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SponsorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("StateProvince")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("SponsorAddressId");
+
+                    b.HasIndex("SponsorId");
+
+                    b.ToTable("SponsorAddresses");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorChangeRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestId"));
+
+                    b.Property<string>("AppliedByUserDisplay")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AppliedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("AppliedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AppliedValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CurrentValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RequestField")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RequestReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("RequestedValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ReviewedByUserDisplay")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReviewedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ReviewedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SponsorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SubmittedByUserDisplay")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SubmittedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("SubmittedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("AppliedByUserId");
+
+                    b.HasIndex("ReviewedByUserId");
+
+                    b.HasIndex("SubmittedByUserId");
+
+                    b.HasIndex("SubmittedOn");
+
+                    b.HasIndex("SponsorId", "Status");
+
+                    b.ToTable("SponsorChangeRequests");
                 });
 
             modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorContact", b =>
@@ -324,6 +903,84 @@ namespace ISMSponsor.Migrations
                     b.ToTable("SponsorContacts");
                 });
 
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorDuplicateCandidate", b =>
+                {
+                    b.Property<int>("CandidateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CandidateId"));
+
+                    b.Property<string>("DetectedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("DetectedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DuplicateSponsorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MatchExplanation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MatchReasons")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("MatchScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("MergeOperationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PrimarySponsorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ReviewedByUserDisplay")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ReviewedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ReviewedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("CandidateId");
+
+                    b.HasIndex("DuplicateSponsorId");
+
+                    b.HasIndex("MatchScore");
+
+                    b.HasIndex("MergeOperationId");
+
+                    b.HasIndex("ReviewedByUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("PrimarySponsorId", "DuplicateSponsorId");
+
+                    b.ToTable("SponsorDuplicateCandidates");
+                });
+
             modelBuilder.Entity("ISMSponsor.Models.Domain.Student", b =>
                 {
                     b.Property<string>("SchoolYearId")
@@ -357,6 +1014,141 @@ namespace ISMSponsor.Migrations
                     b.HasIndex("SponsorId");
 
                     b.ToTable("Students");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SyncLog", b =>
+                {
+                    b.Property<int>("SyncLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SyncLogId"));
+
+                    b.Property<DateTime>("AttemptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExternalReferenceId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("LastSucceededAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PayloadVersion")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RequestPayload")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponsePayload")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TargetSystem")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("SyncLogId");
+
+                    b.HasIndex("AttemptedAt");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TargetSystem");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.ToTable("SyncLogs");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.UserFeedback", b =>
+                {
+                    b.Property<int>("FeedbackId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FeedbackId"));
+
+                    b.Property<string>("AffectedResource")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Resolution")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("FeedbackId");
+
+                    b.ToTable("UserFeedback");
                 });
 
             modelBuilder.Entity("ISMSponsor.Models.Domain.UserPreference", b =>
@@ -544,23 +1336,196 @@ namespace ISMSponsor.Migrations
                     b.Navigation("Sponsor");
                 });
 
+            modelBuilder.Entity("ISMSponsor.Models.Domain.CoverageEvaluationAudit", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "EvaluatedByUser")
+                        .WithMany()
+                        .HasForeignKey("EvaluatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.Domain.LogCoverage", "LetterOfGuarantee")
+                        .WithMany()
+                        .HasForeignKey("LogId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.Domain.LoGCoverageRule", "MatchedRule")
+                        .WithMany()
+                        .HasForeignKey("MatchedRuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("EvaluatedByUser");
+
+                    b.Navigation("LetterOfGuarantee");
+
+                    b.Navigation("MatchedRule");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.Item", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.Domain.ItemCategory", "Category")
+                        .WithMany("Items")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.LoGCoverageRule", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.Domain.ItemCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.Domain.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.Domain.LogCoverage", "LetterOfGuarantee")
+                        .WithMany("CoverageRules")
+                        .HasForeignKey("LogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "ModifiedByUser")
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LetterOfGuarantee");
+
+                    b.Navigation("ModifiedByUser");
+                });
+
             modelBuilder.Entity("ISMSponsor.Models.Domain.LogCoverage", b =>
                 {
-                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "Sponsor")
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "ActivatedByUser")
                         .WithMany()
+                        .HasForeignKey("ActivatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "DeactivatedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeactivatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "ModifiedByUser")
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "Sponsor")
+                        .WithMany("LettersOfGuarantee")
                         .HasForeignKey("SponsorId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ISMSponsor.Models.Domain.Student", "Student")
-                        .WithOne()
-                        .HasForeignKey("ISMSponsor.Models.Domain.LogCoverage", "SchoolYearId", "StudentId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .WithMany()
+                        .HasForeignKey("SchoolYearId", "StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ActivatedByUser");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeactivatedByUser");
+
+                    b.Navigation("ModifiedByUser");
 
                     b.Navigation("Sponsor");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.MergeOperation", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "InitiatedByUser")
+                        .WithMany()
+                        .HasForeignKey("InitiatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "MergedSponsor")
+                        .WithMany()
+                        .HasForeignKey("MergedSponsorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "SurvivingSponsor")
+                        .WithMany()
+                        .HasForeignKey("SurvivingSponsorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("InitiatedByUser");
+
+                    b.Navigation("MergedSponsor");
+
+                    b.Navigation("SurvivingSponsor");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorAddress", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "Sponsor")
+                        .WithMany("Addresses")
+                        .HasForeignKey("SponsorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sponsor");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorChangeRequest", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "AppliedByUser")
+                        .WithMany()
+                        .HasForeignKey("AppliedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "ReviewedByUser")
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "Sponsor")
+                        .WithMany()
+                        .HasForeignKey("SponsorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "SubmittedByUser")
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AppliedByUser");
+
+                    b.Navigation("ReviewedByUser");
+
+                    b.Navigation("Sponsor");
+
+                    b.Navigation("SubmittedByUser");
                 });
 
             modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorContact", b =>
@@ -572,6 +1537,39 @@ namespace ISMSponsor.Migrations
                         .IsRequired();
 
                     b.Navigation("Sponsor");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.SponsorDuplicateCandidate", b =>
+                {
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "DuplicateSponsor")
+                        .WithMany()
+                        .HasForeignKey("DuplicateSponsorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.Domain.MergeOperation", "MergeOperation")
+                        .WithMany("RelatedCandidates")
+                        .HasForeignKey("MergeOperationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ISMSponsor.Models.Domain.Sponsor", "PrimarySponsor")
+                        .WithMany()
+                        .HasForeignKey("PrimarySponsorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ISMSponsor.Models.ApplicationUser", "ReviewedByUser")
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DuplicateSponsor");
+
+                    b.Navigation("MergeOperation");
+
+                    b.Navigation("PrimarySponsor");
+
+                    b.Navigation("ReviewedByUser");
                 });
 
             modelBuilder.Entity("ISMSponsor.Models.Domain.Student", b =>
@@ -663,6 +1661,21 @@ namespace ISMSponsor.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ISMSponsor.Models.Domain.ItemCategory", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.LogCoverage", b =>
+                {
+                    b.Navigation("CoverageRules");
+                });
+
+            modelBuilder.Entity("ISMSponsor.Models.Domain.MergeOperation", b =>
+                {
+                    b.Navigation("RelatedCandidates");
+                });
+
             modelBuilder.Entity("ISMSponsor.Models.Domain.SchoolYear", b =>
                 {
                     b.Navigation("Students");
@@ -670,9 +1683,13 @@ namespace ISMSponsor.Migrations
 
             modelBuilder.Entity("ISMSponsor.Models.Domain.Sponsor", b =>
                 {
+                    b.Navigation("Addresses");
+
                     b.Navigation("ChangeRequests");
 
                     b.Navigation("Contacts");
+
+                    b.Navigation("LettersOfGuarantee");
 
                     b.Navigation("Students");
                 });

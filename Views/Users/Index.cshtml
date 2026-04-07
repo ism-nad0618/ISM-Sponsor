@@ -6,17 +6,50 @@
 }
 
 <div class="page-header">
-    <h1>User Management</h1>
-    <p class="page-subtitle">Manage system users and their access levels.</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>User Management</h1>
+            <p class="page-subtitle">Manage system users and their access levels</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn-primary btn-add" onclick="openUserModal()">+ New User</button>
+        </div>
+    </div>
 </div>
 
 <div class="card">
-    <div class="page-header-actions">
-        <h2 class="table-title">Users Directory</h2>
-        <a href="@Url.Action("Create")" class="btn-primary btn-add">+ New User</a>
-    </div>
+    <form class="filter-form" id="userFilterForm">
+        <div class="filter-group" style="flex: 1; min-width: 250px;">
+            <label class="field-label">Search</label>
+            <input type="text" id="searchInput" placeholder="Username, display name, or sponsor..." 
+                   aria-label="Search users" />
+        </div>
+        <div class="filter-group" style="min-width: 160px;">
+            <label class="field-label">Status</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showInactive" onchange="filterUsers()" />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Show Inactive</span>
+            </label>
+        </div>
+        <div class="filter-group" style="min-width: 180px;">
+            <label class="field-label">Sort By</label>
+            <select id="sortBy" onchange="sortUsers()">
+                <option value="username">Username</option>
+                <option value="displayname">Display Name</option>
+                <option value="status">Status</option>
+                <option value="role">Role</option>
+            </select>
+        </div>
+        <button type="button" class="btn-secondary" onclick="filterUsers()">Apply</button>
+        <button type="button" class="btn-secondary" onclick="clearUserFilters()">Clear</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Users Directory (@Model.Count)</h2>
     <div class="table-wrap">
-        <table>
+        <table id="usersTable">
         <thead>
             <tr>
                 <th>Username</th>
@@ -27,30 +60,45 @@
                 <th class="text-center">Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="usersTableBody">
             @foreach(var u in Model){
-                <tr>
-                    <td><strong>@u.UserName</strong></td>
-                    <td>@u.DisplayName</td>
-                    <td>@(u.SponsorId ?? "-")</td>
-                    <td>
-                        @{
-                            var roles = (await UserManager.GetRolesAsync(u)).ToList();
-                            if(roles.Any()){
-                                @foreach(var role in roles){
-                                    <span class="role-badge">@role</span>
-                                }
-                            }else{
-                                <span class="text-muted">No roles assigned</span>
+                var roles = (await UserManager.GetRolesAsync(u)).ToList();
+                var rolesStr = roles.Any() ? string.Join(", ", roles) : "No roles";
+                <tr data-id="@u.Id" 
+                    data-username="@u.UserName.ToLower()" 
+                    data-displayname="@u.DisplayName.ToLower()" 
+                    data-sponsor="@((u.SponsorId ?? "").ToLower())" 
+                    data-roles="@rolesStr.ToLower()" 
+                    data-status="@(u.IsActive ? "active" : "inactive")"
+                    class="user-row @(u.IsActive ? "" : "inactive-row")"
+                    style="@(u.IsActive ? "" : "display: none;")">                    
+                    <td data-label="Username"><strong>@u.UserName</strong></td>
+                    <td data-label="Display Name">@u.DisplayName</td>
+                    <td data-label="Sponsor">@(u.SponsorId ?? "—")</td>
+                    <td data-label="Roles">
+                        @if(roles.Any()){
+                            @foreach(var role in roles){
+                                <span class="role-badge">@role</span>
                             }
+                        }else{
+                            <span class="text-muted">No roles assigned</span>
                         }
                     </td>
-                    <td>
+                    <td data-label="Status">
                         <span class="status-badge @(u.IsActive ? "status-active" : "status-inactive")">@(u.IsActive ? "Active" : "Inactive")</span>
                     </td>
-                    <td class="text-center">
-                        <a href="#" class="link-edit">Edit</a>
-                        <a href="#" class="link-delete" onclick="return confirm('Are you sure?');">Delete</a>
+                    <td data-label="Actions" class="action-cell">
+                        <a href="javascript:void(0)" class="btn-link" onclick="openUserModal('@u.Id')">Edit</a>
+                        @if (u.IsActive)
+                        {
+                            <span style="color: var(--gray-300); margin: 0 4px;">|</span>
+                            <a href="javascript:void(0)" class="btn-link" onclick="toggleUserStatus('@u.Id', false)">Deactivate</a>
+                        }
+                        else
+                        {
+                            <span style="color: var(--gray-300); margin: 0 4px;">|</span>
+                            <a href="javascript:void(0)" class="btn-link" onclick="toggleUserStatus('@u.Id', true)">Activate</a>
+                        }
                     </td>
                 </tr>
             }
@@ -58,3 +106,322 @@
     </table>
     </div>
 </div>
+
+<!-- User Modal (Create/Edit) -->
+<div id="userModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 id="modalTitle">Create New User</h2>
+            <button class="modal-close" onclick="closeUserModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="userForm">
+                <input type="hidden" id="userId" name="Id" />
+                <input type="hidden" id="isEdit" value="false" />
+                
+                <div class="form-group">
+                    <label for="username">Username <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="username" name="Username" placeholder="Enter username" required />
+                    <span class="form-error" id="usernameError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="displayName">Display Name <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="displayName" name="DisplayName" placeholder="Enter display name" required />
+                    <span class="form-error" id="displayNameError"></span>
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password <span style="color: #ef4444;" id="passwordRequired">*</span></label>
+                    <input type="password" id="password" name="Password" placeholder="Enter password" />
+                    <span class="form-error" id="passwordError"></span>
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 4px;" id="passwordHint">Minimum 1 character</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Role <span style="color: #ef4444;">*</span></label>
+                    <select id="role" name="Role" required>
+                        <option value="">-- Select a role --</option>
+                        <option value="admin">Admin</option>
+                        <option value="admissions">Admissions</option>
+                        <option value="cashier">Cashier</option>
+                        <option value="sponsor">Sponsor</option>
+                    </select>
+                    <span class="form-error" id="roleError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="sponsorId">Sponsor ID <span style="color: #9ca3af;">(optional, if role is sponsor)</span></label>
+                    <input type="text" id="sponsorId" name="SponsorId" placeholder="e.g., ACME" />
+                    <span class="form-error" id="sponsorIdError"></span>
+                </div>
+                
+                <div class="form-group" id="statusGroup" style="display: none;">
+                    <label for="isActive">Status <span style="color: #ef4444;">*</span></label>
+                    <select id="isActive" name="IsActive">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+                    <button type="submit" class="btn-primary" style="flex: 1;" id="submitBtn">Create User</button>
+                    <button type="button" class="btn-secondary" onclick="closeUserModal()" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal functions
+async function openUserModal(userId = null) {
+    const modal = document.getElementById('userModal');
+    const form = document.getElementById('userForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const submitBtn = document.getElementById('submitBtn');
+    const isEditInput = document.getElementById('isEdit');
+    const passwordGroup = document.getElementById('passwordGroup');
+    const passwordInput = document.getElementById('password');
+    const passwordRequired = document.getElementById('passwordRequired');
+    const passwordHint = document.getElementById('passwordHint');
+    const statusGroup = document.getElementById('statusGroup');
+    const usernameInput = document.getElementById('username');
+    
+    // Clear form and errors
+    form.reset();
+    document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+    
+    if (userId) {
+        // Edit mode
+        isEditInput.value = 'true';
+        modalTitle.textContent = 'Edit User';
+        submitBtn.innerHTML = 'Update User';
+        passwordInput.required = false;
+        passwordRequired.style.display = 'none';
+        passwordHint.textContent = 'Leave blank to keep current password';
+        statusGroup.style.display = 'block';
+        usernameInput.disabled = true;
+        usernameInput.style.backgroundColor = '#f3f4f6';
+        
+        // Load user data
+        try {
+            const url = '/Settings/Users/GetUser?id=' + encodeURIComponent(userId);
+            console.log('Fetching user data from:', url);
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                alert('Error loading user: Server returned ' + response.status);
+                console.error('Response status:', response.status, response.statusText);
+                const text = await response.text();
+                console.error('Response body:', text);
+                return;
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('userId').value = result.user.id;
+                document.getElementById('username').value = result.user.username;
+                document.getElementById('displayName').value = result.user.displayName;
+                document.getElementById('sponsorId').value = result.user.sponsorId || '';
+                document.getElementById('role').value = result.user.role;
+                document.getElementById('isActive').value = result.user.isActive ? 'true' : 'false';
+            } else {
+                alert('Error loading user: ' + result.message);
+                return;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while loading user data');
+            return;
+        }
+    } else {
+        // Create mode
+        isEditInput.value = 'false';
+        modalTitle.textContent = 'Create New User';
+        submitBtn.innerHTML = 'Create User';
+        passwordInput.required = true;
+        passwordRequired.style.display = 'inline';
+        passwordHint.textContent = 'Minimum 1 character';
+        statusGroup.style.display = 'none';
+        usernameInput.disabled = false;
+        usernameInput.style.backgroundColor = '';
+        document.getElementById('userId').value = '';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').style.display = 'none';
+    document.getElementById('userForm').reset();
+    document.getElementById('username').disabled = false;
+    document.getElementById('username').style.backgroundColor = '';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('userModal');
+    if (event.target === modal) {
+        closeUserModal();
+    }
+}
+
+// Toggle user status (activate/deactivate)
+async function toggleUserStatus(userId, newStatus) {
+    const action = newStatus ? 'activate' : 'deactivate';
+    if (!confirm(`Are you sure you want to ${action} this user?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('@Url.Action("ToggleStatus")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ Id: userId, IsActive: newStatus })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`User ${action}d successfully!`);
+            window.location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while updating user status');
+    }
+}
+
+// Search, sort, and filter functionality
+function filterAndSortUsers() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const showInactive = document.getElementById('showInactive').checked;
+    const sortBy = document.getElementById('sortBy').value;
+    
+    const rows = Array.from(document.querySelectorAll('.user-row'));
+    
+    // Filter rows
+    rows.forEach(row => {
+        const username = row.dataset.username || '';
+        const displayname = row.dataset.displayname || '';
+        const sponsor = row.dataset.sponsor || '';
+        const status = row.dataset.status || '';
+        
+        const matchesSearch = username.includes(searchTerm) || 
+                            displayname.includes(searchTerm) || 
+                            sponsor.includes(searchTerm);
+        const matchesStatus = showInactive || status === 'active';
+        
+        row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+    });
+    
+    // Sort visible rows
+    const tbody = document.getElementById('usersTableBody');
+    const visibleRows = rows.filter(row => row.style.display !== 'none');
+    
+    visibleRows.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(sortBy) {
+            case 'username':
+                aVal = a.dataset.username;
+                bVal = b.dataset.username;
+                break;
+            case 'displayname':
+                aVal = a.dataset.displayname;
+                bVal = b.dataset.displayname;
+                break;
+            case 'status':
+                aVal = a.dataset.status;
+                bVal = b.dataset.status;
+                break;
+            case 'role':
+                aVal = a.dataset.roles;
+                bVal = b.dataset.roles;
+                break;
+            default:
+                return 0;
+        }
+        
+        return aVal.localeCompare(bVal);
+    });
+    
+    // Reorder rows in DOM
+    visibleRows.forEach(row => tbody.appendChild(row));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // User Form submission (Create/Edit)
+    document.getElementById('userForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+        
+        const isEdit = document.getElementById('isEdit').value === 'true';
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        // In edit mode, manually add username since the field is disabled
+        if (isEdit) {
+            data.Username = document.getElementById('username').value;
+            // Convert IsActive to boolean
+            data.IsActive = data.IsActive === 'true';
+        }
+        
+        // Remove password if empty in edit mode
+        if (isEdit && !data.Password) {
+            delete data.Password;
+        }
+        
+        console.log('Submitting data:', data);
+        
+        const endpoint = isEdit ? '@Url.Action("EditAjax")' : '@Url.Action("CreateAjax")';
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(isEdit ? 'User updated successfully!' : 'User created successfully!');
+                closeUserModal();
+                window.location.reload();
+            } else {
+                // Display validation errors
+                if (result.errors) {
+                    for (const [field, message] of Object.entries(result.errors)) {
+                        const errorElement = document.getElementById(field.toLowerCase() + 'Error');
+                        if (errorElement) {
+                            errorElement.textContent = message;
+                        }
+                    }
+                }
+                if (result.message) {
+                    alert('Error: ' + result.message);
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while saving the user');
+        }
+    });
+    
+    // Attach event listeners for search, sort, and filter
+    document.getElementById('searchInput').addEventListener('input', filterAndSortUsers);
+    document.getElementById('showInactive').addEventListener('change', filterAndSortUsers);
+    document.getElementById('sortBy').addEventListener('change', filterAndSortUsers);
+});
+</script>

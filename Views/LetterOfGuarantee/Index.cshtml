@@ -1,0 +1,1790 @@
+@model List<ISMSponsor.Models.Domain.LogCoverage>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Letters of Guarantee";
+    var schoolYears = ViewBag.SchoolYears as List<ISMSponsor.Models.Domain.SchoolYear>;
+    var selectedYear = ViewBag.SelectedYear as string;
+    var search = ViewBag.Search as string;
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Letters of Guarantee</h1>
+            <p class="page-subtitle">Manage student LoG coverage and activation status</p>
+        </div>
+        @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+        {
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="btn-secondary" onclick="openImportModal()">Import LoGs</button>
+                <button type="button" class="btn-primary" onclick="openCreateLogModal()">+ New LoG</button>
+            </div>
+        }
+    </div>
+</div>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="alert alert-success">@successMsg</div>
+}
+@if (TempData["Error"] is string errorMsg)
+{
+    <div class="alert alert-error">@errorMsg</div>
+}
+
+<div class="card">
+    <form method="get" asp-action="Index" class="filter-form">
+        <div class="filter-group" style="flex: 2; min-width: 250px;">
+            <label class="field-label">Search</label>
+            <input type="text" name="search" value="@search" placeholder="Student ID, Name, or Sponsor..." />
+        </div>
+        <div class="filter-group" style="min-width: 150px;">
+            <label class="field-label">School Year</label>
+            <select name="schoolYear">
+                <option value="">All Years</option>
+                @if (schoolYears != null)
+                {
+                    foreach (var year in schoolYears)
+                    {
+                        <option value="@year.SchoolYearId" selected="@(year.SchoolYearId == selectedYear)">@year.SchoolYearId</option>
+                    }
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn-secondary">Apply</button>
+        <a asp-action="Index" class="btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">LoG Records (@Model.Count)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>LoG #</th>
+                    <th>School Year</th>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Grade</th>
+                    <th>Sponsor</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Attachment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    ViewData["EmptyIcon"] = "";
+                    ViewData["EmptyTitle"] = "No Letters of Guarantee Found";
+                    ViewData["EmptyMessage"] = "No LoG records match your search criteria. Try adjusting your filters or create a new LoG.";
+                    ViewData["EmptyAction"] = "+ New LoG";
+                    ViewData["EmptyActionUrl"] = "javascript:openCreateLogModal()";
+                    <tr>
+                        <td colspan="10">
+                            @await Html.PartialAsync("_EmptyState")
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in Model)
+                    {
+                        <tr>
+                            <td>@log.LogId</td>
+                            <td>@log.SchoolYearId</td>
+                            <td>@log.StudentId</td>
+                            <td>@(log.Student != null ? $"{log.Student.FirstName} {log.Student.LastName}" : "N/A")</td>
+                            <td>@(log.Student?.GradeLevel ?? "N/A")</td>
+                            <td>@(log.Sponsor?.SponsorName ?? log.SponsorId)</td>
+                            <td>
+                                <span class="status-badge status-@log.LogStatus.ToLower()">@log.LogStatus</span>
+                            </td>
+                            <td>
+                                @if (log.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(log.AttachmentFileName))
+                                {
+                                    <span></span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--gray-300);">—</span>
+                                }
+                            </td>
+                            <td class="action-cell">
+                                <a href="javascript:void(0)" onclick="openEditLogModal(@log.LogId)" class="btn-link">View / Edit</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Import LoGs Modal -->
+<div id="importModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2>Import Letters of Guarantee</h2>
+            <button class="modal-close" onclick="closeImportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Step 1: Upload File -->
+            <div id="uploadStep">
+                <div id="importError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+                
+                <form id="importForm" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="form-group">
+                        <label class="field-label">Upload CSV File <span class="required">*</span></label>
+                        <input type="file" id="importFile" name="file" accept=".csv" required />
+                        <p class="help-text">Upload a CSV file with columns: SchoolYearId, StudentId, SponsorId, EffectiveFrom, EffectiveTo, Notes</p>
+                    </div>
+                    
+                    <div style="margin: 24px 0; padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #374151;">CSV Format Example:</h4>
+                        <pre style="margin: 0; font-size: 12px; color: #6b7280; overflow-x: auto;">SchoolYearId,StudentId,SponsorId,EffectiveFrom,EffectiveTo,Notes
+2024-2025,STU001,ACME,2024-08-01,2025-06-30,Regular coverage
+2024-2025,STU002,BETA,2024-08-01,2025-06-30,Full coverage</pre>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button type="submit" class="btn-primary" style="flex: 1;" id="validateBtn">Validate & Preview</button>
+                        <button type="button" class="btn-secondary" onclick="closeImportModal()" style="flex: 1;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Step 2: Preview & Confirm -->
+            <div id="previewStep" style="display: none;">
+                <div id="previewSummary" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+                    <h3 style="margin: 0 0 0.5rem 0;">Import Summary</h3>
+                    <div style="display: flex; gap: 2rem;">
+                        <div><strong>Total:</strong> <span id="summaryTotal">0</span></div>
+                        <div style="color: #28a745;"><strong>Will Add:</strong> <span id="summaryAdd">0</span></div>
+                        <div style="color: #dc3545;"><strong>Errors:</strong> <span id="summaryErrors">0</span></div>
+                    </div>
+                </div>
+                
+                <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                        <thead style="position: sticky; top: 0; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <tr>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Action</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">School Year</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Student ID</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Sponsor ID</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Effective From</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Effective To</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="confirmError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+                <div id="confirmSuccess" class="alert alert-success" style="display: none; margin-bottom: 16px;"></div>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="resetImportModal()" class="btn-secondary" style="flex: 1;">Back</button>
+                    <button type="button" id="confirmImportBtn" onclick="confirmImport()" class="btn-primary" style="flex: 1;">Confirm & Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create LoG Modal (Step-based) -->
+<div id="createLogModal" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2>Create Letter of Guarantee</h2>
+            <button class="modal-close" onclick="closeCreateLogModal()">&times;</button>
+        </div>
+        
+        <!-- Step Progress Bar -->
+        <div style="display: flex; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb;">
+            <div class="step-tab active" data-step="1" data-modal="create" onclick="goToCreateStep(1)">
+                <span class="step-number">1</span>
+                <span class="step-label">Basic Info</span>
+            </div>
+            <div class="step-tab" data-step="2" data-modal="create" onclick="goToCreateStep(2)">
+                <span class="step-number">2</span>
+                <span class="step-label">Coverage Details</span>
+            </div>
+            <div class="step-tab" data-step="3" data-modal="create" onclick="goToCreateStep(3)">
+                <span class="step-number">3</span>
+                <span class="step-label">Coverage Rules</span>
+            </div>
+            <div class="step-tab" data-step="4" data-modal="create" onclick="goToCreateStep(4)">
+                <span class="step-number">4</span>
+                <span class="step-label">Attachment</span>
+            </div>
+        </div>
+        
+        <div class="modal-body">
+            <div id="createError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+            <div id="createWarning" class="alert" style="display: none; margin-bottom: 16px; background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;"></div>
+            
+            <form id="createLogForm" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                
+                <!-- Step 1: Basic Info -->
+                <div class="step-content active" data-step="1" data-modal="create">
+                    <h3 class="form-section-title">Student and Sponsor Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="createSchoolYearId" class="field-label">School Year <span class="required">*</span></label>
+                        <select id="createSchoolYearId" name="SchoolYearId" required onchange="handleSchoolYearChange()">
+                            <option value="">-- Select School Year --</option>
+                        </select>
+                        <span class="form-error" id="createSchoolYearId-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createStudentId" class="field-label">Student <span class="required">*</span></label>
+                        <select id="createStudentId" name="StudentId" required onchange="checkExistingLog()">
+                            <option value="">-- Select Student --</option>
+                        </select>
+                        <span class="form-error" id="createStudentId-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createSponsorId" class="field-label">Sponsor <span class="required">*</span></label>
+                        <select id="createSponsorId" name="SponsorId" required>
+                            <option value="">-- Select Sponsor --</option>
+                        </select>
+                        <span class="form-error" id="createSponsorId-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createLogStatus" class="field-label">Status <span class="required">*</span></label>
+                        <select id="createLogStatus" name="LogStatus" required>
+                            <option value="Draft">Draft</option>
+                            <option value="Submitted">Submitted</option>
+                            <option value="UnderReview">Under Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                        <span class="form-error" id="createLogStatus-error"></span>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Coverage Details -->
+                <div class="step-content" data-step="2" data-modal="create" style="display: none;">
+                    <h3 class="form-section-title">Coverage Period and Notes</h3>
+                    
+                    <div class="form-group">
+                        <label for="createEffectiveFrom" class="field-label">Effective From</label>
+                        <input type="date" id="createEffectiveFrom" name="EffectiveFrom" />
+                        <span class="form-error" id="createEffectiveFrom-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createEffectiveTo" class="field-label">Effective To</label>
+                        <input type="date" id="createEffectiveTo" name="EffectiveTo" />
+                        <span class="form-error" id="createEffectiveTo-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createNotes" class="field-label">Notes</label>
+                        <textarea id="createNotes" name="Notes" rows="4" placeholder="Enter any notes about this LoG"></textarea>
+                        <span class="form-error" id="createNotes-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createReviewComments" class="field-label">Review Comments</label>
+                        <textarea id="createReviewComments" name="ReviewComments" rows="3" placeholder="Comments from review process"></textarea>
+                        <span class="form-error" id="createReviewComments-error"></span>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Coverage Rules -->
+                <div class="step-content" data-step="3" data-modal="create" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 class="form-section-title" style="margin: 0;">Coverage Rules</h3>
+                        <button type="button" class="btn-primary btn-add" onclick="addCreateCoverageRuleRow()">+ Add Rule</button>
+                    </div>
+                    
+                    <p class="help-text" style="margin-bottom: 16px;">Define what items or categories are covered and how much coverage applies</p>
+                    
+                    <div class="table-wrap">
+                        <table id="createCoverageRulesTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Target</th>
+                                    <th style="width: 150px;">Item/Category</th>
+                                    <th style="width: 120px;">Coverage Type</th>
+                                    <th style="width: 100px;">Value</th>
+                                    <th style="width: 120px;">Effective From</th>
+                                    <th style="width: 120px;">Effective To</th>
+                                    <th style="width: 60px;">Order</th>
+                                    <th style="width: 80px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="createCoverageRulesTableBody">
+                                <tr id="createNoRulesRow">
+                                    <td colspan="8" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                        No coverage rules defined. Click "+ Add Rule" to create one.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Hidden rule data for submission -->
+                    <div id="createCoverageRulesData"></div>
+                </div>
+                
+                <!-- Step 4: Attachment -->
+                <div class="step-content" data-step="4" data-modal="create" style="display: none;">
+                    <h3 class="form-section-title">Document Attachment</h3>
+                    
+                    <div class="form-group">
+                        <label for="createAttachment" class="field-label">Upload Attachment (Optional)</label>
+                        <input type="file" id="createAttachment" name="Attachment" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                        <span class="form-error" id="createAttachment-error"></span>
+                        <p class="help-text">Upload a supporting document for this Letter of Guarantee</p>
+                    </div>
+                </div>
+                
+                <!-- Navigation Buttons -->
+                <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                    <button type="button" class="btn-secondary" id="createPrevStepBtn" onclick="previousCreateStep()" style="display: none;">
+                        ← Previous
+                    </button>
+                    <button type="button" class="btn-primary" id="createNextStepBtn" onclick="nextCreateStep()" style="flex: 1;">
+                        Next →
+                    </button>
+                    <button type="submit" class="btn-primary" id="createSubmitBtn" style="display: none; flex: 1;">
+                         Create LoG
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeCreateLogModal()">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit LoG Modal (Step-based) -->
+<div id="editLogModal" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2 id="editModalTitle">Letter of Guarantee #<span id="editLogId"></span></h2>
+            <button class="modal-close" onclick="closeEditLogModal()">&times;</button>
+        </div>
+        
+        <!-- Step Progress Bar -->
+        <div style="display: flex; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb;">
+            <div class="step-tab active" data-step="1" data-modal="edit" onclick="goToStep(1)">
+                <span class="step-number">1</span>
+                <span class="step-label">Basic Info</span>
+            </div>
+            <div class="step-tab" data-step="2" data-modal="edit" onclick="goToStep(2)">
+                <span class="step-number">2</span>
+                <span class="step-label">Coverage Details</span>
+            </div>
+            <div class="step-tab" data-step="3" data-modal="edit" onclick="goToStep(3)">
+                <span class="step-number">3</span>
+                <span class="step-label">Coverage Rules</span>
+            </div>
+            <div class="step-tab" data-step="4" data-modal="edit" onclick="goToStep(4)">
+                <span class="step-number">4</span>
+                <span class="step-label">Attachment</span>
+            </div>
+        </div>
+        
+        <div class="modal-body">
+            <div id="editError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+            
+            <form id="editLogForm" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editLogIdInput" name="LogId" />
+                
+                <!-- Step 1: Basic Info -->
+                <div class="step-content active" data-step="1" data-modal="edit">
+                    <h3 class="form-section-title">Student and Sponsor Information</h3>
+                    
+                    <div class="data-grid" style="margin-bottom: 1.5rem;">
+                        <div>
+                            <p class="field-label">School Year</p>
+                            <p><strong id="editSchoolYear"></strong></p>
+                        </div>
+                        <div>
+                            <p class="field-label">Student ID</p>
+                            <p><strong id="editStudentId"></strong></p>
+                        </div>
+                        <div>
+                            <p class="field-label">Student Name</p>
+                            <p><strong id="editStudentName"></strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editSponsorId" class="field-label">Sponsor <span class="required">*</span></label>
+                        <select id="editSponsorId" name="SponsorId" required>
+                            <option value="">-- Select Sponsor --</option>
+                        </select>
+                        <span class="form-error" id="editSponsorId-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editLogStatus" class="field-label">Status <span class="required">*</span></label>
+                        <select id="editLogStatus" name="LogStatus" required>
+                            <option value="Draft">Draft</option>
+                            <option value="Submitted">Submitted</option>
+                            <option value="UnderReview">Under Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                        <span class="form-error" id="editLogStatus-error"></span>
+                    </div>
+                    
+                    <div id="editActiveStatus" style="padding: 12px; border-radius: 6px; margin-top: 16px; display: none;">
+                        <!-- Active/Inactive status will be shown here -->
+                    </div>
+                </div>
+                
+                <!-- Step 2: Coverage Details -->
+                <div class="step-content" data-step="2" data-modal="edit" style="display: none;">
+                    <h3 class="form-section-title">Coverage Period and Notes</h3>
+                    
+                    <div class="form-group">
+                        <label for="editEffectiveFrom" class="field-label">Effective From</label>
+                        <input type="date" id="editEffectiveFrom" name="EffectiveFrom" />
+                        <span class="form-error" id="editEffectiveFrom-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editEffectiveTo" class="field-label">Effective To</label>
+                        <input type="date" id="editEffectiveTo" name="EffectiveTo" />
+                        <span class="form-error" id="editEffectiveTo-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editNotes" class="field-label">Notes</label>
+                        <textarea id="editNotes" name="Notes" rows="4" placeholder="Enter any notes about this LoG"></textarea>
+                        <span class="form-error" id="editNotes-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editReviewComments" class="field-label">Review Comments</label>
+                        <textarea id="editReviewComments" name="ReviewComments" rows="3" placeholder="Comments from review process"></textarea>
+                        <span class="form-error" id="editReviewComments-error"></span>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Coverage Rules (Table Format) -->
+                <div class="step-content" data-step="3" data-modal="edit" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 class="form-section-title" style="margin: 0;">Coverage Rules</h3>
+                        @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+                        {
+                            <button type="button" class="btn-primary btn-add" id="addRuleBtn" onclick="addCoverageRuleRow()">+ Add Rule</button>
+                        }
+                    </div>
+                    
+                    <p class="help-text" style="margin-bottom: 16px;">Define what items or categories are covered and how much coverage applies</p>
+                    
+                    <div class="table-wrap">
+                        <table id="coverageRulesTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Target</th>
+                                    <th style="width: 150px;">Item/Category</th>
+                                    <th style="width: 120px;">Coverage Type</th>
+                                    <th style="width: 100px;">Value</th>
+                                    <th style="width: 120px;">Effective From</th>
+                                    <th style="width: 120px;">Effective To</th>
+                                    <th style="width: 60px;">Order</th>
+                                    <th style="width: 80px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coverageRulesTableBody">
+                                <tr id="noRulesRow">
+                                    <td colspan="8" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                        No coverage rules defined. Click "+ Add Rule" to create one.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Hidden rule data for submission -->
+                    <div id="coverageRulesData"></div>
+                </div>
+                
+                <!-- Step 4: Attachment -->
+                <div class="step-content" data-step="4" data-modal="edit" style="display: none;">
+                    <h3 class="form-section-title">Document Attachment</h3>
+                    
+                    <div id="existingAttachment" style="display: none; padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px;">
+                        <strong>Current Attachment:</strong> <span id="existingAttachmentName"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editNewAttachment" class="field-label">Replace Attachment (Optional)</label>
+                        <input type="file" id="editNewAttachment" name="NewAttachment" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                        <span class="form-error" id="editNewAttachment-error"></span>
+                        <p class="help-text">Upload a new document to replace the existing one</p>
+                    </div>
+                </div>
+                
+                <!-- Navigation Buttons -->
+                <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                    <button type="button" class="btn-secondary" id="prevStepBtn" onclick="previousStep()" style="display: none;">
+                        ← Previous
+                    </button>
+                    <button type="button" class="btn-primary" id="nextStepBtn" onclick="nextStep()" style="flex: 1;">
+                        Next →
+                    </button>
+                    @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+                    {
+                        <button type="submit" class="btn-primary" id="saveLogBtn" style="display: none; flex: 1;">
+                             Save Changes
+                        </button>
+                    }
+                    <button type="button" class="btn-secondary" onclick="closeEditLogModal()">
+                        <span id="closeButtonText">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Coverage Rule Edit Modal (for inline editing) -->
+<div id="editRuleModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Edit Coverage Rule</h2>
+            <button class="modal-close" onclick="closeEditRuleModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="editRuleError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+            
+            <input type="hidden" id="ruleEditIndex" />
+            
+            <div class="form-group">
+                <label for="ruleCoverageTarget" class="field-label">Coverage Target <span class="required">*</span></label>
+                <select id="ruleCoverageTarget" onchange="toggleRuleTargetFields()" required>
+                    <option value="Item">Item</option>
+                    <option value="Category">Category</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="ruleItemField">
+                <label for="ruleItemId" class="field-label">Item</label>
+                <select id="ruleItemId">
+                    <option value="">-- Select Item --</option>
+                </select>
+                <p class="help-text">Need to add an item? <a href="/Settings/Items" target="_blank" style="color: #2563eb; text-decoration: underline;">Manage Items</a></p>
+            </div>
+            
+            <div class="form-group" id="ruleCategoryField" style="display: none;">
+                <label for="ruleCategoryId" class="field-label">Category</label>
+                <select id="ruleCategoryId">
+                    <option value="">-- Select Category --</option>
+                </select>
+                <p class="help-text">Need to add a category? <a href="/Settings/Items" target="_blank" style="color: #2563eb; text-decoration: underline;">Manage Items & Categories</a></p>
+            </div>
+            
+            <div class="form-group">
+                <label for="ruleCoverageType" class="field-label">Coverage Type <span class="required">*</span></label>
+                <select id="ruleCoverageType" onchange="toggleRuleCoverageFields()" required>
+                    <option value="Full">Full (100%)</option>
+                    <option value="Percentage">Percentage</option>
+                    <option value="FixedAmount">Fixed Amount</option>
+                    <option value="UpToCap">Up To Cap</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="rulePercentageField" style="display: none;">
+                <label for="rulePercentage" class="field-label">Percentage (%)</label>
+                <input type="number" id="rulePercentage" min="0" max="100" step="0.01" placeholder="e.g., 75" />
+            </div>
+            
+            <div class="form-group" id="ruleFixedAmountField" style="display: none;">
+                <label for="ruleFixedAmount" class="field-label">Fixed Amount (₱)</label>
+                <input type="number" id="ruleFixedAmount" min="0" step="0.01" placeholder="e.g., 5000" />
+            </div>
+            
+            <div class="form-group" id="ruleCapField" style="display: none;">
+                <label for="ruleCapAmount" class="field-label">Cap Amount (₱)</label>
+                <input type="number" id="ruleCapAmount" min="0" step="0.01" placeholder="e.g., 10000" />
+            </div>
+            
+            <div class="form-group">
+                <label for="ruleEffectiveFrom" class="field-label">Effective From</label>
+                <input type="date" id="ruleEffectiveFrom" />
+            </div>
+            
+            <div class="form-group">
+                <label for="ruleEffectiveTo" class="field-label">Effective To</label>
+                <input type="date" id="ruleEffectiveTo" />
+            </div>
+            
+            <div class="form-group">
+                <label for="ruleDisplayOrder" class="field-label">Display Order</label>
+                <input type="number" id="ruleDisplayOrder" min="1" value="1" />
+            </div>
+            
+            <div class="form-group">
+                <label for="ruleExceptionNote" class="field-label">Exception Note</label>
+                <textarea id="ruleExceptionNote" rows="3" placeholder="Optional note about exceptions or special conditions"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="button" class="btn-primary" style="flex: 1;" onclick="saveRuleEdit()"> Save Rule</button>
+                <button type="button" class="btn-secondary" onclick="closeEditRuleModal()" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-tab {
+    flex: 1;
+    padding: 12px 16px;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.step-tab:hover {
+    background-color: #f3f4f6;
+}
+
+.step-tab.active {
+    border-bottom-color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.step-tab.completed {
+    border-bottom-color: #10b981;
+}
+
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #e5e7eb;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.step-tab.active .step-number {
+    background-color: #2563eb;
+    color: white;
+}
+
+.step-tab.completed .step-number {
+    background-color: #10b981;
+    color: white;
+}
+
+.step-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.step-tab.active .step-label {
+    color: #2563eb;
+}
+
+.step-content {
+    min-height: 300px;
+}
+</style>
+
+<script>
+let currentStep = 1;
+let currentCreateStep = 1;
+let editCoverageRules = [];
+let createCoverageRules = [];
+let editItemsData = [];
+let editCategoriesData = [];
+let createItemsData = [];
+let createCategoriesData = [];
+const canEdit = @(User.IsInRole("admin") || User.IsInRole("admissions") ? "true" : "false");
+
+// Import Modal Functions
+function openImportModal() {
+    document.getElementById('importModal').style.display = 'flex';
+    resetImportModal();
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+    resetImportModal();
+}
+
+function resetImportModal() {
+    document.getElementById('uploadStep').style.display = 'block';
+    document.getElementById('previewStep').style.display = 'none';
+    document.getElementById('importForm').reset();
+    document.getElementById('importError').style.display = 'none';
+    document.getElementById('confirmError').style.display = 'none';
+    document.getElementById('confirmSuccess').style.display = 'none';
+}
+
+let validatedLogFile = null;
+
+async function confirmImport() {
+    if (!validatedLogFile) {
+        alert('No file to import');
+        return;
+    }
+    
+    const confirmBtn = document.getElementById('confirmImportBtn');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Importing...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', validatedLogFile);
+        
+        const response = await fetch('/Settings/LetterOfGuarantee/BulkImport', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('confirmSuccess').textContent = result.message;
+            document.getElementById('confirmSuccess').style.display = 'block';
+            document.getElementById('confirmError').style.display = 'none';
+            
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            document.getElementById('confirmError').textContent = result.message || 'Import failed';
+            document.getElementById('confirmError').style.display = 'block';
+            document.getElementById('confirmSuccess').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Import error:', error);
+        document.getElementById('confirmError').textContent = `An error occurred during import: ${error.message}`;
+        document.getElementById('confirmError').style.display = 'block';
+        document.getElementById('confirmSuccess').style.display = 'none';
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+    }
+}
+
+// Edit LoG Modal Functions
+async function openEditLogModal(logId) {
+    currentStep = 1;
+    editCoverageRules = [];
+    document.getElementById('editLogModal').style.display = 'flex';
+    document.getElementById('editError').style.display = 'none';
+    
+    try {
+        const response = await fetch(`/Settings/LetterOfGuarantee/GetEditData?id=${logId}`);
+        if (!response.ok) {
+            throw new Error('Failed to load LoG data');
+        }
+        
+        const data = await response.json();
+        console.log('Edit data loaded:', data);
+        
+        // Make sure all elements are visible before populating
+        goToStep(1);
+        
+        // Use requestAnimationFrame to ensure DOM is ready
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        
+        // Populate fields with null checking
+        const editLogId = document.getElementById('editLogId');
+        const editLogIdInput = document.getElementById('editLogIdInput');
+        const editSchoolYear = document.getElementById('editSchoolYear');
+        const editStudentId = document.getElementById('editStudentId');
+        const editStudentName = document.getElementById('editStudentName');
+        
+        if (editLogId) editLogId.textContent = data.logId;
+        if (editLogIdInput) editLogIdInput.value = data.logId;
+        if (editSchoolYear) editSchoolYear.textContent = data.schoolYearId;
+        if (editStudentId) editStudentId.textContent = data.studentId;
+        if (editStudentName) editStudentName.textContent = data.studentName || 'N/A';
+        
+        // Populate sponsor dropdown
+        const sponsorSelect = document.getElementById('editSponsorId');
+        if (sponsorSelect) {
+            sponsorSelect.innerHTML = '<option value="">-- Select Sponsor --</option>';
+            data.sponsors.forEach(sponsor => {
+                const option = document.createElement('option');
+                option.value = sponsor.value;
+                option.textContent = sponsor.text;
+                option.selected = sponsor.value === data.sponsorId;
+                sponsorSelect.appendChild(option);
+            });
+        }
+        
+        const editLogStatus = document.getElementById('editLogStatus');
+        if (editLogStatus) editLogStatus.value = data.logStatus;
+        
+        // Show active status
+        const activeStatusDiv = document.getElementById('editActiveStatus');
+        if (activeStatusDiv) {
+            if (data.isActive) {
+                activeStatusDiv.style.display = 'block';
+                activeStatusDiv.style.backgroundColor = '#d1fae5';
+                activeStatusDiv.style.color = '#065f46';
+                activeStatusDiv.innerHTML = `<strong> Active</strong> - This LoG is currently active${data.activatedOn ? ` (Activated on ${new Date(data.activatedOn).toLocaleDateString()})` : ''}`;
+            } else if (data.deactivatedOn) {
+                activeStatusDiv.style.display = 'block';
+                activeStatusDiv.style.backgroundColor = '#fee2e2';
+                activeStatusDiv.style.color = '#991b1b';
+                activeStatusDiv.innerHTML = `<strong> Deactivated</strong> - This LoG was deactivated on ${new Date(data.deactivatedOn).toLocaleDateString()}`;
+            } else {
+                activeStatusDiv.style.display = 'none';
+            }
+        }
+        
+        // Set dates
+        const editEffectiveFrom = document.getElementById('editEffectiveFrom');
+        const editEffectiveTo = document.getElementById('editEffectiveTo');
+        const editNotes = document.getElementById('editNotes');
+        const editReviewComments = document.getElementById('editReviewComments');
+        
+        if (editEffectiveFrom) editEffectiveFrom.value = data.effectiveFrom ? data.effectiveFrom.split('T')[0] : '';
+        if (editEffectiveTo) editEffectiveTo.value = data.effectiveTo ? data.effectiveTo.split('T')[0] : '';
+        if (editNotes) editNotes.value = data.notes || '';
+        if (editReviewComments) editReviewComments.value = data.reviewComments || '';
+        
+        // Store items and categories for rule editing
+        editItemsData = data.items || [];
+        editCategoriesData = data.categories || [];
+        
+        // Load coverage rules
+        editCoverageRules = data.coverageRules || [];
+        renderCoverageRulesTable();
+        
+        // Show attachment info
+        const existingAttachment = document.getElementById('existingAttachment');
+        const existingAttachmentName = document.getElementById('existingAttachmentName');
+        
+        if (data.existingAttachmentFileName) {
+            if (existingAttachment) existingAttachment.style.display = 'block';
+            if (existingAttachmentName) existingAttachmentName.textContent = data.existingAttachmentFileName;
+        } else {
+            if (existingAttachment) existingAttachment.style.display = 'none';
+        }
+        
+        // Update UI based on user role
+        const editModalTitle = document.getElementById('editModalTitle');
+        const closeButtonText = document.getElementById('closeButtonText');
+        
+        if (!canEdit) {
+            // Change modal title to "View" mode
+            if (editModalTitle) editModalTitle.innerHTML = 'Letter of Guarantee #' + data.logId;
+            
+            // Disable all form inputs
+            document.querySelectorAll('#editLogForm input, #editLogForm select, #editLogForm textarea').forEach(el => {
+                el.disabled = true;
+            });
+            
+            // Change close button text
+            if (closeButtonText) closeButtonText.textContent = 'Close';
+            
+            // Hide file upload field
+            const editNewAttachment = document.getElementById('editNewAttachment');
+            if (editNewAttachment) {
+                const fileField = editNewAttachment.closest('.form-group');
+                if (fileField) fileField.style.display = 'none';
+            }
+        } else {
+            if (editModalTitle) editModalTitle.innerHTML = 'Edit Letter of Guarantee #' + data.logId;
+            if (closeButtonText) closeButtonText.textContent = 'Cancel';
+        }
+        
+    } catch (error) {
+        console.error('Error loading LoG data:', error);
+        alert('Error loading LoG data. Please try again.');
+        closeEditLogModal();
+    }
+}
+
+function closeEditLogModal() {
+    document.getElementById('editLogModal').style.display = 'none';
+    editCoverageRules = [];
+}
+
+// Step Navigation
+function goToStep(step) {
+    currentStep = step;
+    
+    // Update step tabs (only edit modal)
+    document.querySelectorAll('.step-tab[data-modal="edit"]').forEach(tab => {
+        const tabStep = parseInt(tab.getAttribute('data-step'));
+        tab.classList.remove('active');
+        if (tabStep < step) {
+            tab.classList.add('completed');
+        } else {
+            tab.classList.remove('completed');
+        }
+        if (tabStep === step) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Update step content (only edit modal)
+    document.querySelectorAll('.step-content[data-modal="edit"]').forEach(content => {
+        content.style.display = 'none';
+    });
+    const targetContent = document.querySelector(`.step-content[data-modal="edit"][data-step="${step}"]`);
+    if (targetContent) {
+        targetContent.style.display = 'block';
+    }
+    
+    // Update buttons
+    document.getElementById('prevStepBtn').style.display = step > 1 ? 'block' : 'none';
+    document.getElementById('nextStepBtn').style.display = step < 4 ? 'block' : 'none';
+    const saveBtn = document.getElementById('saveLogBtn');
+    if (saveBtn) {
+        saveBtn.style.display = (step === 4 && canEdit) ? 'block' : 'none';
+    }
+}
+
+function nextStep() {
+    if (currentStep < 4) {
+        goToStep(currentStep + 1);
+    }
+}
+
+function previousStep() {
+    if (currentStep > 1) {
+        goToStep(currentStep - 1);
+    }
+}
+
+// Coverage Rules Table Management
+function renderCoverageRulesTable() {
+    const tbody = document.getElementById('coverageRulesTableBody');
+    const noRulesRow = document.getElementById('noRulesRow');
+    
+    if (editCoverageRules.length === 0) {
+        noRulesRow.style.display = 'table-row';
+        return;
+    }
+    
+    noRulesRow.style.display = 'none';
+    
+    // Remove existing rows except no-rules row
+    Array.from(tbody.children).forEach(row => {
+        if (row.id !== 'noRulesRow') {
+            row.remove();
+        }
+    });
+    
+    editCoverageRules.forEach((rule, index) => {
+        const row = document.createElement('tr');
+        
+        const targetName = rule.coverageTarget === 'Item' ? 
+            (editItemsData.find(i => i.value === rule.itemId)?.text || 'Unknown') :
+            (editCategoriesData.find(c => c.value === rule.categoryId)?.text || 'Unknown');
+        
+        let valueDisplay = '';
+        switch (rule.coverageType) {
+            case 'Full':
+                valueDisplay = '100%';
+                break;
+            case 'Percentage':
+                valueDisplay = `${rule.coveragePercentage}%`;
+                break;
+            case 'FixedAmount':
+                valueDisplay = `₱${rule.coverageFixedAmount}`;
+                break;
+            case 'UpToCap':
+                valueDisplay = `Cap: ₱${rule.capAmount}`;
+                break;
+        }
+        
+        const actionsHtml = canEdit ? `
+            <td class="action-cell">
+                <a href="javascript:void(0)" onclick="editCoverageRule(${index})" class="btn-link">Edit</a>
+                <a href="javascript:void(0)" onclick="deleteCoverageRule(${index})" class="btn-link" style="color: #dc2626;">Delete</a>
+            </td>
+        ` : `<td class="action-cell">—</td>`;
+        
+        row.innerHTML = `
+            <td>${rule.coverageTarget}</td>
+            <td>${targetName}</td>
+            <td>${rule.coverageType}</td>
+            <td>${valueDisplay}</td>
+            <td>${rule.effectiveFrom ? new Date(rule.effectiveFrom).toLocaleDateString() : '—'}</td>
+            <td>${rule.effectiveTo ? new Date(rule.effectiveTo).toLocaleDateString() : '—'}</td>
+            <td style="text-align: center;">${rule.displayOrder || index + 1}</td>
+            ${actionsHtml}
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function addCoverageRuleRow() {
+    // Open the rule edit modal in "add" mode
+    document.getElementById('ruleEditIndex').value = '';
+    document.getElementById('editRuleError').style.display = 'none';
+    
+    // Reset form
+    document.getElementById('ruleCoverageTarget').value = 'Item';
+    document.getElementById('ruleItemId').value = '';
+    document.getElementById('ruleCategoryId').value = '';
+    document.getElementById('ruleCoverageType').value = 'Full';
+    document.getElementById('rulePercentage').value = '';
+    document.getElementById('ruleFixedAmount').value = '';
+    document.getElementById('ruleCapAmount').value = '';
+    document.getElementById('ruleEffectiveFrom').value = '';
+    document.getElementById('ruleEffectiveTo').value = '';
+    document.getElementById('ruleDisplayOrder').value = editCoverageRules.length + 1;
+    document.getElementById('ruleExceptionNote').value = '';
+    
+    // Populate items and categories dropdowns
+    populateRuleDropdowns();
+    toggleRuleTargetFields();
+    toggleRuleCoverageFields();
+    
+    document.getElementById('editRuleModal').style.display = 'flex';
+}
+
+function editCoverageRule(index) {
+    const rule = editCoverageRules[index];
+    
+    document.getElementById('ruleEditIndex').value = index;
+    document.getElementById('editRuleError').style.display = 'none';
+    
+    // Populate form with rule data
+    document.getElementById('ruleCoverageTarget').value = rule.coverageTarget;
+    document.getElementById('ruleItemId').value = rule.itemId || '';
+    document.getElementById('ruleCategoryId').value = rule.categoryId || '';
+    document.getElementById('ruleCoverageType').value = rule.coverageType;
+    document.getElementById('rulePercentage').value = rule.coveragePercentage || '';
+    document.getElementById('ruleFixedAmount').value = rule.coverageFixedAmount || '';
+    document.getElementById('ruleCapAmount').value = rule.capAmount || '';
+    document.getElementById('ruleEffectiveFrom').value = rule.effectiveFrom ? rule.effectiveFrom.split('T')[0] : '';
+    document.getElementById('ruleEffectiveTo').value = rule.effectiveTo ? rule.effectiveTo.split('T')[0] : '';
+    document.getElementById('ruleDisplayOrder').value = rule.displayOrder || index + 1;
+    document.getElementById('ruleExceptionNote').value = rule.exceptionNote || '';
+    
+    populateRuleDropdowns();
+    toggleRuleTargetFields();
+    toggleRuleCoverageFields();
+    
+    document.getElementById('editRuleModal').style.display = 'flex';
+}
+
+function deleteCoverageRule(index) {
+    if (confirm('Are you sure you want to delete this coverage rule?')) {
+        editCoverageRules.splice(index, 1);
+        renderCoverageRulesTable();
+    }
+}
+
+function populateRuleDropdowns() {
+    // Populate items
+    const itemSelect = document.getElementById('ruleItemId');
+    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+    editItemsData.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.text;
+        itemSelect.appendChild(option);
+    });
+    
+    // Populate categories
+    const categorySelect = document.getElementById('ruleCategoryId');
+    categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
+    editCategoriesData.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.value;
+        option.textContent = category.text;
+        categorySelect.appendChild(option);
+    });
+}
+
+function toggleRuleTargetFields() {
+    const target = document.getElementById('ruleCoverageTarget').value;
+    document.getElementById('ruleItemField').style.display = target === 'Item' ? 'block' : 'none';
+    document.getElementById('ruleCategoryField').style.display = target === 'Category' ? 'block' : 'none';
+}
+
+function toggleRuleCoverageFields() {
+    const type = document.getElementById('ruleCoverageType').value;
+    document.getElementById('rulePercentageField').style.display = type === 'Percentage' ? 'block' : 'none';
+    document.getElementById('ruleFixedAmountField').style.display = type === 'FixedAmount' ? 'block' : 'none';
+    document.getElementById('ruleCapField').style.display = type === 'UpToCap' ? 'block' : 'none';
+}
+
+function saveRuleEdit() {
+    const indexInput = document.getElementById('ruleEditIndex');
+    const index = indexInput.value;
+    const mode = indexInput.getAttribute('data-mode') || 'edit';
+    
+    const rule = {
+        ruleId: (index !== '' && mode === 'edit') ? editCoverageRules[index].ruleId : 0,
+        coverageTarget: document.getElementById('ruleCoverageTarget').value,
+        itemId: document.getElementById('ruleItemId').value || null,
+        categoryId: document.getElementById('ruleCategoryId').value || null,
+        coverageType: document.getElementById('ruleCoverageType').value,
+        coveragePercentage: document.getElementById('rulePercentage').value || null,
+        coverageFixedAmount: document.getElementById('ruleFixedAmount').value || null,
+        capAmount: document.getElementById('ruleCapAmount').value || null,
+        effectiveFrom: document.getElementById('ruleEffectiveFrom').value || null,
+        effectiveTo: document.getElementById('ruleEffectiveTo').value || null,
+        displayOrder: parseInt(document.getElementById('ruleDisplayOrder').value) || 1,
+        exceptionNote: document.getElementById('ruleExceptionNote').value || null,
+        isActive: true
+    };
+    
+    // Validate
+    if (!rule.coverageTarget) {
+        alert('Please select a coverage target');
+        return;
+    }
+    
+    if (rule.coverageTarget === 'Item' && !rule.itemId) {
+        alert('Please select an item');
+        return;
+    }
+    
+    if (rule.coverageTarget === 'Category' && !rule.categoryId) {
+        alert('Please select a category');
+        return;
+    }
+    
+    if (mode === 'create') {
+        if (index !== '') {
+            // Edit existing rule in create mode
+            createCoverageRules[index] = rule;
+        } else {
+            // Add new rule in create mode
+            createCoverageRules.push(rule);
+        }
+        renderCreateCoverageRulesTable();
+    } else {
+        if (index !== '') {
+            // Edit existing rule
+            editCoverageRules[index] = rule;
+        } else {
+            // Add new rule
+            editCoverageRules.push(rule);
+        }
+        renderCoverageRulesTable();
+    }
+    
+    closeEditRuleModal();
+}
+
+function closeEditRuleModal() {
+    document.getElementById('editRuleModal').style.display = 'none';
+}
+
+// Handle edit form submission
+document.getElementById('editLogForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Prevent submission if user doesn't have edit permissions
+    if (!canEdit) {
+        return;
+    }
+    
+    const saveBtn = document.getElementById('saveLogBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = 'Saving...';
+    
+    document.getElementById('editError').style.display = 'none';
+    
+    const formData = new FormData(this);
+    
+    // Add coverage rules as JSON
+    formData.append('CoverageRulesJson', JSON.stringify(editCoverageRules));
+    
+    try {
+        const response = await fetch('/Settings/LetterOfGuarantee/EditModal', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Letter of Guarantee updated successfully!');
+            closeEditLogModal();
+            window.location.reload();
+        } else {
+            const errorDiv = document.getElementById('editError');
+            errorDiv.textContent = result.message || 'Failed to update LoG';
+            errorDiv.style.display = 'block';
+            goToStep(1); // Go back to first step to see error
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        const errorDiv = document.getElementById('editError');
+        errorDiv.textContent = 'An error occurred while updating the LoG';
+        errorDiv.style.display = 'block';
+        goToStep(1);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    }
+});
+
+// Create LoG Modal Functions
+async function openCreateLogModal() {
+    currentCreateStep = 1;
+    createCoverageRules = [];
+    document.getElementById('createLogModal').style.display = 'flex';
+    document.getElementById('createLogForm').reset();
+    document.getElementById('createError').style.display = 'none';
+    document.getElementById('createWarning').style.display = 'none';
+    document.querySelectorAll('#createLogForm .form-error').forEach(el => el.textContent = '');
+    goToCreateStep(1);
+    
+    // Load dropdowns
+    await loadCreateFormData();
+    
+    // If there's a pre-selected school year after loading, trigger the date population
+    const schoolYearSelect = document.getElementById('createSchoolYearId');
+    if (schoolYearSelect.value) {
+        handleSchoolYearChange();
+    }
+}
+
+function closeCreateLogModal() {
+    document.getElementById('createLogModal').style.display = 'none';
+    createCoverageRules = [];
+}
+
+// Handle school year change and set default effective dates
+function handleSchoolYearChange() {
+    const schoolYearSelect = document.getElementById('createSchoolYearId');
+    const selectedOption = schoolYearSelect.options[schoolYearSelect.selectedIndex];
+    
+    if (selectedOption && selectedOption.value) {
+        // Get the stored valid dates from data attributes
+        const validFrom = selectedOption.getAttribute('data-valid-from');
+        const validTo = selectedOption.getAttribute('data-valid-to');
+        
+        if (validFrom && validTo) {
+            // Parse the dates to get the years
+            const fromDate = new Date(validFrom);
+            const toDate = new Date(validTo);
+            
+            // Set Effective From to August 1 of the start year
+            const startYear = fromDate.getFullYear();
+            const effectiveFrom = `${startYear}-08-01`;
+            document.getElementById('createEffectiveFrom').value = effectiveFrom;
+            
+            // Set Effective To to July 31 of the end year
+            const endYear = toDate.getFullYear();
+            const effectiveTo = `${endYear}-07-31`;
+            document.getElementById('createEffectiveTo').value = effectiveTo;
+        } else {
+            // Fallback: parse school year format (e.g., "25-26" or "2025-2026")
+            const schoolYearId = selectedOption.value;
+            if (schoolYearId.includes('-')) {
+                const parts = schoolYearId.split('-');
+                const firstPart = parts[0].trim();
+                const secondPart = parts[1].trim();
+                
+                let startYear, endYear;
+                // If format is "25-26"
+                if (firstPart.length === 2) {
+                    startYear = 2000 + parseInt(firstPart);
+                    endYear = 2000 + parseInt(secondPart);
+                } 
+                // If format is "2025-2026"
+                else {
+                    startYear = parseInt(firstPart);
+                    endYear = parseInt(secondPart);
+                }
+                
+                // Set Effective From to August 1 of start year
+                const effectiveFrom = `${startYear}-08-01`;
+                document.getElementById('createEffectiveFrom').value = effectiveFrom;
+                
+                // Set Effective To to July 31 of end year
+                const effectiveTo = `${endYear}-07-31`;
+                document.getElementById('createEffectiveTo').value = effectiveTo;
+            }
+        }
+    }
+    
+    // Also check for existing LoG
+    checkExistingLog();
+}
+
+// Check if LoG already exists for student/school year
+async function checkExistingLog() {
+    const schoolYearId = document.getElementById('createSchoolYearId').value;
+    const studentId = document.getElementById('createStudentId').value;
+    
+    if (!schoolYearId || !studentId) {
+        document.getElementById('createWarning').style.display = 'none';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/Settings/LetterOfGuarantee/CheckExisting?schoolYearId=${encodeURIComponent(schoolYearId)}&studentId=${encodeURIComponent(studentId)}`);
+        const result = await response.json();
+        
+        if (result.exists) {
+            const warningDiv = document.getElementById('createWarning');
+            warningDiv.innerHTML = `
+                <strong>⚠ Existing Record Found</strong><br>
+                A Letter of Guarantee already exists for this student in ${schoolYearId} (LoG #${result.logId}).<br>
+                <button type="button" class="btn-primary" style="margin-top: 8px;" onclick="switchToEditMode(${result.logId})">
+                    View/Edit Existing LoG
+                </button>
+            `;
+            warningDiv.style.display = 'block';
+        } else {
+            document.getElementById('createWarning').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error checking for existing LoG:', error);
+    }
+}
+
+// Switch from create to edit mode
+function switchToEditMode(logId) {
+    closeCreateLogModal();
+    openEditLogModal(logId);
+}
+
+// Create modal step navigation
+function goToCreateStep(step) {
+    currentCreateStep = step;
+    
+    // Update step tabs
+    document.querySelectorAll('.step-tab[data-modal="create"]').forEach(tab => {
+        const tabStep = parseInt(tab.getAttribute('data-step'));
+        tab.classList.remove('active');
+        if (tabStep < step) {
+            tab.classList.add('completed');
+        } else {
+            tab.classList.remove('completed');
+        }
+        if (tabStep === step) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Update step content
+    document.querySelectorAll('.step-content[data-modal="create"]').forEach(content => {
+        content.style.display = 'none';
+    });
+    const currentContent = document.querySelector(`.step-content[data-modal="create"][data-step="${step}"]`);
+    if (currentContent) {
+        currentContent.style.display = 'block';
+    }
+    
+    // Update buttons
+    document.getElementById('createPrevStepBtn').style.display = step > 1 ? 'block' : 'none';
+    document.getElementById('createNextStepBtn').style.display = step < 4 ? 'block' : 'none';
+    document.getElementById('createSubmitBtn').style.display = step === 4 ? 'block' : 'none';
+}
+
+function nextCreateStep() {
+    if (currentCreateStep < 4) {
+        goToCreateStep(currentCreateStep + 1);
+    }
+}
+
+function previousCreateStep() {
+    if (currentCreateStep > 1) {
+        goToCreateStep(currentCreateStep - 1);
+    }
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+// Load form data for create modal
+async function loadCreateFormData() {
+    try {
+        const response = await fetch('/Settings/LetterOfGuarantee/GetFormData');
+        const data = await response.json();
+        
+        // Populate school years
+        const schoolYearSelect = document.getElementById('createSchoolYearId');
+        schoolYearSelect.innerHTML = '<option value="">-- Select School Year --</option>';
+        data.schoolYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year.value;
+            option.textContent = year.text;
+            // Store valid dates as data attributes
+            option.setAttribute('data-valid-from', year.validFrom);
+            option.setAttribute('data-valid-to', year.validTo);
+            schoolYearSelect.appendChild(option);
+        });
+        
+        // Populate students
+        const studentSelect = document.getElementById('createStudentId');
+        studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
+        data.students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.value;
+            option.textContent = student.text;
+            studentSelect.appendChild(option);
+        });
+        
+        // Populate sponsors
+        const sponsorSelect = document.getElementById('createSponsorId');
+        sponsorSelect.innerHTML = '<option value="">-- Select Sponsor --</option>';
+        data.sponsors.forEach(sponsor => {
+            const option = document.createElement('option');
+            option.value = sponsor.value;
+            option.textContent = sponsor.text;
+            sponsorSelect.appendChild(option);
+        });
+        
+        // Store items and categories for create rules
+        createItemsData = data.items || [];
+        createCategoriesData = data.categories || [];
+    } catch (error) {
+        console.error('Error loading form data:', error);
+        alert('Error loading form data. Please try again.');
+    }
+}
+
+// Handle import form submission
+document.getElementById('importForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const validateBtn = document.getElementById('validateBtn');
+    const originalText = validateBtn.innerHTML;
+    validateBtn.disabled = true;
+    validateBtn.innerHTML = 'Validating...';
+    
+    document.getElementById('importError').style.display = 'none';
+    
+    const formData = new FormData(this);
+    const fileInput = document.getElementById('importFile');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        document.getElementById('importError').textContent = 'Please select a CSV file to upload';
+        document.getElementById('importError').style.display = 'block';
+        validateBtn.disabled = false;
+        validateBtn.innerHTML = originalText;
+        return;
+    }
+    
+    validatedLogFile = fileInput.files[0];
+    
+    try {
+        const response = await fetch('/Settings/LetterOfGuarantee/ValidateImport', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show preview
+            document.getElementById('uploadStep').style.display = 'none';
+            document.getElementById('previewStep').style.display = 'block';
+            
+            // Update summary
+            document.getElementById('summaryTotal').textContent = result.summary.total;
+            document.getElementById('summaryAdd').textContent = result.summary.willAdd;
+            document.getElementById('summaryErrors').textContent = result.summary.hasErrors;
+            
+            // Populate preview table
+            const tbody = document.getElementById('previewTableBody');
+            tbody.innerHTML = '';
+            
+            result.items.forEach(item => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = item.hasError ? '#fff5f5' : 'white';
+                
+                let actionBadge = '';
+                if (item.action === 'Add') {
+                    actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.85em;">Add</span>';
+                } else {
+                    actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.85em;">Skip</span>';
+                }
+                
+                let errorText = '';
+                if (item.errors && item.errors.length > 0) {
+                    errorText = '<br><small style="color: #dc3545;">' + item.errors.join(', ') + '</small>';
+                }
+                
+                row.innerHTML = `
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${actionBadge}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.schoolYearId || ''}${errorText}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.studentId || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.sponsorId || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.effectiveFrom || ''}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.effectiveTo || ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Disable confirm button if there are errors
+            const confirmBtn = document.getElementById('confirmImportBtn');
+            if (result.summary.hasErrors > 0) {
+                confirmBtn.disabled = true;
+                confirmBtn.title = 'Fix validation errors before importing';
+                document.getElementById('confirmError').textContent = 'Please fix validation errors before importing';
+                document.getElementById('confirmError').style.display = 'block';
+            } else {
+                confirmBtn.disabled = false;
+                confirmBtn.title = '';
+            }
+        } else {
+            document.getElementById('importError').textContent = result.message || 'Validation failed';
+            document.getElementById('importError').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Validation error:', error);
+        document.getElementById('importError').textContent = `An error occurred during validation: ${error.message}`;
+        document.getElementById('importError').style.display = 'block';
+    } finally {
+        validateBtn.disabled = false;
+        validateBtn.innerHTML = originalText;
+    }
+});
+
+// Create Coverage Rules Table Management
+function renderCreateCoverageRulesTable() {
+    const tbody = document.getElementById('createCoverageRulesTableBody');
+    const noRulesRow = document.getElementById('createNoRulesRow');
+    
+    if (createCoverageRules.length === 0) {
+        noRulesRow.style.display = 'table-row';
+        return;
+    }
+    
+    noRulesRow.style.display = 'none';
+    
+    // Remove existing rows except no-rules row
+    Array.from(tbody.children).forEach(row => {
+        if (row.id !== 'createNoRulesRow') {
+            row.remove();
+        }
+    });
+    
+    createCoverageRules.forEach((rule, index) => {
+        const row = document.createElement('tr');
+        
+        const targetName = rule.coverageTarget === 'Item' ? 
+            (createItemsData.find(i => i.value === rule.itemId)?.text || 'Unknown') :
+            (createCategoriesData.find(c => c.value === rule.categoryId)?.text || 'Unknown');
+        
+        let valueDisplay = '';
+        switch (rule.coverageType) {
+            case 'Full':
+                valueDisplay = '100%';
+                break;
+            case 'Percentage':
+                valueDisplay = `${rule.coveragePercentage}%`;
+                break;
+            case 'FixedAmount':
+                valueDisplay = `₱${rule.coverageFixedAmount}`;
+                break;
+            case 'UpToCap':
+                valueDisplay = `Cap: ₱${rule.capAmount}`;
+                break;
+        }
+        
+        row.innerHTML = `
+            <td>${rule.coverageTarget}</td>
+            <td>${targetName}</td>
+            <td>${rule.coverageType}</td>
+            <td>${valueDisplay}</td>
+            <td>${rule.effectiveFrom ? new Date(rule.effectiveFrom).toLocaleDateString() : '—'}</td>
+            <td>${rule.effectiveTo ? new Date(rule.effectiveTo).toLocaleDateString() : '—'}</td>
+            <td style="text-align: center;">${rule.displayOrder || index + 1}</td>
+            <td class="action-cell">
+                <a href="javascript:void(0)" onclick="editCreateCoverageRule(${index})" class="btn-link">Edit</a>
+                <a href="javascript:void(0)" onclick="deleteCreateCoverageRule(${index})" class="btn-link" style="color: #dc2626;">Delete</a>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function addCreateCoverageRuleRow() {
+    // Open the rule edit modal in "add" mode for create
+    document.getElementById('ruleEditIndex').value = '';
+    document.getElementById('editRuleError').style.display = 'none';
+    
+    // Reset form
+    document.getElementById('ruleCoverageTarget').value = 'Item';
+    document.getElementById('ruleItemId').value = '';
+    document.getElementById('ruleCategoryId').value = '';
+    document.getElementById('ruleCoverageType').value = 'Full';
+    document.getElementById('rulePercentage').value = '';
+    document.getElementById('ruleFixedAmount').value = '';
+    document.getElementById('ruleCapAmount').value = '';
+    document.getElementById('ruleEffectiveFrom').value = '';
+    document.getElementById('ruleEffectiveTo').value = '';
+    document.getElementById('ruleDisplayOrder').value = createCoverageRules.length + 1;
+    document.getElementById('ruleExceptionNote').value = '';
+    
+    // Populate dropdowns with create data
+    populateCreateRuleDropdowns();
+    toggleRuleTargetFields();
+    toggleRuleCoverageFields();
+    
+    // Set a flag to indicate we're in create mode
+    document.getElementById('ruleEditIndex').setAttribute('data-mode', 'create');
+    
+    document.getElementById('editRuleModal').style.display = 'flex';
+}
+
+function editCreateCoverageRule(index) {
+    const rule = createCoverageRules[index];
+    
+    document.getElementById('ruleEditIndex').value = index;
+    document.getElementById('ruleEditIndex').setAttribute('data-mode', 'create');
+    document.getElementById('editRuleError').style.display = 'none';
+    
+    // Populate form with rule data
+    document.getElementById('ruleCoverageTarget').value = rule.coverageTarget;
+    document.getElementById('ruleItemId').value = rule.itemId || '';
+    document.getElementById('ruleCategoryId').value = rule.categoryId || '';
+    document.getElementById('ruleCoverageType').value = rule.coverageType;
+    document.getElementById('rulePercentage').value = rule.coveragePercentage || '';
+    document.getElementById('ruleFixedAmount').value = rule.coverageFixedAmount || '';
+    document.getElementById('ruleCapAmount').value = rule.capAmount || '';
+    document.getElementById('ruleEffectiveFrom').value = rule.effectiveFrom ? rule.effectiveFrom.split('T')[0] : '';
+    document.getElementById('ruleEffectiveTo').value = rule.effectiveTo ? rule.effectiveTo.split('T')[0] : '';
+    document.getElementById('ruleDisplayOrder').value = rule.displayOrder || index + 1;
+    document.getElementById('ruleExceptionNote').value = rule.exceptionNote || '';
+    
+    populateCreateRuleDropdowns();
+    toggleRuleTargetFields();
+    toggleRuleCoverageFields();
+    
+    document.getElementById('editRuleModal').style.display = 'flex';
+}
+
+function deleteCreateCoverageRule(index) {
+    if (confirm('Are you sure you want to delete this coverage rule?')) {
+        createCoverageRules.splice(index, 1);
+        renderCreateCoverageRulesTable();
+    }
+}
+
+function populateCreateRuleDropdowns() {
+    // Populate items
+    const itemSelect = document.getElementById('ruleItemId');
+    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+    createItemsData.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.text;
+        itemSelect.appendChild(option);
+    });
+    
+    // Populate categories
+    const categorySelect = document.getElementById('ruleCategoryId');
+    categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
+    createCategoriesData.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.value;
+        option.textContent = category.text;
+        categorySelect.appendChild(option);
+    });
+}
+
+// Handle create LoG form submission
+document.getElementById('createLogForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const createBtn = document.getElementById('createSubmitBtn');
+    const originalText = createBtn.innerHTML;
+    createBtn.disabled = true;
+    createBtn.innerHTML = 'Creating...';
+    
+    document.getElementById('createError').style.display = 'none';
+    document.querySelectorAll('#createLogForm .form-error').forEach(el => el.textContent = '');
+    
+    const formData = new FormData(this);
+    
+    // Add coverage rules as JSON
+    formData.append('CoverageRulesJson', JSON.stringify(createCoverageRules));
+    
+    try {
+        const response = await fetch('/Settings/LetterOfGuarantee/CreateModalFull', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Letter of Guarantee created successfully!');
+            closeCreateLogModal();
+            window.location.reload();
+        } else {
+            if (result.errors) {
+                for (const [field, message] of Object.entries(result.errors)) {
+                    const errorElement = document.getElementById(field + '-error');
+                    if (errorElement) {
+                        errorElement.textContent = message;
+                    }
+                }
+            }
+            if (result.message) {
+                const errorDiv = document.getElementById('createError');
+                errorDiv.textContent = result.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        const errorDiv = document.getElementById('createError');
+        errorDiv.textContent = 'An error occurred while creating the LoG';
+        errorDiv.style.display = 'block';
+    } finally {
+        createBtn.disabled = false;
+        createBtn.innerHTML = originalText;
+    }
+});
+</script>

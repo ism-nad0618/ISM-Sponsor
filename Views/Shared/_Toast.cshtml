@@ -1,0 +1,64 @@
+@* Toast Notification Component *@
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+@section Scripts {
+<script>
+    // Toast notification system
+    window.showToast = function(message, type = 'success', duration = 5000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        const icon = type === 'success' ? '' : 
+                     type === 'error' ? '' : 
+                     type === 'warning' ? '⚠' : 'ℹ';
+        
+        toast.innerHTML = `
+            <div class="toast-icon">${icon}</div>
+            <div class="toast-message">${message}</div>
+            <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Close notification">×</button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => toast.classList.add('toast-show'), 10);
+        
+        // Auto remove
+        setTimeout(() => {
+            toast.classList.remove('toast-show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    };
+
+    // Show existing TempData alerts as toasts
+    document.addEventListener('DOMContentLoaded', function() {
+        @if (TempData["Success"] is string successText)
+        {
+            <text>
+            showToast('@Html.Raw(successText.Replace("'", "\\'"))', 'success');
+            </text>
+        }
+        @if (TempData["Error"] is string errorText)
+        {
+            <text>
+            showToast('@Html.Raw(errorText.Replace("'", "\\'"))', 'error');
+            </text>
+        }
+        @if (TempData["Warning"] is string warningText)
+        {
+            <text>
+            showToast('@Html.Raw(warningText.Replace("'", "\\'"))', 'warning');
+            </text>
+        }
+        @if (TempData["Info"] is string infoText)
+        {
+            <text>
+            showToast('@Html.Raw(infoText.Replace("'", "\\'"))', 'info');
+            </text>
+        }
+    });
+</script>
+}

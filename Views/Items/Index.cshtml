@@ -2,44 +2,125 @@
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Items";
+    var gradeLevels = ViewBag.GradeLevels as List<string> ?? new List<string>();
+    var categories = ViewBag.Categories as List<ISMSponsor.Models.Domain.ItemCategory> ?? new List<ISMSponsor.Models.Domain.ItemCategory>();
+    var search = ViewBag.Search as string ?? "";
+    var selectedGradeLevel = ViewBag.GradeLevel as string ?? "";
+    var selectedStatus = ViewBag.Status as string ?? "";
+    var sortBy = ViewBag.SortBy as string ?? "ItemName";
+    var sortOrder = ViewBag.SortOrder as string ?? "asc";
 }
 
 <div class="page-header">
-    <h1>Items Management</h1>
-    <p class="page-subtitle">Manage required items by grade level</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>Items Management</h1>
+            <p class="page-subtitle">Manage required items by grade level</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" onclick="openImportModal()" class="btn-secondary">Import CSV</button>
+            <a href="@Url.Action("ExportTemplate")" class="btn-secondary">Download Template</a>
+            <button type="button" onclick="openCreateModal()" class="btn-primary">+ New Item</button>
+        </div>
+    </div>
 </div>
 
 <div class="card">
-    <h2 class="table-title">Items Directory</h2>
+    <form id="filterForm" method="get" action="@Url.Action("Index")" class="filter-form">
+        <div class="filter-group" style="flex: 2; min-width: 250px;">
+            <label for="search" class="field-label">Search</label>
+            <input type="text" id="search" name="search" value="@search" placeholder="Item ID or Name..." />
+        </div>
+        <div class="filter-group" style="min-width: 150px;">
+            <label for="gradeLevel" class="field-label">Grade Level</label>
+            <select id="gradeLevel" name="gradeLevel">
+                <option value="">All Grades</option>
+                @foreach (var grade in gradeLevels)
+                {
+                    <option value="@grade" selected="@(grade == selectedGradeLevel)">@grade</option>
+                }
+            </select>
+        </div>
+        <div class="filter-group" style="min-width: 150px;">
+            <label for="status" class="field-label">Status</label>
+            <select id="status" name="status">
+                <option value="">All</option>
+                <option value="Active" selected="@(selectedStatus == "Active")">Active</option>
+                <option value="Inactive" selected="@(selectedStatus == "Inactive")">Inactive</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-secondary">Apply</button>
+        <a href="@Url.Action("Index")" class="btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Items Directory (@Model.Count)</h2>
     <div class="table-wrap">
         <table>
         <thead>
             <tr>
-                <th>Item ID</th>
-                <th>Item Name</th>
-                <th>Grade Level</th>
-                <th>Status</th>
+                <th><a href="?search=@search&gradeLevel=@selectedGradeLevel&status=@selectedStatus&sortBy=ItemId&sortOrder=@(sortBy == "ItemId" && sortOrder == "asc" ? "desc" : "asc")">Item ID @(sortBy == "ItemId" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th><a href="?search=@search&gradeLevel=@selectedGradeLevel&status=@selectedStatus&sortBy=ItemName&sortOrder=@(sortBy == "ItemName" && sortOrder == "asc" ? "desc" : "asc")">Item Name @(sortBy == "ItemName" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th>Description</th>
+                <th><a href="?search=@search&gradeLevel=@selectedGradeLevel&status=@selectedStatus&sortBy=GradeLevel&sortOrder=@(sortBy == "GradeLevel" && sortOrder == "asc" ? "desc" : "asc")">Grade Level @(sortBy == "GradeLevel" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                <th>Currency</th>
+                <th><a href="?search=@search&gradeLevel=@selectedGradeLevel&status=@selectedStatus&sortBy=Status&sortOrder=@(sortBy == "Status" && sortOrder == "asc" ? "desc" : "asc")">Status @(sortBy == "Status" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
                 <th class="text-center">Actions</th>
             </tr>
         </thead>
         <tbody>
             @if(Model.Count == 0){
+                ViewData["EmptyIcon"] = "";
+                ViewData["EmptyTitle"] = "No Items Found";
+                ViewData["EmptyMessage"] = "No items match your search criteria. Try adjusting your filters or add a new item.";
+                ViewData["EmptyAction"] = "+ New Item";
+                ViewData["EmptyActionUrl"] = "javascript:openCreateModal()";
                 <tr>
-                    <td colspan="5" class="empty-state">No items found</td>
+                    <td colspan="8">
+                        @await Html.PartialAsync("_EmptyState")
+                    </td>
                 </tr>
             }else{
                 @foreach(var item in Model){
-                    <tr>
+                    <tr data-id="@item.ItemId">
                         <td><strong>@item.ItemId</strong></td>
-                        <td>@item.ItemName</td>
-                        <td><span class="grade-badge">@item.GradeLevel</span></td>
                         <td>
-                            <span class="status-badge @(item.IsActive ? "status-active" : "status-inactive")">
-                                @(item.IsActive ? "Active" : "Inactive")
-                            </span>
+                            <span class="view-mode">@item.ItemName</span>
+                            <input type="text" class="edit-mode" value="@item.ItemName" data-field="ItemName" style="display:none; width: 100%;" />
                         </td>
-                        <td class="text-center">
-                            <a href="#" class="link-edit">Edit</a>
+                        <td>
+                            <span class="view-mode">@(item.Description ?? "")</span>
+                            <input type="text" class="edit-mode" value="@(item.Description ?? "")" data-field="Description" style="display:none; width: 100%;" />
+                        </td>
+                        <td>
+                            <span class="view-mode"><span class="grade-badge">@item.GradeLevel</span></span>
+                            <input type="text" class="edit-mode" value="@item.GradeLevel" data-field="GradeLevel" style="display:none; width: 100%;" />
+                        </td>
+                        <td>
+                            <span class="view-mode">@item.Currency</span>
+                            <input type="text" class="edit-mode" value="@item.Currency" data-field="Currency" style="display:none; width: 100%;" />
+                        </td>
+                        <td>
+                            <span class="view-mode">
+                                <span class="status-badge @(item.Status == "Active" ? "status-active" : "status-inactive")">
+                                    @item.Status
+                                </span>
+                            </span>
+                            <select class="edit-mode" data-field="Status" style="display:none; width: 100%;">
+                                <option value="Active" selected="@(item.Status == "Active")">Active</option>
+                                <option value="Inactive" selected="@(item.Status == "Inactive")">Inactive</option>
+                            </select>
+                            <input type="hidden" data-field="CategoryId" value="@(item.CategoryId ?? "")" />
+                        </td>
+                        <td data-label="Actions" class="action-cell">
+                            <div class="view-mode">
+                                <a href="javascript:void(0)" class="btn-link btn-edit" data-id="@item.ItemId">Edit</a>
+                            </div>
+                            <div class="edit-mode" style="display:none;">
+                                <a href="javascript:void(0)" class="btn-link btn-save" data-id="@item.ItemId" style="color: green;">Save</a>
+                                <a href="javascript:void(0)" class="btn-link btn-cancel" data-id="@item.ItemId" style="color: red;">Cancel</a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -48,3 +129,476 @@
     </table>
     </div>
 </div>
+
+<!-- Create Item Modal -->
+<div id="createItemModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Add New Item</h2>
+            <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+        </div>
+        <form id="createItemForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="createItemId" class="field-label">Item ID <span class="required">*</span></label>
+                    <input type="text" id="createItemId" name="ItemId" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="createGradeLevel" class="field-label">Grade Level <span class="required">*</span></label>
+                    <input type="text" id="createGradeLevel" name="GradeLevel" required />
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="createItemName" class="field-label">Item Name <span class="required">*</span></label>
+                <input type="text" id="createItemName" name="ItemName" required />
+            </div>
+            
+            <div class="form-group">
+                <label for="createDescription" class="field-label">Description</label>
+                <textarea id="createDescription" name="Description" rows="2"></textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="createCurrency" class="field-label">Currency <span class="required">*</span></label>
+                    <input type="text" id="createCurrency" name="Currency" value="USD" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="createStatus" class="field-label">Status <span class="required">*</span></label>
+                    <select id="createStatus" name="Status" required>
+                        <option value="Active" selected>Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="createCategoryId" class="field-label">Category</label>
+                <select id="createCategoryId" name="CategoryId">
+                    <option value="">-- None --</option>
+                    @foreach (var cat in categories)
+                    {
+                        <option value="@cat.CategoryId">@cat.CategoryName</option>
+                    }
+                </select>
+            </div>
+            
+            <div id="createError" class="alert alert-danger" style="display: none; margin-top: 1rem;"></div>
+            
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" onclick="closeCreateModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2>Import Items from CSV</h2>
+            <button class="modal-close" onclick="closeImportModal()">&times;</button>
+        </div>
+        
+        <!-- Step 1: Upload File -->
+        <div id="uploadStep">
+            <form id="importForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="importFile" class="field-label">CSV File <span class="required">*</span></label>
+                    <input type="file" id="importFile" name="file" accept=".csv" required />
+                    <small style="display: block; margin-top: 0.5rem; color: #666;">
+                        Upload a CSV file with columns: ItemId, ItemName, Description, GradeLevel, Currency, Status, CategoryId, IsActive
+                    </small>
+                </div>
+                
+                <div id="importError" class="alert alert-danger" style="display: none;"></div>
+                
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" onclick="closeImportModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Validate & Preview</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Step 2: Preview & Confirm -->
+        <div id="previewStep" style="display: none;">
+            <div id="previewSummary" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+                <h3 style="margin: 0 0 0.5rem 0;">Import Summary</h3>
+                <div style="display: flex; gap: 2rem;">
+                    <div><strong>Total:</strong> <span id="summaryTotal">0</span></div>
+                    <div style="color: #28a745;"><strong>Will Add:</strong> <span id="summaryAdd">0</span></div>
+                    <div style="color: #ffc107;"><strong>Will Update:</strong> <span id="summaryUpdate">0</span></div>
+                    <div style="color: #dc3545;"><strong>Errors:</strong> <span id="summaryErrors">0</span></div>
+                </div>
+            </div>
+            
+            <div style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                    <thead style="position: sticky; top: 0; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <tr>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Action</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Item ID</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Item Name</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Grade Level</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Category</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="confirmError" class="alert alert-danger" style="display: none;"></div>
+            <div id="confirmSuccess" class="alert alert-success" style="display: none;"></div>
+            
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" onclick="resetImportModal()" class="btn btn-secondary">Back</button>
+                <button type="button" id="confirmImportBtn" onclick="confirmImport()" class="btn btn-success">Confirm & Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCreateModal() {
+    document.getElementById('createItemModal').style.display = 'flex';
+    document.getElementById('createItemForm').reset();
+    document.getElementById('createError').style.display = 'none';
+}
+
+function closeCreateModal() {
+    document.getElementById('createItemModal').style.display = 'none';
+}
+
+function openImportModal() {
+    document.getElementById('importModal').style.display = 'flex';
+    resetImportModal();
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+    resetImportModal();
+}
+
+function resetImportModal() {
+    document.getElementById('uploadStep').style.display = 'block';
+    document.getElementById('previewStep').style.display = 'none';
+    document.getElementById('importForm').reset();
+    document.getElementById('importError').style.display = 'none';
+    document.getElementById('confirmError').style.display = 'none';
+    document.getElementById('confirmSuccess').style.display = 'none';
+}
+
+let validatedFile = null;
+
+async function confirmImport() {
+    if (!validatedFile) {
+        alert('No file to import');
+        return;
+    }
+    
+    const confirmBtn = document.getElementById('confirmImportBtn');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Importing...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', validatedFile);
+        
+        const response = await fetch('/Settings/Items/BulkImport', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('confirmSuccess').textContent = result.message;
+            document.getElementById('confirmSuccess').style.display = 'block';
+            document.getElementById('confirmError').style.display = 'none';
+            
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            document.getElementById('confirmError').textContent = result.message || 'Import failed';
+            document.getElementById('confirmError').style.display = 'block';
+            document.getElementById('confirmSuccess').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Import error:', error);
+        document.getElementById('confirmError').textContent = `An error occurred during import: ${error.message}`;
+        document.getElementById('confirmError').style.display = 'block';
+        document.getElementById('confirmSuccess').style.display = 'none';
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+    }
+}
+
+// Existing inline edit functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit filters when changed
+    const filterForm = document.getElementById('filterForm');
+    const gradeLevelSelect = document.getElementById('gradeLevel');
+    const statusSelect = document.getElementById('status');
+    const searchInput = document.getElementById('search');
+    
+    // Submit form when dropdowns change
+    if (gradeLevelSelect) {
+        gradeLevelSelect.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    }
+    
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    }
+    
+    // Use debounced search for better performance
+    if (searchInput && typeof setupDebouncedSearch !== 'undefined') {
+        setupDebouncedSearch('search', function() {
+            filterForm.submit();
+        }, 400);
+    }
+    
+    // Create item form submission
+    const createForm = document.getElementById('createItemForm');
+    if (createForm) {
+        createForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                ItemId: document.getElementById('createItemId').value,
+                ItemName: document.getElementById('createItemName').value,
+                Description: document.getElementById('createDescription').value || null,
+                GradeLevel: document.getElementById('createGradeLevel').value,
+                Currency: document.getElementById('createCurrency').value,
+                Status: document.getElementById('createStatus').value,
+                CategoryId: document.getElementById('createCategoryId').value || null,
+                IsActive: document.getElementById('createStatus').value === 'Active'
+            };
+            
+            try {
+                const response = await fetch('@Url.Action("Create")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    closeCreateModal();
+                    location.reload();
+                } else {
+                    document.getElementById('createError').textContent = result.message;
+                    document.getElementById('createError').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('createError').textContent = 'An error occurred while creating the item';
+                document.getElementById('createError').style.display = 'block';
+            }
+        });
+    }
+
+    // Import form submission - validate and preview
+    const importForm = document.getElementById('importForm');
+    if (importForm) {
+        importForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const fileInput = document.getElementById('importFile');
+            
+            // Validate file is selected
+            if (!fileInput.files || fileInput.files.length === 0) {
+                document.getElementById('importError').textContent = 'Please select a CSV file to upload';
+                document.getElementById('importError').style.display = 'block';
+                return;
+            }
+            
+            // Store file for later import
+            validatedFile = fileInput.files[0];
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Validating...';
+            
+            try {
+                const response = await fetch('/Settings/Items/ValidateImport', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show preview
+                    document.getElementById('uploadStep').style.display = 'none';
+                    document.getElementById('previewStep').style.display = 'block';
+                    
+                    // Update summary
+                    document.getElementById('summaryTotal').textContent = result.summary.total;
+                    document.getElementById('summaryAdd').textContent = result.summary.willAdd;
+                    document.getElementById('summaryUpdate').textContent = result.summary.willUpdate;
+                    document.getElementById('summaryErrors').textContent = result.summary.hasErrors;
+                    
+                    // Populate preview table
+                    const tbody = document.getElementById('previewTableBody');
+                    tbody.innerHTML = '';
+                    
+                    result.items.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.style.backgroundColor = item.hasError ? '#fff5f5' : 'white';
+                        
+                        let actionBadge = '';
+                        if (item.action === 'Add') {
+                            actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.85em;">Add</span>';
+                        } else if (item.action === 'Update') {
+                            actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.85em;">Update</span>';
+                        } else {
+                            actionBadge = '<span style="padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.85em;">Skip</span>';
+                        }
+                        
+                        let errorText = '';
+                        if (item.errors && item.errors.length > 0) {
+                            errorText = '<br><small style="color: #dc3545;">' + item.errors.join(', ') + '</small>';
+                        }
+                        
+                        row.innerHTML = `
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${actionBadge}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.itemId || ''}${errorText}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.itemName || ''}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.gradeLevel || ''}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.categoryId || ''}</td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #ddd;">${item.status || ''}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Disable confirm button if there are errors
+                    const confirmBtn = document.getElementById('confirmImportBtn');
+                    if (result.summary.hasErrors > 0) {
+                        confirmBtn.disabled = true;
+                        confirmBtn.title = 'Fix validation errors before importing';
+                        document.getElementById('confirmError').textContent = 'Please fix validation errors before importing';
+                        document.getElementById('confirmError').style.display = 'block';
+                    } else {
+                        confirmBtn.disabled = false;
+                        confirmBtn.title = '';
+                    }
+                } else {
+                    document.getElementById('importError').textContent = result.message || 'Validation failed';
+                    document.getElementById('importError').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                document.getElementById('importError').textContent = `An error occurred during validation: ${error.message}`;
+                document.getElementById('importError').style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    }
+
+    // Edit button click
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            
+            row.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
+            row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'inline-block');
+        });
+    });
+    
+    // Cancel button click
+    document.querySelectorAll('.btn-cancel').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            
+            row.querySelectorAll('.view-mode').forEach(el => el.style.display = '');
+            row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
+        });
+    });
+    
+    // Save button click
+    document.querySelectorAll('.btn-save').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.getAttribute('data-id');
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            
+            const data = {
+                ItemId: id,
+                ItemName: row.querySelector('[data-field="ItemName"]').value,
+                Description: row.querySelector('[data-field="Description"]').value || null,
+                GradeLevel: row.querySelector('[data-field="GradeLevel"]').value,
+                Currency: row.querySelector('[data-field="Currency"]').value,
+                Status: row.querySelector('[data-field="Status"]').value,
+                CategoryId: row.querySelector('[data-field="CategoryId"]').value || null,
+                IsActive: row.querySelector('[data-field="Status"]').value === 'Active'
+            };
+            
+            try {
+                const response = await fetch('@Url.Action("EditInline")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    row.querySelectorAll('.view-mode')[0].textContent = data.ItemName;
+                    row.querySelectorAll('.view-mode')[1].textContent = data.Description || '';
+                    row.querySelectorAll('.view-mode')[2].innerHTML = `<span class="grade-badge">${data.GradeLevel}</span>`;
+                    row.querySelectorAll('.view-mode')[3].textContent = data.Currency;
+                    
+                    const statusBadge = row.querySelectorAll('.view-mode')[4].querySelector('.status-badge');
+                    statusBadge.textContent = data.Status;
+                    statusBadge.className = 'status-badge ' + (data.Status === 'Active' ? 'status-active' : 'status-inactive');
+                    
+                    row.querySelectorAll('.view-mode').forEach(el => el.style.display = '');
+                    row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
+                    
+                    alert(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while saving');
+            }
+        });
+    });
+});
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+</script>
+<script src="~/js/search-debounce.js"></script>

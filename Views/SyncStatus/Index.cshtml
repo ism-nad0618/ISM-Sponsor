@@ -1,0 +1,327 @@
+@model ISMSponsor.ViewModels.IntegrationSyncViewModel
+@{
+    ViewData["Title"] = "Integration Sync Status";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-sync-alt"></i> Integration Sync Status</h2>
+            <p class="text-muted mb-0">Monitor external system synchronization</p>
+        </div>
+        <div>
+            @if (Model.IsSyncEnabled)
+            {
+                <form asp-action="SyncAll" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Sync all pending sponsors?')">
+                        <i class="fas fa-sync"></i> Sync All
+                    </button>
+                </form>
+            }
+            else
+            {
+                <span class="badge bg-warning text-dark">Sync Disabled</span>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Status Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Overall Health</h5>
+                    <h2 class="mb-0">
+                        <span class="badge @(Model.StatusSummary.HealthStatus == "Healthy" ? "bg-success" : 
+                                            Model.StatusSummary.HealthStatus == "Degraded" ? "bg-warning" : "bg-danger")">
+                            @Model.StatusSummary.HealthStatus
+                        </span>
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Total Sponsors</h5>
+                    <h2 class="mb-0">@Model.StatusSummary.TotalSponsorsInSystem</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Pending Sync</h5>
+                    <h2 class="mb-0 text-warning">@Model.StatusSummary.SponsorsPendingSync</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Failed (24h)</h5>
+                    <h2 class="mb-0 text-danger">@Model.StatusSummary.FailedSyncsLast24Hours</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-System Status -->
+    @if (Model.StatusSummary.SystemStatuses.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @foreach (var system in Model.StatusSummary.SystemStatuses.Values)
+                    {
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-@(system.Status == "Healthy" ? "success" : 
+                                                      system.Status == "Degraded" ? "warning" : "danger")">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong>@system.SystemName</strong>
+                                        <span class="badge bg-@(system.Status == "Healthy" ? "success" : 
+                                                                system.Status == "Degraded" ? "warning" : "danger")">
+                                            @system.Status
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm mb-0">
+                                        <tr>
+                                            <th width="50%">Last Successful Sync:</th>
+                                            <td>
+                                                @if (system.LastSuccessfulSync.HasValue)
+                                                {
+                                                    @system.LastSuccessfulSync.Value.ToString("MMM d, h:mm tt")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Never</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Pending Records:</th>
+                                            <td><span class="badge bg-warning">@system.PendingRecords</span></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Failed Records:</th>
+                                            <td><span class="badge bg-danger">@system.FailedRecords</span></td>
+                                        </tr>
+                                        @if (!string.IsNullOrEmpty(system.LastError))
+                                        {
+                                            <tr>
+                                                <th>Last Error:</th>
+                                                <td><small class="text-danger">@system.LastError</small></td>
+                                            </tr>
+                                        }
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Recent Failures -->
+    @if (Model.RecentFailures.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Recent Sync Failures</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Failed At</th>
+                                <th>Sponsor</th>
+                                <th>System</th>
+                                <th>Operation</th>
+                                <th>Error</th>
+                                <th>Retries</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var failure in Model.RecentFailures)
+                            {
+                                <tr>
+                                    <td>
+                                        <small>@failure.FailedAt.ToString("MMM d, h:mm tt")</small>
+                                    </td>
+                                    <td>
+                                        <a asp-controller="Sponsors" asp-action="Profile" asp-route-id="@failure.SponsorId">
+                                            @failure.SponsorName
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@failure.ExternalSystemName</span>
+                                    </td>
+                                    <td>@failure.Operation</td>
+                                    <td>
+                                        <small class="text-danger">
+                                            @failure.ErrorMessage
+                                            @if (!string.IsNullOrEmpty(failure.ErrorDetails))
+                                            {
+                                                <button type="button" class="btn btn-sm btn-link p-0" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#errorModal-@failure.SyncLogId">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </button>
+                                            }
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">@failure.RetryCount</span>
+                                    </td>
+                                    <td>
+                                        @if (failure.CanRetry)
+                                        {
+                                            <form asp-action="RetrySyncOperation" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="syncLogId" value="@failure.SyncLogId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary" 
+                                                        title="Retry sync">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Max retries</span>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <!-- Error Details Modal -->
+                                @if (!string.IsNullOrEmpty(failure.ErrorDetails))
+                                {
+                                    <div class="modal fade" id="errorModal-@failure.SyncLogId" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Error Details</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <pre class="bg-light p-3">@failure.ErrorDetails</pre>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Recent Sync History -->
+    @if (Model.RecentSyncs.Any())
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Sync Operations</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Synced At</th>
+                                <th>Sponsor</th>
+                                <th>System</th>
+                                <th>External ID</th>
+                                <th>Operation</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sync in Model.RecentSyncs.Take(20))
+                            {
+                                <tr class="@(sync.Success ? "" : "table-danger")">
+                                    <td>
+                                        <small>@sync.SyncedAt.ToString("MMM d, h:mm tt")</small>
+                                    </td>
+                                    <td>
+                                        <a asp-controller="Sponsors" asp-action="Profile" asp-route-id="@sync.SponsorId">
+                                            @sync.SponsorName
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@sync.ExternalSystemName</span>
+                                    </td>
+                                    <td>
+                                        <small>@sync.ExternalId</small>
+                                    </td>
+                                    <td>@sync.Operation</td>
+                                    <td>
+                                        @if (sync.Success)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Success
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times"></i> Failed
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Housekeeping Actions -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Maintenance</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="ClearOldLogs" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="daysToKeep" value="90" />
+                <button type="submit" class="btn btn-outline-warning" 
+                        onclick="return confirm('Clear sync logs older than 90 days?')">
+                    <i class="fas fa-trash"></i> Clear Old Logs (90+ days)
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

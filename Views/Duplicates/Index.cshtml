@@ -1,0 +1,191 @@
+@model ISMSponsor.ViewModels.DuplicateDetectionViewModel
+@{
+    ViewData["Title"] = "Duplicate Sponsors";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-clone"></i> Duplicate Sponsor Detection</h2>
+            <p class="text-muted mb-0">
+                Manage duplicate sponsor records and merge operations
+            </p>
+        </div>
+        <div>
+            <form asp-action="RunDetection" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Run Detection
+                </button>
+            </form>
+            <a asp-action="MergeHistory" class="btn btn-outline-secondary">
+                <i class="fas fa-history"></i> Merge History
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Total Duplicates</h5>
+                    <h2 class="mb-0">@Model.TotalDuplicates</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Last Detection Run</h5>
+                    <p class="mb-0">
+                        @if (Model.LastDetectionRun.HasValue)
+                        {
+                            @Model.LastDetectionRun.Value.ToString("MMM d, yyyy h:mm tt")
+                        }
+                        else
+                        {
+                            <span class="text-muted">Never</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.DuplicateGroups.Any())
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Potential Duplicate Sponsors</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Match Score</th>
+                                <th>Primary Sponsor</th>
+                                <th>Secondary Sponsor</th>
+                                <th>Match Reason</th>
+                                <th>Detected</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var duplicate in Model.DuplicateGroups)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="badge @(duplicate.MatchScore >= 0.9m ? "bg-danger" : 
+                                                             duplicate.MatchScore >= 0.7m ? "bg-warning" : "bg-info")">
+                                            @duplicate.MatchScore.ToString("P0")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>@duplicate.PrimarySponsorName</strong><br />
+                                        <small class="text-muted">
+                                            @duplicate.PrimarySponsorEmail<br />
+                                            @duplicate.PrimarySponsorPhone
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>@duplicate.SecondarySponsorName</strong><br />
+                                        <small class="text-muted">
+                                            @duplicate.SecondarySponsorEmail<br />
+                                            @duplicate.SecondarySponsorPhone
+                                        </small>
+                                    </td>
+                                    <td>@duplicate.MatchReason</td>
+                                    <td>
+                                        <small>@duplicate.DetectedAt.ToString("MMM d, yyyy")</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@duplicate.Status</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="MergePreview" 
+                                               asp-route-primaryId="@duplicate.PrimarySponsorId" 
+                                               asp-route-secondaryId="@duplicate.SecondarySponsorId" 
+                                               class="btn btn-outline-primary"
+                                               title="Preview merge">
+                                                <i class="fas fa-code-branch"></i> Merge
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-secondary"
+                                                    onclick="markNotDuplicate(@duplicate.DuplicateId)"
+                                                    title="Mark as not a duplicate">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No duplicate sponsors detected. Click "Run Detection" to scan for duplicates.
+        </div>
+    }
+</div>
+
+<!-- Modal for marking not a duplicate -->
+<div class="modal fade" id="notDuplicateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="notDuplicateForm" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="duplicateId" id="duplicateIdInput" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Not a Duplicate</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure these sponsors are not duplicates?</p>
+                    <div class="mb-3">
+                        <label for="notesInput" class="form-label">Notes (optional)</label>
+                        <textarea class="form-control" id="notesInput" name="notes" rows="3" 
+                                  placeholder="Why are these not duplicates?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function markNotDuplicate(duplicateId) {
+            document.getElementById('duplicateIdInput').value = duplicateId;
+            document.getElementById('notDuplicateForm').action = '@Url.Action("MarkNotDuplicate")';
+            new bootstrap.Modal(document.getElementById('notDuplicateModal')).show();
+        }
+    </script>
+}

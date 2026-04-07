@@ -1,0 +1,228 @@
+@model ISMSponsor.Models.Domain.SponsorChangeRequest
+@{
+    ViewData["Title"] = $"Review Request #{Model.RequestId}";
+    var isAdmin = User.IsInRole("admin");
+    var canReview = Model.Status == "Pending";
+    var canApply = Model.Status == "Approved" && isAdmin;
+}
+
+<div class="page-header">
+    <h2>Change Request #@Model.RequestId - Review</h2>
+    <div class="actions">
+        <a asp-action="Index" class="btn-secondary">Back to Queue</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error">@TempData["Error"]</div>
+}
+
+<div class="card">
+    <h3 class="card-title">Request Information</h3>
+    
+    <div class="data-grid">
+        <div class="data-item">
+            <label class="data-label">Sponsor ID</label>
+            <div class="data-value">@Model.SponsorId</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Sponsor Name</label>
+            <div class="data-value">
+                <a asp-controller="Sponsors" asp-action="Profile" asp-route-id="@Model.SponsorId">
+                    @Model.Sponsor?.SponsorName
+                </a>
+            </div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Field</label>
+            <div class="data-value">@Model.RequestField</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Status</label>
+            <div class="data-value">
+                <span class="badge badge-@GetStatusClass(Model.Status)">@Model.Status</span>
+            </div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Submitted By</label>
+            <div class="data-value">@Model.SubmittedByUserDisplay</div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Submitted On</label>
+            <div class="data-value">@Model.SubmittedOn.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Requested Change</h3>
+    
+    <div class="data-grid">
+        <div class="data-item">
+            <label class="data-label">Current Value</label>
+            <div class="data-value" style="padding: 1rem; background-color: #f5f5f5; border-radius: 4px;">
+                @(Model.CurrentValue ?? "(empty)")
+            </div>
+        </div>
+        
+        <div class="data-item">
+            <label class="data-label">Requested Value</label>
+            <div class="data-value" style="padding: 1rem; background-color: #e3f2fd; border-radius: 4px; font-weight: bold;">
+                @Model.RequestedValue
+            </div>
+        </div>
+    </div>
+    
+    @if (!string.IsNullOrEmpty(Model.RequestReason))
+    {
+        <div class="data-item" style="margin-top: 1rem;">
+            <label class="data-label">Reason for Change</label>
+            <div class="data-value" style="padding: 1rem; background-color: #fff9c4; border-radius: 4px;">
+                @Model.RequestReason
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.ReviewedOn.HasValue)
+{
+    <div class="card">
+        <h3 class="card-title">Review Information</h3>
+        
+        <div class="data-grid">
+            <div class="data-item">
+                <label class="data-label">Reviewed By</label>
+                <div class="data-value">@Model.ReviewedByUserDisplay</div>
+            </div>
+            
+            <div class="data-item">
+                <label class="data-label">Reviewed On</label>
+                <div class="data-value">@Model.ReviewedOn.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+            </div>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.ReviewNotes))
+        {
+            <div class="data-item" style="margin-top: 1rem;">
+                <label class="data-label">Review Notes</label>
+                <div class="data-value">@Model.ReviewNotes</div>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.AppliedOn.HasValue)
+{
+    <div class="card">
+        <h3 class="card-title">Application Information</h3>
+        
+        <div class="data-grid">
+            <div class="data-item">
+                <label class="data-label">Applied By</label>
+                <div class="data-value">@Model.AppliedByUserDisplay</div>
+            </div>
+            
+            <div class="data-item">
+                <label class="data-label">Applied On</label>
+                <div class="data-value">@Model.AppliedOn.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+            </div>
+            
+            <div class="data-item">
+                <label class="data-label">Applied Value</label>
+                <div class="data-value">@Model.AppliedValue</div>
+            </div>
+        </div>
+        
+        <div class="alert alert-success" style="margin-top: 1rem;">
+            This change has been applied to the sponsor master record.
+        </div>
+    </div>
+}
+
+@if (canReview)
+{
+    <div class="card">
+        <h3 class="card-title">Review Actions</h3>
+        
+        <form asp-action="Review" method="post" id="reviewForm">
+            <input type="hidden" name="RequestId" value="@Model.RequestId" />
+            <input type="hidden" name="Action" id="actionInput" value="" />
+            
+            <div class="form-group">
+                <label class="field-label">Review Notes</label>
+                <textarea name="ReviewNotes" class="form-control" rows="4" placeholder="Optional notes about your decision"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" onclick="submitAction('approve')" class="btn-primary">
+                    Approve
+                </button>
+                <button type="button" onclick="submitAction('reject')" class="btn-danger">
+                    Reject
+                </button>
+            </div>
+        </form>
+    </div>
+}
+
+@if (canApply)
+{
+    <div class="card">
+        <h3 class="card-title">Apply Approved Change</h3>
+        <p style="color: #666; margin-bottom: 1rem;">
+            This request has been approved. Click below to apply the change to the sponsor master record.
+        </p>
+        
+        <form asp-action="Apply" method="post" onsubmit="return confirm('Are you sure you want to apply this change to the sponsor master record?');">
+            <input type="hidden" name="id" value="@Model.RequestId" />
+            <button type="submit" class="btn-primary">
+                Apply Change to Master Data
+            </button>
+        </form>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function submitAction(action) {
+            if (action === 'reject') {
+                if (!confirm('Are you sure you want to reject this request?')) {
+                    return;
+                }
+            } else if (action === 'approve') {
+                if (!confirm('Are you sure you want to approve this request?')) {
+                    return;
+                }
+            }
+            
+            document.getElementById('actionInput').value = action;
+            document.getElementById('reviewForm').submit();
+        }
+    </script>
+}
+
+@functions {
+    string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "warning",
+            "Approved" => "info",
+            "Applied" => "success",
+            "Rejected" => "danger",
+            "Cancelled" => "secondary",
+            _ => "secondary"
+        };
+    }
+}

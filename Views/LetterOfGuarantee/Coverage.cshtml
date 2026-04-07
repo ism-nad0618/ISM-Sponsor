@@ -1,0 +1,217 @@
+@model ISMSponsor.Models.Domain.LogCoverage
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = $"LoG #{Model.LogId} Coverage Details";
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Coverage Details - LoG #{Model.LogId}</h1>
+            <p class="page-subtitle">Review configured coverage rules for this Letter of Guarantee</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a asp-action="Details" asp-route-id="@Model.LogId" class="btn-secondary btn-add">Back to Details</a>
+            <a asp-action="Index" class="btn-secondary btn-add">Back to List</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">LoG Summary</h2>
+    <div class="data-grid">
+        <div>
+            <p class="field-label">School Year</p>
+            <p><strong>@Model.SchoolYearId</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Student ID</p>
+            <p><strong>@Model.StudentId</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Student Name</p>
+            <p><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Grade Level</p>
+            <p><strong>@(Model.Student?.GradeLevel ?? "N/A")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Sponsor</p>
+            <p><strong>@(Model.Sponsor?.SponsorName ?? "N/A")</strong></p>
+        </div>
+        <div>
+            <p class="field-label">Status</p>
+            <p><span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span></p>
+        </div>
+        <div>
+            <p class="field-label">Active State</p>
+            <p>
+                @if (Model.IsActive)
+                {
+                    <span class="status-badge status-active">Active</span>
+                }
+                else
+                {
+                    <span class="status-badge status-inactive">Inactive</span>
+                }
+            </p>
+        </div>
+        <div>
+            <p class="field-label">Effective Period</p>
+            <p>
+                <strong>
+                    @(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")
+                    to
+                    @(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")
+                </strong>
+            </p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Notes))
+    {
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
+            <p class="field-label">Notes</p>
+            <p style="white-space: pre-wrap;">@Model.Notes</p>
+        </div>
+    }
+</div>
+
+<div class="card">
+    <h2 class="table-title">Coverage Rules (@(Model.CoverageRules?.Count ?? 0))</h2>
+    
+    @if (Model.CoverageRules == null || !Model.CoverageRules.Any())
+    {
+        <div class="alert alert-error">
+            <strong>⚠ No Coverage Rules Defined</strong>
+            <p>This Letter of Guarantee does not have any coverage rules configured. No charges will be covered under this LoG.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Target</th>
+                        <th>Item/Category</th>
+                        <th>Coverage Type</th>
+                        <th>Details</th>
+                        <th>Effective Period</th>
+                        <th>Status</th>
+                        <th>Exception Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rule in Model.CoverageRules.OrderBy(r => r.DisplayOrder).ThenBy(r => r.RuleId))
+                    {
+                        <tr>
+                            <td>@rule.DisplayOrder</td>
+                            <td>
+                                <span class="badge-yellow">@rule.CoverageTarget</span>
+                            </td>
+                            <td>
+                                @if (rule.CoverageTarget == "Item")
+                                {
+                                    <strong>@(rule.Item?.ItemName ?? rule.ItemId ?? "N/A")</strong>
+                                    <br />
+                                    <small style="color: var(--gray-500);">Item ID: @(rule.ItemId ?? "N/A")</small>
+                                }
+                                else
+                                {
+                                    <strong>@(rule.Category?.CategoryName ?? rule.CategoryId ?? "N/A")</strong>
+                                    <br />
+                                    <small style="color: var(--gray-500);">Category ID: @(rule.CategoryId ?? "N/A")</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="role-badge">@rule.CoverageType</span>
+                            </td>
+                            <td>
+                                @switch (rule.CoverageType)
+                                {
+                                    case "Full":
+                                        <span>100% Coverage</span>
+                                        break;
+                                    case "Percentage":
+                                        <span><strong>@rule.CoveragePercentage%</strong> of charge amount</span>
+                                        break;
+                                    case "FixedAmount":
+                                        <span><strong>₱@rule.CoverageFixedAmount?.ToString("N2")</strong> per charge</span>
+                                        break;
+                                    case "UpToCap":
+                                        <span>Up to <strong>₱@rule.CapAmount?.ToString("N2")</strong> cap</span>
+                                        break;
+                                    default:
+                                        <span>@rule.CoverageType</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                @if (rule.EffectiveFrom.HasValue || rule.EffectiveTo.HasValue)
+                                {
+                                    <small>
+                                        @(rule.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Start")
+                                        <br />to<br />
+                                        @(rule.EffectiveTo?.ToString("MMM dd, yyyy") ?? "End")
+                                    </small>
+                                }
+                                else
+                                {
+                                    <small style="color: var(--gray-500);">No date restriction</small>
+                                }
+                            </td>
+                            <td>
+                                @if (rule.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(rule.ExceptionNote))
+                                {
+                                    <small style="max-width: 200px; display: block;">@rule.ExceptionNote</small>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--gray-300);">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--ism-yellow-soft); border-radius: 8px;">
+            <p class="field-label" style="margin-bottom: 0.5rem;">Coverage Evaluation Note</p>
+            <p style="margin: 0;">
+                This view shows the configured coverage rules only. Actual charge evaluation and bill-to decisions 
+                will be performed by the Coverage Evaluation API when charges are entered into the system.
+            </p>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(Model.AttachmentFileName))
+{
+    <div class="card">
+        <h2 class="table-title">Attachment</h2>
+        <div class="data-grid">
+            <div>
+                <p class="field-label">File Name</p>
+                <p><strong>@Model.AttachmentFileName</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Uploaded On</p>
+                <p><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+            </div>
+        </div>
+    </div>
+}

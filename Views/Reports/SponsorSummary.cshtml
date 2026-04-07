@@ -1,0 +1,102 @@
+@model List<ISMSponsor.Models.Domain.Sponsor>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Sponsor Summary Report";
+    var filters = ViewBag.Filters as ISMSponsor.ViewModels.ReportFilterViewModel ?? new ISMSponsor.ViewModels.ReportFilterViewModel();
+    var sponsorCount = ViewBag.SponsorCount ?? 0;
+    var activeCount = ViewBag.ActiveCount ?? 0;
+    var inactiveCount = ViewBag.InactiveCount ?? 0;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Sponsor Summary Report</h1>
+        <p class="page-subtitle">Complete sponsor roster with status and activity metrics</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to Reports Hub</a>
+    </div>
+</div>
+
+@{
+    ViewBag.SummaryTitle = "Summary Statistics";
+    ViewBag.SummaryMetrics = new Dictionary<string, object>
+    {
+        { "Total Sponsors", sponsorCount },
+        { "Active Sponsors", activeCount },
+        { "Inactive Sponsors", inactiveCount },
+        { "Generated At", DateTime.Now.ToString("MMM d, yyyy h:mm tt") }
+    };
+}
+@await Html.PartialAsync("_ReportSummary")
+
+@{
+    ViewBag.ShowSponsorFilter = false;
+    ViewBag.ShowStudentFilter = false;
+    ViewBag.ShowStatusFilter = true;
+    ViewBag.ShowDateRangeFilter = true;
+    ViewBag.FormAction = Url.Action("SponsorSummary");
+}
+@await Html.PartialAsync("_ReportFilters", filters)
+
+@if (!Model.Any())
+{
+    @await Html.PartialAsync("_ReportNoData")
+}
+else
+{
+    <div class="card">
+        <h2 class="table-title">Sponsor Details (@Model.Count sponsors)</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sponsor ID</th>
+                        <th>Sponsor Name</th>
+                        <th>Legal Name</th>
+                        <th>TIN</th>
+                        <th>Status</th>
+                        <th>Created On</th>
+                        <th>Modified On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sponsor in Model)
+                    {
+                        <tr>
+                            <td><strong>@sponsor.SponsorId</strong></td>
+                            <td>@sponsor.SponsorName</td>
+                            <td>@sponsor.LegalName</td>
+                            <td>@sponsor.Tin</td>
+                            <td>
+                                @if (sponsor.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>@sponsor.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td>
+                                @if (sponsor.ModifiedOn.HasValue)
+                                {
+                                    @sponsor.ModifiedOn.Value.ToString("MMM d, yyyy")
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">N/A</span>
+                                }
+                            </td>
+                            <td>
+                                <a href="@Url.Action("Profile", "Sponsors", new { id = sponsor.SponsorId })" class="link">View Profile</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

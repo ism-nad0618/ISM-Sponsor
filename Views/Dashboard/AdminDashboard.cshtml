@@ -1,0 +1,100 @@
+@model ISMSponsor.ViewModels.AdminDashboardViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p class="page-subtitle">
+        System overview for school year: <strong>@(Model.SelectedSchoolYear?.Name ?? "Not Selected")</strong>
+    </p>
+</div>
+
+@if (Model.Alerts?.Any() == true)
+{
+    @await Html.PartialAsync("_DashboardAlerts", Model.Alerts)
+}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Sponsors</div>
+        <div class="stat-value">@Model.TotalSponsors</div>
+        <div class="stat-sub">@Model.ActiveSponsors active</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">@Model.TotalStudents</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active LoGs</div>
+        <div class="stat-value">@Model.ActiveLoGs</div>
+        <div class="stat-sub">of @Model.TotalLoGs total</div>
+    </div>
+    <div class="stat-card @(Model.PendingLoGs > 0 || Model.PendingChangeRequests > 0 ? "stat-card-warning" : "")">
+        <div class="stat-label">Pending Items</div>
+        <div class="stat-value">@(Model.PendingLoGs + Model.PendingChangeRequests)</div>
+        <div class="stat-sub">@Model.PendingLoGs LoGs, @Model.PendingChangeRequests requests</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Recent Letters of Guarantee (@Model.RecentLoGs.Count())</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Sponsor</th>
+                    <th>Status</th>
+                    <th>Coverage</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.RecentLoGs.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">No recent LoGs available.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in Model.RecentLoGs.Take(8))
+                    {
+                        var avgCoverage = log.CoverageRules?.Any() == true 
+                            ? log.CoverageRules.Where(r => r.CoveragePercentage.HasValue).Average(r => r.CoveragePercentage) ?? 0
+                            : 0;
+                        <tr>
+                            <td data-label="Student">@log.Student?.FirstName @log.Student?.LastName</td>
+                            <td data-label="Sponsor">@log.Sponsor?.SponsorName</td>
+                            <td data-label="Status">
+                                <span class="status-badge @(log.LogStatus == "Approved" ? "status-active" : log.LogStatus == "Pending" ? "status-pending" : "status-draft")">
+                                    @log.LogStatus
+                                </span>
+                            </td>
+                            <td data-label="Coverage">@avgCoverage.ToString("F0")%</td>
+                            <td data-label="Created">@log.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td data-label="Actions" class="action-cell">
+                                <a href="/LetterOfGuarantee/Details/@log.LogId" class="btn-link">View</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.RecentLoGs.Count() > 8)
+    {
+        <div style="padding: 1rem; text-align: center; border-top: 1px solid var(--gray-200);">
+            <a href="/LetterOfGuarantee" class="btn-secondary">View All LoGs</a>
+        </div>
+    }
+</div>
+
+<style>
+.stat-card-warning {
+    border-left: 4px solid #f59e0b;
+}
+</style>

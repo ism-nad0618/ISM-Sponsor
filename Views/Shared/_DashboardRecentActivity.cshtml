@@ -1,0 +1,29 @@
+@model List<ISMSponsor.ViewModels.RecentActivityItem>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card">
+        <h3 class="table-title">📅 Recent Activity</h3>
+        <div class="dashboard-activity">
+            @foreach (var activity in Model)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon">@activity.Icon</div>
+                    <div class="activity-content">
+                        <div class="activity-header">
+                            <strong>@activity.Activity</strong>
+                            <span class="activity-time">@activity.Timestamp.ToString("MMM d, h:mm tt")</span>
+                        </div>
+                        <p class="activity-description">@activity.Description</p>
+                    </div>
+                    @if (!string.IsNullOrEmpty(activity.ActionUrl))
+                    {
+                        <div class="activity-action">
+                            <a href="@activity.ActionUrl" class="btn btn-sm btn-outline">View</a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}

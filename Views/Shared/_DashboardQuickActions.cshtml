@@ -1,0 +1,24 @@
+@model List<ISMSponsor.ViewModels.QuickActionItem>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card">
+        <h3 class="table-title"> Quick Actions</h3>
+        <div class="dashboard-quick-actions">
+            @foreach (var action in Model)
+            {
+                <a href="@action.ActionUrl" class="quick-action-card">
+                    <div class="quick-action-icon">@action.Icon</div>
+                    <div class="quick-action-content">
+                        <strong>@action.Title</strong>
+                        <p>@action.Description</p>
+                    </div>
+                    @if (!string.IsNullOrEmpty(action.BadgeText))
+                    {
+                        <span class="badge @action.BadgeClass">@action.BadgeText</span>
+                    }
+                </a>
+            }
+        </div>
+    </div>
+}

@@ -1,0 +1,152 @@
+@model ISMSponsor.ViewModels.PortalLoGsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Letters of Guarantee";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Letters of Guarantee</h1>
+        <p class="page-subtitle">View and manage your Letters of Guarantee for @Model.SelectedSchoolYearName</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to Portal Home</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="get" action="@Url.Action("LettersOfGuarantee")" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 1rem; align-items: end;">
+        <div class="form-group" style="margin: 0;">
+            <label for="schoolYear" class="field-label">School Year</label>
+            <select id="schoolYear" name="schoolYear" class="form-control">
+                @foreach (var year in Model.AvailableSchoolYears)
+                {
+                    <option value="@year.SchoolYearId" selected="@(year.SchoolYearId == Model.SelectedSchoolYearId)">
+                        @year.Name
+                    </option>
+                }
+            </select>
+        </div>
+        
+        <div class="form-group" style="margin: 0;">
+            <label for="search" class="field-label">Search</label>
+            <input type="text" id="search" name="search" value="@Model.SearchQuery" placeholder="Student ID or Name..." class="form-control" />
+        </div>
+        
+        <div class="form-group" style="margin: 0;">
+            <label for="status" class="field-label">Status</label>
+            <select id="status" name="status" class="form-control">
+                <option value="">All Statuses</option>
+                <option value="active" selected="@(Model.StatusFilter == "active")">Active</option>
+                <option value="inactive" selected="@(Model.StatusFilter == "inactive")">Inactive</option>
+                <option value="Draft" selected="@(Model.StatusFilter == "Draft")">Draft</option>
+                <option value="Submitted" selected="@(Model.StatusFilter == "Submitted")">Submitted</option>
+                <option value="UnderReview" selected="@(Model.StatusFilter == "UnderReview")">Under Review</option>
+                <option value="Approved" selected="@(Model.StatusFilter == "Approved")">Approved</option>
+                <option value="Rejected" selected="@(Model.StatusFilter == "Rejected")">Rejected</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
+        <a href="@Url.Action("LettersOfGuarantee")" class="btn btn-secondary">Clear</a>
+    </form>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Total LoGs</div>
+        <div class="stat-value">@Model.LettersOfGuarantee.Count</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active LoGs</div>
+        <div class="stat-value">@Model.LettersOfGuarantee.Count(l => l.IsActive)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Approved</div>
+        <div class="stat-value">@Model.LettersOfGuarantee.Count(l => l.LogStatus == "Approved")</div>
+    </div>
+</div>
+
+<!-- LoGs Table -->
+<div class="card">
+    <h2 class="table-title">Letters of Guarantee (@Model.LettersOfGuarantee.Count)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Rules</th>
+                    <th>Created On</th>
+                    <th>Activated On</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.LettersOfGuarantee.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            No Letters of Guarantee found matching your criteria.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in Model.LettersOfGuarantee)
+                    {
+                        <tr>
+                            <td><strong>@log.StudentId</strong></td>
+                            <td>
+                                @if (log.Student != null)
+                                {
+                                    @($"{log.Student.FirstName} {log.Student.LastName}")
+                                    <br />
+                                    <small style="color: #666;">Grade @log.Student.GradeLevel</small>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">N/A</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="status-badge status-@log.LogStatus.ToLower()">
+                                    @log.LogStatus
+                                </span>
+                            </td>
+                            <td>
+                                @if (log.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>@(log.CoverageRules?.Count ?? 0) rules</td>
+                            <td>@log.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td>
+                                @if (log.ActivatedOn.HasValue)
+                                {
+                                    @log.ActivatedOn.Value.ToString("MMM d, yyyy")
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">Not activated</span>
+                                }
+                            </td>
+                            <td>
+                                <a href="@Url.Action("LoGDetail", new { id = log.LogId })" class="link">View Details</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

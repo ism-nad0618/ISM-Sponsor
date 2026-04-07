@@ -1,0 +1,33 @@
+@model List<ISMSponsor.ViewModels.DashboardAlert>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card">
+        <h3 class="table-title"> Alerts & Notifications</h3>
+        <div class="dashboard-alerts">
+            @foreach (var alert in Model)
+            {
+                var alertClass = alert.Severity switch
+                {
+                    "error" => "alert-error",
+                    "warning" => "alert-warning",
+                    "success" => "alert-success",
+                    _ => "alert-info"
+                };
+                
+                <div class="dashboard-alert @alertClass">
+                    <div class="alert-content">
+                        <strong>@alert.Title</strong>
+                        <p>@alert.Message</p>
+                    </div>
+                    @if (!string.IsNullOrEmpty(alert.ActionUrl))
+                    {
+                        <div class="alert-action">
+                            <a href="@alert.ActionUrl" class="btn btn-sm">@alert.ActionText</a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}

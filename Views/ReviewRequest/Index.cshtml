@@ -1,0 +1,328 @@
+@model List<ISMSponsor.Models.Domain.SponsorChangeRequest>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Review Change Requests";
+    var search = ViewBag.Search as string ?? "";
+    var selectedStatus = ViewBag.Status as string ?? "";
+    var sortBy = ViewBag.SortBy as string ?? "SubmittedOn";
+    var sortOrder = ViewBag.SortOrder as string ?? "desc";
+    var isAdmin = User.IsInRole("admin");
+}
+
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1>Change Request Review Queue</h1>
+            <p class="page-subtitle">Review and approve sponsor change requests</p>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error">@TempData["Error"]</div>
+}
+
+<div class="card">
+    <form method="get" action="@Url.Action("Index")" class="filter-form">
+        <div class="filter-group" style="flex: 2; min-width: 250px;">
+            <label for="search" class="field-label">Search</label>
+            <input type="text" id="search" name="search" value="@search" placeholder="Sponsor name or ID..." />
+        </div>
+        <div class="filter-group" style="min-width: 150px;">
+            <label for="status" class="field-label">Status</label>
+            <select id="status" name="status">
+                <option value="">All Statuses</option>
+                <option value="Pending" selected="@(selectedStatus == "Pending")">Pending</option>
+                <option value="Approved" selected="@(selectedStatus == "Approved")">Approved</option>
+                <option value="Applied" selected="@(selectedStatus == "Applied")">Applied</option>
+                <option value="Rejected" selected="@(selectedStatus == "Rejected")">Rejected</option>
+                <option value="Cancelled" selected="@(selectedStatus == "Cancelled")">Cancelled</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-secondary">Apply</button>
+        <a href="@Url.Action("Index")" class="btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="card">
+    <h2 class="table-title">Change Requests (@Model.Count)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th><a href="?search=@search&status=@selectedStatus&sortBy=RequestId&sortOrder=@(sortBy == "RequestId" && sortOrder == "asc" ? "desc" : "asc")">Request ID @(sortBy == "RequestId" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                    <th><a href="?search=@search&status=@selectedStatus&sortBy=SponsorName&sortOrder=@(sortBy == "SponsorName" && sortOrder == "asc" ? "desc" : "asc")">Sponsor @(sortBy == "SponsorName" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                    <th><a href="?search=@search&status=@selectedStatus&sortBy=RequestField&sortOrder=@(sortBy == "RequestField" && sortOrder == "asc" ? "desc" : "asc")">Field @(sortBy == "RequestField" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                    <th>Current Value</th>
+                    <th>Requested Value</th>
+                    <th><a href="?search=@search&status=@selectedStatus&sortBy=Status&sortOrder=@(sortBy == "Status" && sortOrder == "asc" ? "desc" : "asc")">Status @(sortBy == "Status" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                    <th><a href="?search=@search&status=@selectedStatus&sortBy=SubmittedBy&sortOrder=@(sortBy == "SubmittedBy" && sortOrder == "asc" ? "desc" : "asc")">Submitted By @(sortBy == "SubmittedBy" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                    <th><a href="?search=@search&status=@selectedStatus&sortBy=SubmittedOn&sortOrder=@(sortBy == "SubmittedOn" && sortOrder == "asc" ? "desc" : "asc")">Submitted On @(sortBy == "SubmittedOn" ? (sortOrder == "asc" ? "▲" : "▼") : "")</a></th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(Model.Count == 0)
+                {
+                    ViewData["EmptyIcon"] = "";
+                    ViewData["EmptyTitle"] = "No Change Requests Found";
+                    ViewData["EmptyMessage"] = "No change requests match your search criteria. Try adjusting your filters.";
+                    <tr>
+                        <td colspan="9">
+                            @await Html.PartialAsync("_EmptyState")
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var request in Model)
+                    {
+                        <tr>
+                            <td data-label="Request ID"><strong>#@request.RequestId</strong></td>
+                            <td data-label="Sponsor">@request.Sponsor?.SponsorName</td>
+                            <td data-label="Field">@request.RequestField</td>
+                            <td data-label="Current Value">@(request.CurrentValue ?? "—")</td>
+                            <td data-label="Requested Value"><strong>@request.RequestedValue</strong></td>
+                            <td data-label="Status">
+                                <span class="status-badge @(request.Status switch
+                                {
+                                    "Pending" => "status-pending",
+                                    "Approved" => "status-approved",
+                                    "Applied" => "status-active",
+                                    "Rejected" => "status-inactive",
+                                    "Cancelled" => "status-draft",
+                                    _ => "status-draft"
+                                })">@request.Status</span>
+                            </td>
+                            <td data-label="Submitted By">@request.SubmittedByUserDisplay</td>
+                            <td data-label="Submitted On">@request.SubmittedOn.ToLocalTime().ToString("MMM d, yyyy")</td>
+                            <td data-label="Actions" class="action-cell">
+                                <a href="javascript:void(0)" onclick="openReviewModal(@request.RequestId)" class="btn-link">Review</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Review Request Modal -->
+<div id="reviewModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 id="modalTitle">Review Request</h2>
+            <button class="modal-close" onclick="closeReviewModal()">&times;</button>
+        </div>
+        <div id="modalBody">
+            <div class="loading-spinner" style="text-align: center; padding: 2rem;">Loading...</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentRequestId = null;
+        const isAdmin = @(isAdmin.ToString().ToLower());
+
+        function openReviewModal(id) {
+            currentRequestId = id;
+            document.getElementById('reviewModal').style.display = 'flex';
+            document.getElementById('modalBody').innerHTML = '<div style="text-align: center; padding: 2rem;">Loading...</div>';
+            
+            fetch('/ReviewRequest/GetDetails/' + id)
+                .then(response => response.json())
+                .then(data => {
+                    renderModalContent(data);
+                })
+                .catch(error => {
+                    document.getElementById('modalBody').innerHTML = '<div class="alert alert-error">Failed to load request details.</div>';
+                });
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').style.display = 'none';
+            currentRequestId = null;
+        }
+
+        function renderModalContent(data) {
+            const statusClass = {
+                'Pending': 'status-pending',
+                'Approved': 'status-approved',
+                'Applied': 'status-active',
+                'Rejected': 'status-inactive',
+                'Cancelled': 'status-draft'
+            }[data.status] || 'status-draft';
+
+            let html = `
+                <div class="data-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="data-item">
+                        <label class="field-label">Sponsor ID</label>
+                        <div>${data.sponsorId}</div>
+                    </div>
+                    <div class="data-item">
+                        <label class="field-label">Sponsor Name</label>
+                        <div><a href="/Sponsors/Profile/${data.sponsorId}">${data.sponsorName || ''}</a></div>
+                    </div>
+                    <div class="data-item">
+                        <label class="field-label">Field</label>
+                        <div>${data.requestField}</div>
+                    </div>
+                    <div class="data-item">
+                        <label class="field-label">Status</label>
+                        <div><span class="status-badge ${statusClass}">${data.status}</span></div>
+                    </div>
+                    <div class="data-item">
+                        <label class="field-label">Submitted By</label>
+                        <div>${data.submittedByUserDisplay}</div>
+                    </div>
+                    <div class="data-item">
+                        <label class="field-label">Submitted On</label>
+                        <div>${data.submittedOn}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="field-label">Current Value</label>
+                    <div style="padding: 0.75rem; background-color: #f5f5f5; border-radius: 4px;">${data.currentValue}</div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="field-label">Requested Value</label>
+                    <div style="padding: 0.75rem; background-color: #e3f2fd; border-radius: 4px; font-weight: bold;">${data.requestedValue}</div>
+                </div>
+            `;
+
+            if (data.requestReason) {
+                html += `
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="field-label">Reason for Change</label>
+                        <div style="padding: 0.75rem; background-color: #fff9c4; border-radius: 4px;">${data.requestReason}</div>
+                    </div>
+                `;
+            }
+
+            if (data.reviewedOn) {
+                html += `
+                    <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f9f9f9; border-radius: 4px;">
+                        <label class="field-label" style="margin-bottom: 0.5rem;">Review Information</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <div><strong>Reviewed By:</strong> ${data.reviewedByUserDisplay}</div>
+                            <div><strong>Reviewed On:</strong> ${data.reviewedOn}</div>
+                        </div>
+                        ${data.reviewNotes ? `<div style="margin-top: 0.5rem;"><strong>Notes:</strong> ${data.reviewNotes}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            if (data.appliedOn) {
+                html += `
+                    <div class="alert alert-success" style="margin-bottom: 1.5rem;">
+                        Change applied by ${data.appliedByUserDisplay} on ${data.appliedOn}
+                    </div>
+                `;
+            }
+
+            if (data.canReview) {
+                html += `
+                    <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1rem;">
+                        <label class="field-label" for="reviewNotes">Review Notes</label>
+                        <textarea id="reviewNotes" class="form-control" rows="3" placeholder="Optional notes about your decision" style="width: 100%; margin-bottom: 1rem;"></textarea>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" onclick="submitReview('approve')" class="btn-primary">Approve</button>
+                            <button type="button" onclick="submitReview('reject')" class="btn-danger">Reject</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.canApply) {
+                html += `
+                    <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1rem;">
+                        <p style="color: #666; margin-bottom: 1rem;">This request has been approved. Click below to apply the change to the sponsor master record.</p>
+                        <button type="button" onclick="applyChange(${data.requestId})" class="btn-primary">Apply Change to Master Data</button>
+                    </div>
+                `;
+            }
+
+            document.getElementById('modalTitle').textContent = `Review Request #${data.requestId}`;
+            document.getElementById('modalBody').innerHTML = html;
+        }
+
+        function submitReview(action) {
+            const confirmMsg = action === 'approve' 
+                ? 'Are you sure you want to approve this request?' 
+                : 'Are you sure you want to reject this request?';
+            
+            if (!confirm(confirmMsg)) return;
+
+            const reviewNotes = document.getElementById('reviewNotes')?.value || '';
+            
+            fetch('/ReviewRequest/ReviewAjax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({
+                    requestId: currentRequestId,
+                    action: action,
+                    reviewNotes: reviewNotes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeReviewModal();
+                    location.reload();
+                } else {
+                    alert(data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                alert('Failed to submit review');
+            });
+        }
+
+        function applyChange(id) {
+            if (!confirm('Are you sure you want to apply this change to the sponsor master record?')) return;
+
+            fetch('/ReviewRequest/ApplyAjax/' + id, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeReviewModal();
+                    location.reload();
+                } else {
+                    alert(data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                alert('Failed to apply change');
+            });
+        }
+
+        // Close modal on outside click
+        document.getElementById('reviewModal').addEventListener('click', function(e) {
+            if (e.target === this) closeReviewModal();
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeReviewModal();
+        });
+    </script>
+}
+
+@Html.AntiForgeryToken()

@@ -1,0 +1,272 @@
+@model ISMSponsor.ViewModels.PortalLoGDetailViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "LoG Details";
+    var log = Model.LetterOfGuarantee;
+    var student = Model.Student;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Letter of Guarantee Details</h1>
+        <p class="page-subtitle">LoG #@log.LogId for Student @log.StudentId</p>
+    </div>
+    <div>
+        <a href="@Url.Action("LettersOfGuarantee")" class="btn btn-secondary">← Back to LoGs</a>
+    </div>
+</div>
+
+<!-- Status Overview -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Status</div>
+        <div class="stat-value" style="font-size: 1.25rem;">
+            <span class="status-badge status-@log.LogStatus.ToLower()">@log.LogStatus</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Status</div>
+        <div class="stat-value" style="font-size: 1.25rem;">
+            @if (log.IsActive)
+            {
+                <span class="status-badge status-active">Active</span>
+            }
+            else
+            {
+                <span class="status-badge status-inactive">Inactive</span>
+            }
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Coverage Rules</div>
+        <div class="stat-value">@Model.CoverageRules.Count</div>
+    </div>
+</div>
+
+<!-- Student Information -->
+<div class="card">
+    <h2 class="table-title">Student Information</h2>
+    <div class="data-grid">
+        <div>
+            <span class="field-label">Student ID</span>
+            <p><strong>@log.StudentId</strong></p>
+        </div>
+        @if (student != null)
+        {
+            <div>
+                <span class="field-label">Student Name</span>
+                <p><strong>@student.FirstName @student.LastName</strong></p>
+            </div>
+            <div>
+                <span class="field-label">Grade Level</span>
+                <p>@student.GradeLevel</p>
+            </div>
+            <div>
+                <span class="field-label">Status</span>
+                <p>
+                    <span class="status-badge status-@student.StudentStatus.ToLower()">
+                        @student.StudentStatus
+                    </span>
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- LoG Details -->
+<div class="card">
+    <h2 class="table-title">Letter of Guarantee Information</h2>
+    <div class="data-grid">
+        <div>
+            <span class="field-label">School Year</span>
+            <p><strong>@log.SchoolYearId</strong></p>
+        </div>
+        <div>
+            <span class="field-label">Created On</span>
+            <p>@log.CreatedOn.ToString("MMMM d, yyyy h:mm tt")</p>
+        </div>
+        @if (log.ActivatedOn.HasValue)
+        {
+            <div>
+                <span class="field-label">Activated On</span>
+                <p>@log.ActivatedOn.Value.ToString("MMMM d, yyyy h:mm tt")</p>
+            </div>
+        }
+        @if (log.DeactivatedOn.HasValue)
+        {
+            <div>
+                <span class="field-label">Deactivated On</span>
+                <p>@log.DeactivatedOn.Value.ToString("MMMM d, yyyy h:mm tt")</p>
+            </div>
+            <div>
+                <span class="field-label">Deactivation Reason</span>
+                <p>@(log.DeactivationReason ?? "Not specified")</p>
+            </div>
+        }
+        @if (log.EffectiveFrom.HasValue)
+        {
+            <div>
+                <span class="field-label">Effective From</span>
+                <p>@log.EffectiveFrom.Value.ToString("MMMM d, yyyy")</p>
+            </div>
+        }
+        @if (log.EffectiveTo.HasValue)
+        {
+            <div>
+                <span class="field-label">Effective To</span>
+                <p>@log.EffectiveTo.Value.ToString("MMMM d, yyyy")</p>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(log.Notes))
+        {
+            <div style="grid-column: 1 / -1;">
+                <span class="field-label">Notes</span>
+                <p>@log.Notes</p>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(log.ReviewComments))
+        {
+            <div style="grid-column: 1 / -1;">
+                <span class="field-label">Review Comments</span>
+                <p>@log.ReviewComments</p>
+            </div>
+        }
+    </div>
+    
+    @if (Model.CanDownloadAttachment)
+    {
+        <div style="padding: 1rem 0;">
+            <a href="@Url.Action("DownloadAttachment", new { id = log.LogId })" class="btn btn-primary">
+                📎 Download Attachment (@log.AttachmentFileName)
+            </a>
+        </div>
+    }
+</div>
+
+<!-- Coverage Rules -->
+<div class="card">
+    <h2 class="table-title">Coverage Rules (@Model.CoverageRules.Count)</h2>
+    @if (!Model.CoverageRules.Any())
+    {
+        <p style="padding: 1rem; color: #666; text-align: center;">No coverage rules defined for this LoG.</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Target</th>
+                        <th>Item/Category</th>
+                        <th>Coverage Type</th>
+                        <th>Coverage</th>
+                        <th>Cap Amount</th>
+                        <th>Effective Period</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rule in Model.CoverageRules)
+                    {
+                        <tr>
+                            <td>
+                                <span class="status-badge">@rule.CoverageTarget</span>
+                            </td>
+                            <td>
+                                @if (rule.CoverageTarget == "SpecificItem" && rule.Item != null)
+                                {
+                                    <strong>@rule.Item.ItemName</strong>
+                                    <br />
+                                    <small style="color: #666;">@rule.Item.ItemId</small>
+                                }
+                                else if (rule.CoverageTarget == "Category" && rule.Category != null)
+                                {
+                                    <strong>@rule.Category.CategoryName</strong>
+                                    <br />
+                                    <small style="color: #666;">All items in category</small>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">N/A</span>
+                                }
+                            </td>
+                            <td>
+                                @if (rule.CoverageType == "Percentage")
+                                {
+                                    <span>Percentage</span>
+                                }
+                                else if (rule.CoverageType == "FixedAmount")
+                                {
+                                    <span>Fixed Amount</span>
+                                }
+                                else
+                                {
+                                    <span>@rule.CoverageType</span>
+                                }
+                            </td>
+                            <td>
+                                @if (rule.CoverageType == "Percentage")
+                                {
+                                    <strong>@rule.CoveragePercentage%</strong>
+                                }
+                                else if (rule.CoverageType == "FixedAmount")
+                                {
+                                    <strong>@rule.CoverageFixedAmount?.ToString("C")</strong>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">N/A</span>
+                                }
+                            </td>
+                            <td>
+                                @if (rule.CapAmount.HasValue)
+                                {
+                                    @rule.CapAmount.Value.ToString("C")
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">No cap</span>
+                                }
+                            </td>
+                            <td>
+                                @if (rule.EffectiveFrom.HasValue && rule.EffectiveTo.HasValue)
+                                {
+                                    <small>
+                                        @rule.EffectiveFrom.Value.ToString("MMM d, yyyy")<br />
+                                        to @rule.EffectiveTo.Value.ToString("MMM d, yyyy")
+                                    </small>
+                                }
+                                else if (rule.EffectiveFrom.HasValue)
+                                {
+                                    <small>From @rule.EffectiveFrom.Value.ToString("MMM d, yyyy")</small>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">No dates set</span>
+                                }
+                            </td>
+                            <td>
+                                @if (rule.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                        </tr>
+                        @if (!string.IsNullOrWhiteSpace(rule.ExceptionNote))
+                        {
+                            <tr>
+                                <td colspan="7" style="background-color: #f8f9fa; padding: 0.5rem 1rem; border-left: 4px solid #ffc107;">
+                                    <strong>Note:</strong> @rule.ExceptionNote
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

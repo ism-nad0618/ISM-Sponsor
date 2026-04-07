@@ -18,13 +18,27 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="description" content="ISM Sponsor Portal - Manage Letters of Guarantee and student sponsorships" />
+    <meta name="theme-color" content="#0d5f3b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ISM Sponsor" />
     <title>@ViewData["Title"] - ISM Sponsor Portal</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="~/icons/icon-192.png" />
+    <link rel="shortcut icon" href="~/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="~/icons/icon-192.png" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <script src="~/js/site.js"></script>
 </head>
 <body>
     <div class="top-bar">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span class="hamburger-icon"></span>
+        </button>
+        
         <div class="logo">
             <div class="logo-main">INTERNATIONAL SCHOOL MANILA</div>
             <div class="logo-sub">Sponsor Portal</div>
@@ -33,41 +47,50 @@
         <div class="user-info">
             @if (SignInManager.IsSignedIn(User))
             {
-                <span>@display (@role)</span>
+                <span class="user-display-name">@display</span>
+                <span class="user-role">(@role)</span>
                 <form method="post" asp-controller="Account" asp-action="Logout">
-                    <button type="submit">Sign Out</button>
+                    <button type="submit" class="btn-logout">Sign Out</button>
                 </form>
             }
         </div>
-
-        <div class="year-selector">
-            <form method="post" asp-controller="SchoolYears" asp-action="SetActive" id="yearForm">
-                <select name="id" onchange="document.getElementById('yearForm').submit();" aria-label="Active school year">
-                    @{
-                        var years = Context.Items["SchoolYears"] as List<ISMSponsor.Models.Domain.SchoolYear>;
-                        var current = Context.Session.GetString("ActiveSchoolYear");
-                        if (years != null)
-                        {
-                            foreach (var y in years)
-                            {
-                                <option value="@y.SchoolYearId" selected="@(y.SchoolYearId == current ? "selected" : null)">@y.Name</option>
-                            }
-                        }
-                    }
-                </select>
-            </form>
-        </div>
     </div>
 
-    <div class="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+    
+    <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation" aria-hidden="true">
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close navigation menu">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        
         <ul>
             <li><a class="@navClass("Dashboard", "Index")" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+            
+            @if (User.IsInRole("sponsor"))
+            {
+                <li><strong>Sponsor Portal</strong></li>
+                <li><a class="@navClass("Portal", "Index")" asp-controller="Portal" asp-action="Index">Portal Home</a></li>
+                <li><a class="@navClass("Portal", "LettersOfGuarantee")" asp-controller="Portal" asp-action="LettersOfGuarantee">Letters of Guarantee</a></li>
+                <li><a class="@navClass("Portal", "Students")" asp-controller="Portal" asp-action="Students">Students</a></li>
+                <li><a class="@navClass("Portal", "Requests")" asp-controller="Portal" asp-action="Requests">Change Requests</a></li>
+                <li><a class="@navClass("Portal", "Contacts")" asp-controller="Portal" asp-action="Contacts">Contacts</a></li>
+                <li><a class="@navClass("Sponsors", "Profile")" asp-controller="Sponsors" asp-action="Profile">My Profile</a></li>
+            }
+            
             @if (User.IsInRole("admin") || User.IsInRole("cashier"))
             {
                 <li><a class="@navClass("Sponsors", "Index")" asp-controller="Sponsors" asp-action="Index">All Sponsors</a></li>
+                <li><a class="@navClass("AdminReports", "AllContacts")" asp-controller="AdminReports" asp-action="AllContacts">All Contacts</a></li>
             }
-            <li><a class="@navClass("Logs", "Index")" asp-controller="Logs" asp-action="Index">Letters of Guarantee (LoGs)</a></li>
-            <li><a class="@navClass("Reports", "Index")" asp-controller="Reports" asp-action="Index">Reports</a></li>
+            @if (User.IsInRole("admin") || User.IsInRole("admissions") || User.IsInRole("cashier"))
+            {
+                <li><a class="@navClass("LetterOfGuarantee", "")" asp-controller="LetterOfGuarantee" asp-action="Index">Letters of Guarantee</a></li>
+            }
+            
+            @if (!User.IsInRole("sponsor"))
+            {
+                <li><a class="@navClass("Reports", "Index")" asp-controller="Reports" asp-action="Index">Reports</a></li>
+            }
 
             @if (User.IsInRole("admin"))
             {
@@ -77,18 +100,32 @@
                 <li><a class="@navClass("Items", "Index")" asp-controller="Items" asp-action="Index">Items</a></li>
                 <li><a class="@navClass("Roles", "Index")" asp-controller="Roles" asp-action="Index">Roles</a></li>
                 <li><a class="@navClass("Users", "Index")" asp-controller="Users" asp-action="Index">Users</a></li>
+                
+                <li><strong>Administration</strong></li>
+                <li><a class="@navClass("Operations", "Dashboard")" asp-controller="Operations" asp-action="Dashboard">Operations Dashboard</a></li>
+                <li><a class="@navClass("Operations", "SyncRetry")" asp-controller="Operations" asp-action="SyncRetry">Integration Retry</a></li>
+                <li><a class="@navClass("Audit", "")" asp-controller="Audit" asp-action="Index">Audit Log</a></li>
+                <li><a class="@navClass("PilotSupport", "")" asp-controller="PilotSupport" asp-action="Index">Pilot Support</a></li>
             }
         </ul>
-    </div>
+    </nav>
 
-    <main class="main-content">
+    <main class="main-content" role="main">
         @RenderBody()
     </main>
 
+    @* Toast Notification System *@
+    @await Html.PartialAsync("_Toast")
+
     @await RenderSectionAsync("Scripts", required: false)
     <script>
+        // Unregister any existing service workers
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
         }
     </script>
 </body>

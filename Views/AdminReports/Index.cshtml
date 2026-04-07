@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Admin Reports";
+}
+
+<div class="container-fluid mt-4">
+    <h2>Admin Reports</h2>
+    <p class="text-muted">Comprehensive oversight reports for system administrators</p>
+
+    <div class="row mt-4">
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Sponsor Master Report</h5>
+                    <p class="card-text">Complete sponsor roster with activity metrics, merge history, and sync status.</p>
+                    <a href="@Url.Action("SponsorMaster", "AdminReports")" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">LoG Activity Report</h5>
+                    <p class="card-text">Letters of Guarantee activity with status tracking, approvals, and rule counts.</p>
+                    <a href="@Url.Action("LogActivity", "AdminReports")" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Coverage Decisions Report</h5>
+                    <p class="card-text">Coverage evaluation outcomes with decision breakdowns and amounts.</p>
+                    <a href="@Url.Action("CoverageDecisions", "AdminReports")" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Sync Status Report</h5>
+                    <p class="card-text">Integration sync attempts, success rates, and failure details by system.</p>
+                    <a href="@Url.Action("SyncStatus", "AdminReports")" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Audit Activity Report</h5>
+                    <p class="card-text">System activity log with user actions, module breakdowns, and critical events.</p>
+                    <a href="@Url.Action("AuditActivity", "AdminReports")" class="btn btn-primary">View Report</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info">Operations Dashboard</h5>
+                    <p class="card-text">Real-time operational monitoring with health status and recent failures.</p>
+                    <a href="@Url.Action("Dashboard", "Operations")" class="btn btn-info">View Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

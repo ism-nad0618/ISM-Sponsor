@@ -1,0 +1,16 @@
+ItemId,ItemName,Description,GradeLevel,Currency,Status,CategoryId,IsActive
+MAJOR-EA25%-G01 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-01,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G02 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-02,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G03 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-03,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G04 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-04,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G05 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-05,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G06 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-06,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G07 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-07,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G08 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-08,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G09 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-09,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G10 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-10,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G11 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-11,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-G12 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-12,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-KINDER EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-KINDER,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-P3 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-P3,US Dollar,Active,Education Assistance,TRUE
+MAJOR-EA25%-P4 EA Fee,EA Fee,Education Assistance (Full Semester 25% Fees),STUD-P4,US Dollar,Active,Education Assistance,TRUE

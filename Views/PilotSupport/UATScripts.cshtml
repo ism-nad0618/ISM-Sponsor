@@ -1,0 +1,665 @@
+@{
+    ViewData["Title"] = "UAT Scripts";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-clipboard-check"></i> UAT Test Scripts</h2>
+    <p class="lead">User Acceptance Testing scenarios (UT01-UT10) for pilot validation.</p>
+
+    <div class="mb-3">
+        <a href="@Url.Action("Index", "PilotSupport")" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Pilot Support
+        </a>
+    </div>
+
+    <hr />
+
+    <div class="alert alert-info">
+        <h5 class="alert-heading"><i class="bi bi-info-circle"></i> UAT Execution Guide</h5>
+        <p class="mb-2">Follow these steps to execute UAT:</p>
+        <ol class="mb-0">
+            <li><strong>Review all 10 scenarios</strong> below to understand test coverage</li>
+            <li><strong>Use demo accounts</strong> listed for each scenario (password: <code>Demo@2026!</code>)</li>
+            <li><strong>Follow test steps</strong> exactly as written, noting any deviations</li>
+            <li><strong>Record results</strong> using the evidence notes section</li>
+            <li><strong>Log defects</strong> using the defect template if issues found</li>
+            <li><strong>Sign off</strong> on each scenario after completion (Pass/Fail/Blocked)</li>
+        </ol>
+    </div>
+
+    <div class="mb-3">
+        <a href="~/docs/UAT_GUIDE.md" class="btn btn-success" download>
+            <i class="bi bi-download"></i> Download Full UAT Guide
+        </a>
+        <a href="~/docs/DEFECT_TEMPLATE.md" class="btn btn-outline-danger" download>
+            <i class="bi bi-download"></i> Download Defect Template
+        </a>
+        <a href="@Url.Action("DemoAccounts", "PilotSupport")" class="btn btn-outline-primary">
+            <i class="bi bi-person-badge"></i> View Demo Accounts
+        </a>
+    </div>
+
+    <hr />
+
+    <!-- UT01 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut01" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT01: Login and Baseline Access
+                <span class="badge bg-secondary float-end">All Roles</span>
+            </h4>
+        </div>
+        <div id="ut01" class="collapse show">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify each role can log in and access assigned pages.</p>
+                <p><strong>Actors:</strong> Admin, Admissions, Cashier, Sponsor</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph, demo.admissions@ism.edu.ph, demo.cashier@ism.edu.ph, demo.sponsor@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Navigate to <code>/Account/Login</code></li>
+                    <li>Enter username (e.g., <code>demo.admin@ism.edu.ph</code>) and password (<code>Demo@2026!</code>)</li>
+                    <li>Click "Login"</li>
+                    <li>Verify redirect to Dashboard after successful login</li>
+                    <li>Verify navigation menu shows role-appropriate links</li>
+                    <li>Logout and repeat for other roles</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li><strong>Admin:</strong> See Sponsors, Dashboard, Reports, Logs, Settings, Operations</li>
+                    <li><strong>Admissions:</strong> See Sponsors, Dashboard (limited), Reports (limited), no Settings</li>
+                    <li><strong>Cashier:</strong> See Sponsors (read-only), Dashboard (read-only), no edit actions</li>
+                    <li><strong>Sponsor:</strong> See Portal menu (future phase), limited access</li>
+                    <li>All roles: No access denied errors for allowed pages</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>All 4 roles can log in successfully</li>
+                    <li>Navigation menus match role permissions</li>
+                    <li>No unexpected errors or access denied messages</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-info">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 10 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT02 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut02" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT02: RBAC Enforcement
+                <span class="badge bg-warning float-end">Admissions, Cashier</span>
+            </h4>
+        </div>
+        <div id="ut02" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify role-based access control (RBAC) prevents unauthorized actions.</p>
+                <p><strong>Actors:</strong> Admissions (can submit requests, cannot approve), Cashier (read-only)</p>
+                <p><strong>Demo Accounts:</strong> demo.admissions@ism.edu.ph, demo.cashier@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as <strong>Admissions</strong> user</li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Verify "Create New Sponsor" button is visible</li>
+                    <li>Search for DEMO-SP001 and click "Edit"</li>
+                    <li>Make a change (e.g., billing address) and submit</li>
+                    <li>Verify change request is created (not directly applied)</li>
+                    <li>Logout, login as <strong>Cashier</strong></li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Verify "Create New Sponsor" button is NOT visible</li>
+                    <li>Search for DEMO-SP001 and verify no "Edit" or "Delete" buttons</li>
+                    <li>Attempt direct URL navigation to <code>/Sponsors/Edit?id=DEMO-SP001</code></li>
+                    <li>Verify "Access Denied" error is shown</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li><strong>Admissions:</strong> Can create sponsors, submit change requests, cannot approve or delete</li>
+                    <li><strong>Cashier:</strong> Read-only access, no create/edit/delete buttons, direct URL access blocked</li>
+                    <li>All unauthorized attempts result in "Access Denied" error</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Admissions can submit change requests but cannot approve</li>
+                    <li>Cashier cannot access any edit/create/delete actions</li>
+                    <li>Direct URL attempts to unauthorized pages return 403 Forbidden</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 15 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT03 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut03" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT03: Create Sponsor Record
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut03" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify sponsor creation with all required fields and validation.</p>
+                <p><strong>Actors:</strong> Admin or Admissions</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Click "Create New Sponsor"</li>
+                    <li>Fill in all required fields:
+                        <ul>
+                            <li>Organization Name: "Test Sponsor Organization"</li>
+                            <li>Sponsor Type: Select "Corporate"</li>
+                            <li>Primary Contact Name: "John Doe"</li>
+                            <li>Primary Contact Email: "john.doe@testsponsor.com"</li>
+                            <li>Primary Contact Phone: "+63 2 8123 4567"</li>
+                            <li>Billing Address: "123 Test St, Manila, Philippines"</li>
+                        </ul>
+                    </li>
+                    <li>Click "Create"</li>
+                    <li>Verify successful creation message</li>
+                    <li>Verify redirect to sponsor profile page</li>
+                    <li>Verify all entered data is displayed correctly</li>
+                    <li>Verify Sponsor ID is auto-generated (format: SP-YYYYMMDD-XXXX)</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Sponsor is created successfully with auto-generated ID</li>
+                    <li>All entered data is saved correctly</li>
+                    <li>Success message is displayed</li>
+                    <li>User is redirected to sponsor profile page</li>
+                    <li>Audit log entry is created for sponsor creation</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Sponsor record created with all fields populated</li>
+                    <li>Auto-generated ID follows expected format</li>
+                    <li>Success message and redirect work correctly</li>
+                    <li>Audit log shows "Sponsor Created" entry</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 10 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT04 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut04" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT04: Validation and Error Messaging
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut04" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify validation rules and error messages for sponsor creation.</p>
+                <p><strong>Actors:</strong> Admin or Admissions</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Click "Create New Sponsor"</li>
+                    <li><strong>Test 1: Required fields</strong>
+                        <ul>
+                            <li>Leave Organization Name blank, click "Create"</li>
+                            <li>Verify error message: "Organization Name is required"</li>
+                        </ul>
+                    </li>
+                    <li><strong>Test 2: Email format</strong>
+                        <ul>
+                            <li>Enter invalid email: "invalid-email"</li>
+                            <li>Click "Create"</li>
+                            <li>Verify error message: "Invalid email format"</li>
+                        </ul>
+                    </li>
+                    <li><strong>Test 3: Phone format</strong>
+                        <ul>
+                            <li>Enter invalid phone: "abc123"</li>
+                            <li>Click "Create"</li>
+                            <li>Verify error message: "Invalid phone number format"</li>
+                        </ul>
+                    </li>
+                    <li><strong>Test 4: Duplicate detection</strong>
+                        <ul>
+                            <li>Enter Organization Name: "Global Tech Corporation" (existing DEMO-SP001)</li>
+                            <li>Click "Create"</li>
+                            <li>Verify warning message: "Potential duplicate sponsor found"</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Validation errors are shown inline near the field</li>
+                    <li>Error messages are clear and actionable</li>
+                    <li>Form is not submitted until all validations pass</li>
+                    <li>Duplicate detection warning is shown (but does not block creation)</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>All validation rules are enforced</li>
+                    <li>Error messages are clear and user-friendly</li>
+                    <li>Form submission is blocked until validations pass</li>
+                    <li>Duplicate detection works correctly</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 15 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT05 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut05" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT05: Update Sponsor Record
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut05" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify Admin can directly update sponsor records.</p>
+                <p><strong>Actors:</strong> Admin only</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Search for DEMO-SP001 (Global Tech Corporation)</li>
+                    <li>Click "Edit"</li>
+                    <li>Change Primary Contact Email to "updated.contact@globaltech.com"</li>
+                    <li>Click "Save"</li>
+                    <li>Verify success message: "Sponsor updated successfully"</li>
+                    <li>Verify redirect to sponsor profile page</li>
+                    <li>Verify updated email is displayed</li>
+                    <li>Navigate to <code>/AdminReports/AuditLog</code></li>
+                    <li>Search for DEMO-SP001</li>
+                    <li>Verify audit log entry shows "Sponsor Updated" with old and new values</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Admin can directly edit and save sponsor records</li>
+                    <li>Changes are applied immediately (no change request)</li>
+                    <li>Success message and redirect work correctly</li>
+                    <li>Audit log captures the change with old/new values</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Admin can update sponsor fields directly</li>
+                    <li>Changes are saved immediately</li>
+                    <li>Audit log entry is created with change details</li>
+                    <li>Admissions user cannot use this workflow (must submit change request)</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 10 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT06 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut06" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT06: Duplicate Detection and Controlled Merge
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut06" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify duplicate sponsor detection and merge workflow.</p>
+                <p><strong>Actors:</strong> Admin only</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                <p><strong>Test Data:</strong> DEMO-SP001 (Global Tech Corporation) and DEMO-SP006 (Global Tech Corp) are potential duplicates</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Search for "Global Tech"</li>
+                    <li>Verify both DEMO-SP001 and DEMO-SP006 appear in results</li>
+                    <li>Click "Detect Duplicates" button</li>
+                    <li>Verify duplicate warning message: "Potential duplicates found"</li>
+                    <li>Click "Review Duplicates" link</li>
+                    <li>Select DEMO-SP001 (master record) and DEMO-SP006 (duplicate to merge)</li>
+                    <li>Review side-by-side comparison of fields</li>
+                    <li>Click "Merge Records"</li>
+                    <li>Confirm merge action</li>
+                    <li>Verify DEMO-SP006 is marked as inactive/merged</li>
+                    <li>Verify DEMO-SP001 retains all data</li>
+                    <li>Verify audit log shows merge action</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Duplicate detection algorithm identifies similar sponsor names</li>
+                    <li>Side-by-side comparison shows all fields for both records</li>
+                    <li>Merge action consolidates records (keeps master, marks duplicate as merged)</li>
+                    <li>Audit log captures merge action with both sponsor IDs</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Duplicate detection identifies DEMO-SP001 and DEMO-SP006</li>
+                    <li>Merge workflow works correctly</li>
+                    <li>Master record retains all data</li>
+                    <li>Duplicate record is marked as merged/inactive</li>
+                    <li>Audit log shows merge action</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-warning">Priority: High</span>
+                    <span class="badge bg-warning">Estimated Time: 15 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT07 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut07" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT07: Submit Sponsor Profile Change Request
+                <span class="badge bg-warning float-end">Admissions</span>
+            </h4>
+        </div>
+        <div id="ut07" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify Admissions user can submit change requests for Admin approval.</p>
+                <p><strong>Actors:</strong> Admissions</p>
+                <p><strong>Demo Accounts:</strong> demo.admissions@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admissions user</li>
+                    <li>Navigate to <code>/Sponsors/Index</code></li>
+                    <li>Search for DEMO-SP002 (Asian Development Bank)</li>
+                    <li>Click "Edit"</li>
+                    <li>Change Billing Address to "Updated Address, Makati City, Philippines"</li>
+                    <li>Click "Submit Change Request"</li>
+                    <li>Verify success message: "Change request submitted for Admin approval"</li>
+                    <li>Verify redirect to Dashboard</li>
+                    <li>Navigate to <code>/Dashboard/Index</code></li>
+                    <li>Verify change request appears in "Pending Requests" section</li>
+                    <li>Verify change request shows:
+                        <ul>
+                            <li>Sponsor ID: DEMO-SP002</li>
+                            <li>Field: BillingAddress</li>
+                            <li>Old Value: (original address)</li>
+                            <li>New Value: "Updated Address, Makati City, Philippines"</li>
+                            <li>Status: Pending</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Admissions user cannot directly update sponsor fields</li>
+                    <li>Edit action creates a change request instead</li>
+                    <li>Change request shows in Dashboard "Pending Requests"</li>
+                    <li>Admissions user cannot approve their own requests</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Admissions user can submit change requests</li>
+                    <li>Change request is created with correct details (sponsor, field, old/new values)</li>
+                    <li>Change request appears in Dashboard pending list</li>
+                    <li>Admissions user cannot approve requests (no "Approve" button visible)</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 10 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT08 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut08" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT08: Apply Sponsor Profile Change Request
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut08" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify Admin can approve and apply change requests submitted by Admissions.</p>
+                <p><strong>Actors:</strong> Admin</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                <p><strong>Prerequisite:</strong> Complete UT07 first to create a pending change request</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/Dashboard/Index</code></li>
+                    <li>Locate the pending change request for DEMO-SP002 (created in UT07)</li>
+                    <li>Click "Review" button</li>
+                    <li>Review change details:
+                        <ul>
+                            <li>Sponsor: DEMO-SP002 (Asian Development Bank)</li>
+                            <li>Field: BillingAddress</li>
+                            <li>Old Value: (original address)</li>
+                            <li>New Value: "Updated Address, Makati City, Philippines"</li>
+                            <li>Submitted by: demo.admissions@ism.edu.ph</li>
+                        </ul>
+                    </li>
+                    <li>Click "Approve and Apply" button</li>
+                    <li>Confirm approval action</li>
+                    <li>Verify success message: "Change request approved and applied"</li>
+                    <li>Navigate to <code>/Sponsors/Profile?id=DEMO-SP002</code></li>
+                    <li>Verify Billing Address is now "Updated Address, Makati City, Philippines"</li>
+                    <li>Navigate to <code>/AdminReports/AuditLog</code></li>
+                    <li>Verify audit log shows "Change Request Approved" and "Sponsor Updated" entries</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Admin can view all pending change requests</li>
+                    <li>Admin can approve and apply changes</li>
+                    <li>Approved changes update the sponsor record immediately</li>
+                    <li>Audit log captures both approval and update actions</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Admin can approve change requests</li>
+                    <li>Approved changes are applied to sponsor record</li>
+                    <li>Audit log shows approval and update entries</li>
+                    <li>Change request status changes from "Pending" to "Approved & Applied"</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 10 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT09 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut09" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT09: LoG List, Coverage Access, and Activation Controls
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut09" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify LoG creation, coverage rule definition, and activation workflow.</p>
+                <p><strong>Actors:</strong> Admin or Admissions</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/Sponsors/Profile?id=DEMO-SP001</code></li>
+                    <li>Click "LoGs" tab</li>
+                    <li>Verify DEMO-LOG001 is listed (Status: Active)</li>
+                    <li>Click "View Coverage" for DEMO-LOG001</li>
+                    <li>Verify coverage rules:
+                        <ul>
+                            <li>Tuition: Covered 100%</li>
+                            <li>Books/Supplies: Covered 100%</li>
+                            <li>Activities: Not Covered</li>
+                            <li>Transportation: Not Covered</li>
+                        </ul>
+                    </li>
+                    <li>Click "Create New LoG"</li>
+                    <li>Select School Year: 2026-2027</li>
+                    <li>Click "Create"</li>
+                    <li>Verify new LoG is created with Status: Inactive</li>
+                    <li>Click "Edit Coverage Rules"</li>
+                    <li>Set Tuition: Covered 80%, Books: Covered 50%</li>
+                    <li>Click "Save"</li>
+                    <li>Verify coverage rules are saved</li>
+                    <li>Click "Activate LoG" button</li>
+                    <li>Confirm activation</li>
+                    <li>Verify LoG status changes to Active</li>
+                    <li>Verify audit log shows "LoG Activated" entry</li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Admin can create new LoGs for any school year</li>
+                    <li>New LoGs start in Inactive status</li>
+                    <li>Admin can define coverage rules (Covered %, Split %, Not Covered)</li>
+                    <li>Admin can activate LoG when ready</li>
+                    <li>Active LoGs are used for coverage evaluation</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>LoG creation workflow works correctly</li>
+                    <li>Coverage rules can be defined and saved</li>
+                    <li>LoG activation workflow works correctly</li>
+                    <li>Audit log captures LoG creation and activation</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-danger">Priority: Critical</span>
+                    <span class="badge bg-warning">Estimated Time: 15 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UT10 -->
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#ut10" style="cursor: pointer;">
+            <h4 class="mb-0">
+                <i class="bi bi-chevron-down"></i> UT10: Audit Retrieval and Standardized Failure Handling
+                <span class="badge bg-danger float-end">Admin</span>
+            </h4>
+        </div>
+        <div id="ut10" class="collapse">
+            <div class="card-body">
+                <p><strong>Objective:</strong> Verify audit log retrieval and error handling for system failures.</p>
+                <p><strong>Actors:</strong> Admin</p>
+                <p><strong>Demo Accounts:</strong> demo.admin@ism.edu.ph</p>
+                
+                <h6 class="mt-3">Test Steps:</h6>
+                <ol>
+                    <li>Login as Admin</li>
+                    <li>Navigate to <code>/AdminReports/AuditLog</code></li>
+                    <li>Verify audit log table displays recent entries</li>
+                    <li>Filter by Entity Type: "Sponsor"</li>
+                    <li>Verify only sponsor-related entries are shown</li>
+                    <li>Filter by Action: "Sponsor Created"</li>
+                    <li>Verify only creation entries are shown</li>
+                    <li>Search for Entity ID: "DEMO-SP001"</li>
+                    <li>Verify all audit entries for DEMO-SP001 are shown (created, updated, etc.)</li>
+                    <li>Click "Export to CSV" button</li>
+                    <li>Verify CSV file is downloaded with all audit data</li>
+                    <li><strong>Test Error Handling:</strong></li>
+                    <li>Navigate to <code>/Operations/Runbooks</code></li>
+                    <li>Review "Database Connection Failed" runbook</li>
+                    <li>Review "Sync Failure" runbook</li>
+                    <li>Verify all runbooks have:
+                        <ul>
+                            <li>Symptom description</li>
+                            <li>Diagnostic steps</li>
+                            <li>Resolution steps</li>
+                            <li>Escalation path</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h6 class="mt-3">Expected Results:</h6>
+                <ul>
+                    <li>Audit log shows all system actions (create, update, delete, approve, etc.)</li>
+                    <li>Filters and search work correctly</li>
+                    <li>Export to CSV includes all filtered data</li>
+                    <li>Runbooks provide clear guidance for common failures</li>
+                </ul>
+
+                <h6 class="mt-3">Pass Criteria:</h6>
+                <ul>
+                    <li>Audit log displays all expected entries</li>
+                    <li>Filters and search work correctly</li>
+                    <li>CSV export includes all data</li>
+                    <li>Runbooks cover common failure scenarios</li>
+                    <li>Error messages are user-friendly and actionable</li>
+                </ul>
+
+                <div class="mt-3">
+                    <span class="badge bg-warning">Priority: High</span>
+                    <span class="badge bg-warning">Estimated Time: 15 minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <div class="alert alert-success">
+        <h5 class="alert-heading"><i class="bi bi-check-circle"></i> UAT Sign-Off</h5>
+        <p>After completing all 10 scenarios, sign off using the template in the full UAT Guide:</p>
+        <ul>
+            <li><strong>All scenarios Pass:</strong> System is ready for pilot deployment</li>
+            <li><strong>1-2 scenarios Fail (non-critical):</strong> Log defects, proceed with pilot, monitor closely</li>
+            <li><strong>3+ scenarios Fail or 1+ critical fail:</strong> Do not proceed with pilot. Fix issues and re-test.</li>
+        </ul>
+        <a href="~/docs/UAT_GUIDE.md" class="btn btn-success" download>
+            <i class="bi bi-download"></i> Download Full UAT Guide with Sign-Off Template
+        </a>
+    </div>
+</div>
+
+<script>
+    // Bootstrap collapse initialization (handled by Bootstrap 5 automatically)
+</script>

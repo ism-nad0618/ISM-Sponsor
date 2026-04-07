@@ -1,0 +1,88 @@
+@model ISMSponsor.ViewModels.Settings.StudentViewModel
+@{
+    ViewData["Title"] = "Create Student";
+    var schoolYears = ViewBag.SchoolYears as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var sponsors = ViewBag.Sponsors as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var gradeLevels = ViewBag.GradeLevels as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var statuses = ViewBag.Statuses as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Create Student</h2>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="StudentId" class="form-label"></label>
+                            <input asp-for="StudentId" class="form-control" />
+                            <span asp-validation-for="StudentId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="StudentName" class="form-label"></label>
+                            <input asp-for="StudentName" class="form-control" />
+                            <span asp-validation-for="StudentName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SchoolYearId" class="form-label"></label>
+                            <select asp-for="SchoolYearId" class="form-select">
+                                <option value="">-- Select School Year --</option>
+                                @foreach (var sy in schoolYears)
+                                {
+                                    <option value="@sy.Value">@sy.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SchoolYearId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SponsorId" class="form-label"></label>
+                            <select asp-for="SponsorId" class="form-select">
+                                <option value="">-- No Sponsor --</option>
+                                @foreach (var sponsor in sponsors)
+                                {
+                                    <option value="@sponsor.Value">@sponsor.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SponsorId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="GradeLevel" class="form-label"></label>
+                            <select asp-for="GradeLevel" asp-items="gradeLevels" class="form-select">
+                                <option value="">-- Select Grade Level --</option>
+                            </select>
+                            <span asp-validation-for="GradeLevel" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Status" class="form-label"></label>
+                            <select asp-for="Status" asp-items="statuses" class="form-select"></select>
+                            <span asp-validation-for="Status" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Student</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

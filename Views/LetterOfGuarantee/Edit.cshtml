@@ -1,0 +1,317 @@
+@model ISMSponsor.ViewModels.EditLogViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Edit Letter of Guarantee";
+}
+
+<div class="page-header">
+    <h1>Edit Letter of Guarantee #@Model.LogId</h1>
+    <p class="page-subtitle">Update LoG details and status</p>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-error">
+        <strong>Please correct the following errors:</strong>
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="card card-narrow">
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="LogId" />
+        <input type="hidden" asp-for="SchoolYearId" />
+        <input type="hidden" asp-for="StudentId" />
+
+        <h3 class="form-section-title">Student Information</h3>
+        <div class="data-grid" style="margin-bottom: 2rem;">
+            <div>
+                <p class="field-label">School Year</p>
+                <p><strong>@Model.SchoolYearId</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Student ID</p>
+                <p><strong>@Model.StudentId</strong></p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="SponsorId" class="field-label">Sponsor <span class="required">*</span></label>
+            <select asp-for="SponsorId" asp-items="ViewBag.Sponsors" required>
+                <option value="">-- Select Sponsor --</option>
+            </select>
+            <span asp-validation-for="SponsorId" class="form-error"></span>
+        </div>
+
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+
+        <h3 class="form-section-title">Status and Coverage</h3>
+
+        <div class="form-group">
+            <label asp-for="LogStatus" class="field-label">Status <span class="required">*</span></label>
+            <select asp-for="LogStatus" asp-items="ViewBag.StatusOptions" required></select>
+            <span asp-validation-for="LogStatus" class="form-error"></span>
+        </div>
+
+        @if (Model.IsActive)
+        {
+            <div class="alert alert-success">
+                <strong> Active</strong> - This LoG is currently active (Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy"))
+            </div>
+        }
+        else if (Model.DeactivatedOn.HasValue)
+        {
+            <div class="alert alert-error">
+                <strong> Deactivated</strong> - This LoG was deactivated on @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
+            </div>
+        }
+
+        <div class="form-group">
+            <label asp-for="EffectiveFrom" class="field-label">Effective From</label>
+            <input asp-for="EffectiveFrom" type="date" />
+            <span asp-validation-for="EffectiveFrom" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="EffectiveTo" class="field-label">Effective To</label>
+            <input asp-for="EffectiveTo" type="date" />
+            <span asp-validation-for="EffectiveTo" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Notes" class="field-label">Notes</label>
+            <textarea asp-for="Notes" rows="4" placeholder="Enter any notes about this LoG"></textarea>
+            <span asp-validation-for="Notes" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ReviewComments" class="field-label">Review Comments</label>
+            <textarea asp-for="ReviewComments" rows="3" placeholder="Comments from review process"></textarea>
+            <span asp-validation-for="ReviewComments" class="form-error"></span>
+        </div>
+
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+
+        <h3 class="form-section-title">Coverage Rules</h3>
+        <p class="help-text" style="margin-bottom: 1.5rem;">Define what items or categories are covered and how much coverage applies</p>
+
+        <div id="coverageRulesContainer">
+            <!-- Coverage rules will be loaded here -->
+        </div>
+
+        <button type="button" class="btn-secondary btn-add" onclick="addCoverageRule()" style="margin-bottom: 2rem;">
+            + Add Coverage Rule
+        </button>
+
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0;" />
+
+        <h3 class="form-section-title">Attachment</h3>
+
+        @if (!string.IsNullOrEmpty(Model.ExistingAttachmentFileName))
+        {
+            <div class="alert alert-success" style="margin-bottom: 1rem;">
+                <strong>Current Attachment:</strong> @Model.ExistingAttachmentFileName
+            </div>
+        }
+
+        <div class="form-group">
+            <label asp-for="NewAttachment" class="field-label">Replace Attachment (Optional)</label>
+            <input asp-for="NewAttachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+            <span asp-validation-for="NewAttachment" class="form-error"></span>
+            <p class="help-text">Upload a new document to replace the existing one</p>
+        </div>
+
+        <div class="form-actions form-actions-bordered">
+            <button type="submit" class="btn-primary btn-add"> Save Changes</button>
+            <a asp-action="Details" asp-route-id="@Model.LogId" class="btn-secondary btn-add">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        let ruleIndex = 0;
+        const existingRules = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CoverageRules ?? new List<ISMSponsor.ViewModels.CoverageRuleViewModel>()));
+        
+        function addCoverageRule(existingRule = null) {
+            const container = document.getElementById('coverageRulesContainer');
+            const ruleDiv = document.createElement('div');
+            ruleDiv.className = 'card';
+            ruleDiv.style.marginBottom = '1rem';
+            ruleDiv.setAttribute('data-rule-index', ruleIndex);
+            
+            const coverageTarget = existingRule?.coverageTarget || 'Item';
+            const coverageType = existingRule?.coverageType || 'Full';
+            const itemId = existingRule?.itemId || '';
+            const categoryId = existingRule?.categoryId || '';
+            const percentage = existingRule?.coveragePercentage || '';
+            const fixedAmount = existingRule?.coverageFixedAmount || '';
+            const capAmount = existingRule?.capAmount || '';
+            const effectiveFrom = existingRule?.effectiveFrom ? existingRule.effectiveFrom.split('T')[0] : '';
+            const effectiveTo = existingRule?.effectiveTo ? existingRule.effectiveTo.split('T')[0] : '';
+            const exceptionNote = existingRule?.exceptionNote || '';
+            const displayOrder = existingRule?.displayOrder || (ruleIndex + 1);
+            
+            ruleDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0;">Rule #${displayOrder}</h4>
+                    <button type="button" class="btn-danger" onclick="removeRule(${ruleIndex})" style="padding: 6px 12px; font-size: 12px;">Remove</button>
+                </div>
+                
+                <input type="hidden" name="CoverageRules[${ruleIndex}].DisplayOrder" value="${displayOrder}" />
+                <input type="hidden" name="CoverageRules[${ruleIndex}].IsActive" value="true" />
+                
+                <div class="data-grid" style="margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label class="field-label">Coverage Target <span class="required">*</span></label>
+                        <select name="CoverageRules[${ruleIndex}].CoverageTarget" onchange="toggleTargetFields(${ruleIndex})" required>
+                            <option value="Item" ${coverageTarget === 'Item' ? 'selected' : ''}>Item</option>
+                            <option value="Category" ${coverageTarget === 'Category' ? 'selected' : ''}>Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="itemField_${ruleIndex}" style="display: ${coverageTarget === 'Item' ? 'block' : 'none'};">
+                        <label class="field-label">Item</label>
+                        <select name="CoverageRules[${ruleIndex}].ItemId">
+                            <option value="">-- Select Item --</option>
+                            @foreach (var item in ((SelectList)ViewBag.Items))
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="categoryField_${ruleIndex}" style="display: ${coverageTarget === 'Category' ? 'block' : 'none'};">
+                        <label class="field-label">Category</label>
+                        <select name="CoverageRules[${ruleIndex}].CategoryId">
+                            <option value="">-- Select Category --</option>
+                            @foreach (var cat in ((SelectList)ViewBag.Categories))
+                            {
+                                <option value="@cat.Value">@cat.Text</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="data-grid" style="margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label class="field-label">Coverage Type <span class="required">*</span></label>
+                        <select name="CoverageRules[${ruleIndex}].CoverageType" onchange="toggleCoverageFields(${ruleIndex})" required>
+                            <option value="Full" ${coverageType === 'Full' ? 'selected' : ''}>Full (100%)</option>
+                            <option value="Percentage" ${coverageType === 'Percentage' ? 'selected' : ''}>Percentage</option>
+                            <option value="FixedAmount" ${coverageType === 'FixedAmount' ? 'selected' : ''}>Fixed Amount</option>
+                            <option value="UpToCap" ${coverageType === 'UpToCap' ? 'selected' : ''}>Up To Cap</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="percentageField_${ruleIndex}" style="display: ${coverageType === 'Percentage' ? 'block' : 'none'};">
+                        <label class="field-label">Percentage (%)</label>
+                        <input type="number" name="CoverageRules[${ruleIndex}].CoveragePercentage" min="0" max="100" step="0.01" value="${percentage}" placeholder="e.g., 75" />
+                    </div>
+                    
+                    <div class="form-group" id="fixedAmountField_${ruleIndex}" style="display: ${coverageType === 'FixedAmount' ? 'block' : 'none'};">
+                        <label class="field-label">Fixed Amount (₱)</label>
+                        <input type="number" name="CoverageRules[${ruleIndex}].CoverageFixedAmount" min="0" step="0.01" value="${fixedAmount}" placeholder="e.g., 5000" />
+                    </div>
+                    
+                    <div class="form-group" id="capField_${ruleIndex}" style="display: ${coverageType === 'UpToCap' ? 'block' : 'none'};">
+                        <label class="field-label">Cap Amount (₱)</label>
+                        <input type="number" name="CoverageRules[${ruleIndex}].CapAmount" min="0" step="0.01" value="${capAmount}" placeholder="e.g., 10000" />
+                    </div>
+                </div>
+                
+                <div class="data-grid" style="margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label class="field-label">Effective From</label>
+                        <input type="date" name="CoverageRules[${ruleIndex}].EffectiveFrom" value="${effectiveFrom}" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="field-label">Effective To</label>
+                        <input type="date" name="CoverageRules[${ruleIndex}].EffectiveTo" value="${effectiveTo}" />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="field-label">Exception Note</label>
+                    <textarea name="CoverageRules[${ruleIndex}].ExceptionNote" rows="2" placeholder="Optional note about exceptions or special conditions">${exceptionNote}</textarea>
+                </div>
+            `;
+            
+            container.appendChild(ruleDiv);
+            
+            // Set the dropdown values after adding to DOM
+            if (coverageTarget === 'Item' && itemId) {
+                const itemSelect = ruleDiv.querySelector(`select[name="CoverageRules[${ruleIndex}].ItemId"]`);
+                if (itemSelect) itemSelect.value = itemId;
+            } else if (coverageTarget === 'Category' && categoryId) {
+                const catSelect = ruleDiv.querySelector(`select[name="CoverageRules[${ruleIndex}].CategoryId"]`);
+                if (catSelect) catSelect.value = categoryId;
+            }
+            
+            ruleIndex++;
+        }
+        
+        function removeRule(index) {
+            const ruleDiv = document.querySelector(`[data-rule-index="${index}"]`);
+            if (ruleDiv) {
+                ruleDiv.remove();
+            }
+        }
+        
+        function toggleTargetFields(index) {
+            const targetSelect = document.querySelector(`select[name="CoverageRules[${index}].CoverageTarget"]`);
+            const itemField = document.getElementById(`itemField_${index}`);
+            const categoryField = document.getElementById(`categoryField_${index}`);
+            
+            if (targetSelect.value === 'Item') {
+                itemField.style.display = 'block';
+                categoryField.style.display = 'none';
+                document.querySelector(`select[name="CoverageRules[${index}].CategoryId"]`).value = '';
+            } else {
+                itemField.style.display = 'none';
+                categoryField.style.display = 'block';
+                document.querySelector(`select[name="CoverageRules[${index}].ItemId"]`).value = '';
+            }
+        }
+        
+        function toggleCoverageFields(index) {
+            const typeSelect = document.querySelector(`select[name="CoverageRules[${index}].CoverageType"]`);
+            const percentageField = document.getElementById(`percentageField_${index}`);
+            const fixedAmountField = document.getElementById(`fixedAmountField_${index}`);
+            const capField = document.getElementById(`capField_${index}`);
+            
+            percentageField.style.display = 'none';
+            fixedAmountField.style.display = 'none';
+            capField.style.display = 'none';
+            
+            switch (typeSelect && typeSelect.value) {
+                case 'Percentage':
+                    percentageField.style.display = 'block';
+                    break;
+                case 'FixedAmount':
+                    fixedAmountField.style.display = 'block';
+                    break;
+                case 'UpToCap':
+                    capField.style.display = 'block';
+                    break;
+            }
+        }
+        
+        // Load existing rules on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            if (existingRules && existingRules.length > 0) {
+                existingRules.forEach(rule => addCoverageRule(rule));
+            } else {
+                addCoverageRule(); // Add one empty rule if none exist
+            }
+        });
+    </script>
+}
