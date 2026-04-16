@@ -54,6 +54,7 @@
             <tr>
                 <th>Username</th>
                 <th>Display Name</th>
+                <th>Email</th>
                 <th>Sponsor</th>
                 <th>Roles</th>
                 <th>Status</th>
@@ -65,8 +66,8 @@
                 var roles = (await UserManager.GetRolesAsync(u)).ToList();
                 var rolesStr = roles.Any() ? string.Join(", ", roles) : "No roles";
                 <tr data-id="@u.Id" 
-                    data-username="@u.UserName.ToLower()" 
-                    data-displayname="@u.DisplayName.ToLower()" 
+                    data-username="@((u.UserName ?? "").ToLower())" 
+                    data-displayname="@((u.DisplayName ?? "").ToLower())" 
                     data-sponsor="@((u.SponsorId ?? "").ToLower())" 
                     data-roles="@rolesStr.ToLower()" 
                     data-status="@(u.IsActive ? "active" : "inactive")"
@@ -74,6 +75,7 @@
                     style="@(u.IsActive ? "" : "display: none;")">                    
                     <td data-label="Username"><strong>@u.UserName</strong></td>
                     <td data-label="Display Name">@u.DisplayName</td>
+                    <td data-label="Email">@(u.Email ?? "—")</td>
                     <td data-label="Sponsor">@(u.SponsorId ?? "—")</td>
                     <td data-label="Roles">
                         @if(roles.Any()){
@@ -129,6 +131,13 @@
                     <label for="displayName">Display Name <span style="color: #ef4444;">*</span></label>
                     <input type="text" id="displayName" name="DisplayName" placeholder="Enter display name" required />
                     <span class="form-error" id="displayNameError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email <span style="color: #ef4444;">*</span></label>
+                    <input type="email" id="email" name="Email" placeholder="Enter email address" required />
+                    <span class="form-error" id="emailError"></span>
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 4px;">For internal users, use @@ismanila.org email to enable Google Sign-In</p>
                 </div>
 
                 <div class="form-group" id="passwordGroup">
@@ -224,6 +233,7 @@ async function openUserModal(userId = null) {
                 document.getElementById('userId').value = result.user.id;
                 document.getElementById('username').value = result.user.username;
                 document.getElementById('displayName').value = result.user.displayName;
+                document.getElementById('email').value = result.user.email || '';
                 document.getElementById('sponsorId').value = result.user.sponsorId || '';
                 document.getElementById('role').value = result.user.role;
                 document.getElementById('isActive').value = result.user.isActive ? 'true' : 'false';
@@ -258,14 +268,6 @@ function closeUserModal() {
     document.getElementById('userForm').reset();
     document.getElementById('username').disabled = false;
     document.getElementById('username').style.backgroundColor = '';
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('userModal');
-    if (event.target === modal) {
-        closeUserModal();
-    }
 }
 
 // Toggle user status (activate/deactivate)

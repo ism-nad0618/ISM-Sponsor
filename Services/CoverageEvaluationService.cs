@@ -3,6 +3,7 @@ using ISMSponsor.Data;
 using ISMSponsor.Models.API;
 using ISMSponsor.Models.Domain;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ISMSponsor.Services
 {
@@ -40,10 +41,21 @@ namespace ISMSponsor.Services
                     response.BillTo = Models.API.BillTo.Parent;
                     response.ParentAmount = request.Amount;
 
+                    PopulateEvaluationMetadata(request, response);
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
-                    _context.CoverageEvaluationAudits.Add(audit);
-                    await _context.SaveChangesAsync();
-                    response.AuditRecordId = audit.AuditId;
+                    audit.CorrelationId = response.CorrelationId;
+                    audit.SponsorPercent = response.SponsorPercent;
+                    audit.ParentPercent = response.ParentPercent;
+                    if (!request.IsPreview)
+                    {
+                        _context.CoverageEvaluationAudits.Add(audit);
+                        await _context.SaveChangesAsync();
+                        response.AuditRecordId = audit.AuditId;
+                    }
+                    else
+                    {
+                        response.AuditRecordId = 0;
+                    }
                     return response;
                 }
 
@@ -57,7 +69,11 @@ namespace ISMSponsor.Services
                     response.ReasonCode = CoverageReasonCodes.NO_ACTIVE_LOG;
                     response.Explanation = $"No active Letter of Guarantee found for student {request.StudentId} in school year {request.SchoolYearId}";
 
+                    PopulateEvaluationMetadata(request, response);
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
+                    audit.CorrelationId = response.CorrelationId;
+                    audit.SponsorPercent = response.SponsorPercent;
+                    audit.ParentPercent = response.ParentPercent;
                     _context.CoverageEvaluationAudits.Add(audit);
                     await _context.SaveChangesAsync();
                     response.AuditRecordId = audit.AuditId;
@@ -73,8 +89,12 @@ namespace ISMSponsor.Services
                     response.ReasonCode = CoverageReasonCodes.LOG_INACTIVE;
                     response.Explanation = $"Letter of Guarantee (ID: {log.LogId}) is inactive";
 
+                    PopulateEvaluationMetadata(request, response);
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                     audit.LogId = log.LogId;
+                    audit.CorrelationId = response.CorrelationId;
+                    audit.SponsorPercent = response.SponsorPercent;
+                    audit.ParentPercent = response.ParentPercent;
                     _context.CoverageEvaluationAudits.Add(audit);
                     await _context.SaveChangesAsync();
                     response.AuditRecordId = audit.AuditId;
@@ -92,8 +112,12 @@ namespace ISMSponsor.Services
                     response.BillTo = Models.API.BillTo.Parent;
                     response.ParentAmount = request.Amount;
 
+                    PopulateEvaluationMetadata(request, response);
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                     audit.LogId = log.LogId;
+                    audit.CorrelationId = response.CorrelationId;
+                    audit.SponsorPercent = response.SponsorPercent;
+                    audit.ParentPercent = response.ParentPercent;
                     _context.CoverageEvaluationAudits.Add(audit);
                     await _context.SaveChangesAsync();
                     response.AuditRecordId = audit.AuditId;
@@ -110,8 +134,12 @@ namespace ISMSponsor.Services
                     response.ReasonCode = CoverageReasonCodes.NO_MATCHING_RULE;
                     response.Explanation = $"No coverage rule found for the specified item or category";
 
+                    PopulateEvaluationMetadata(request, response);
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                     audit.LogId = log.LogId;
+                    audit.CorrelationId = response.CorrelationId;
+                    audit.SponsorPercent = response.SponsorPercent;
+                    audit.ParentPercent = response.ParentPercent;
                     _context.CoverageEvaluationAudits.Add(audit);
                     await _context.SaveChangesAsync();
                     response.AuditRecordId = audit.AuditId;
@@ -128,9 +156,13 @@ namespace ISMSponsor.Services
                     response.ReasonCode = ruleValidation.ReasonCode;
                     response.Explanation = ruleValidation.Explanation;
 
+                    PopulateEvaluationMetadata(request, response);
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                     audit.LogId = log.LogId;
                     audit.MatchedRuleId = matchedRule.RuleId;
+                    audit.CorrelationId = response.CorrelationId;
+                    audit.SponsorPercent = response.SponsorPercent;
+                    audit.ParentPercent = response.ParentPercent;
                     _context.CoverageEvaluationAudits.Add(audit);
                     await _context.SaveChangesAsync();
                     response.AuditRecordId = audit.AuditId;
@@ -148,14 +180,43 @@ namespace ISMSponsor.Services
                 response.MatchedRuleId = matchedRule.RuleId;
                 response.RuleVersion = GenerateRuleVersion(log, matchedRule);
 
-                // Step 8: Create audit record
+                // Step 8: Populate new response fields for audit trail and traceability
+                response.EvaluatedAt = DateTime.UtcNow;
+                response.CorrelationId = request.CorrelationId ?? Guid.NewGuid().ToString();
+                response.DecisionId = Guid.NewGuid().ToString();
+                
+                // Calculate coverage percentages
+                if (request.Amount > 0)
+                {
+                    response.SponsorPercent = Math.Round((response.SponsorAmount / request.Amount) * 100, 2);
+                    response.ParentPercent = Math.Round((response.ParentAmount / request.Amount) * 100, 2);
+                }
+                
+                // Serialize the matched rule as snapshot for audit compliance and rule replay
+                response.RuleSnapshot = SerializeRuleSnapshot(matchedRule);
+
+                // Step 9: Create audit record (skip for preview requests)
                 audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                 audit.LogId = log.LogId;
                 audit.MatchedRuleId = matchedRule.RuleId;
                 audit.RuleVersion = response.RuleVersion;
-                _context.CoverageEvaluationAudits.Add(audit);
-                await _context.SaveChangesAsync();
-                response.AuditRecordId = audit.AuditId;
+                audit.CorrelationId = response.CorrelationId;
+                audit.SponsorPercent = response.SponsorPercent;
+                audit.ParentPercent = response.ParentPercent;
+                audit.RuleSnapshot = response.RuleSnapshot;
+                
+                // Only persist audit record if this is not a preview request
+                if (!request.IsPreview)
+                {
+                    _context.CoverageEvaluationAudits.Add(audit);
+                    await _context.SaveChangesAsync();
+                    response.AuditRecordId = audit.AuditId;
+                }
+                else
+                {
+                    // For preview, still generate an ID for response but don't persist
+                    response.AuditRecordId = 0; // 0 indicates this is a preview, not persisted
+                }
 
                 return response;
             }
@@ -169,9 +230,24 @@ namespace ISMSponsor.Services
                 response.ParentAmount = request.Amount;
                 response.ReasonCode = "SYSTEM_ERROR";
                 response.Explanation = "System error during evaluation";
+                
+                // Populate audit fields for error scenario
+                response.EvaluatedAt = DateTime.UtcNow;
+                response.CorrelationId = request.CorrelationId ?? Guid.NewGuid().ToString();
+                response.DecisionId = Guid.NewGuid().ToString();
+                
+                // Calculate coverage percentages (should be 0/100 for error case)
+                if (request.Amount > 0)
+                {
+                    response.ParentPercent = 100;
+                    response.SponsorPercent = 0;
+                }
 
                 audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                 audit.ErrorMessage = ex.Message;
+                audit.CorrelationId = response.CorrelationId;
+                audit.SponsorPercent = response.SponsorPercent;
+                audit.ParentPercent = response.ParentPercent;
                 _context.CoverageEvaluationAudits.Add(audit);
                 await _context.SaveChangesAsync();
                 response.AuditRecordId = audit.AuditId;
@@ -200,8 +276,10 @@ namespace ISMSponsor.Services
         private async Task<LogCoverage?> FindActiveLogAsync(CoverageEvaluationRequest request)
         {
             var query = _context.LogCoverages
-                .Include(l => l.CoverageRules!.Where(r => r.IsActive).Select(r => r.Item))
-                .Include(l => l.CoverageRules!.Where(r => r.IsActive).Select(r => r.Category))
+                .Include(l => l.CoverageRules!)
+                .ThenInclude(r => r.Item)
+                .Include(l => l.CoverageRules!)
+                .ThenInclude(r => r.Category)
                 .Where(l => l.SchoolYearId == request.SchoolYearId && l.StudentId == request.StudentId);
 
             if (request.LogId.HasValue)
@@ -403,6 +481,57 @@ namespace ISMSponsor.Services
         {
             // Format: LOG{LogId}-RULE{RuleId}-{Timestamp}
             return $"LOG{log.LogId}-RULE{rule.RuleId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        }
+
+        private string SerializeRuleSnapshot(LoGCoverageRule rule)
+        {
+            try
+            {
+                var snapshot = new
+                {
+                    RuleId = rule.RuleId,
+                    CoverageTarget = rule.CoverageTarget,
+                    ItemId = rule.ItemId,
+                    ItemName = rule.Item?.ItemName,
+                    CategoryId = rule.CategoryId,
+                    CategoryName = rule.Category?.CategoryName,
+                    CoverageType = rule.CoverageType,
+                    CoveragePercentage = rule.CoveragePercentage,
+                    CoverageFixedAmount = rule.CoverageFixedAmount,
+                    CapAmount = rule.CapAmount,
+                    DisplayOrder = rule.DisplayOrder,
+                    IsActive = rule.IsActive,
+                    EffectiveFrom = rule.EffectiveFrom,
+                    EffectiveTo = rule.EffectiveTo,
+                    CreatedOn = rule.CreatedOn,
+                    ModifiedOn = rule.ModifiedOn
+                };
+                return JsonSerializer.Serialize(snapshot);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to serialize rule snapshot for rule {RuleId}", rule.RuleId);
+                return string.Empty;
+            }
+        }
+
+        private void PopulateEvaluationMetadata(CoverageEvaluationRequest request, CoverageEvaluationResponse response)
+        {
+            // Set timestamp
+            response.EvaluatedAt = DateTime.UtcNow;
+            
+            // Generate or use provided correlation ID for end-to-end traceability
+            response.CorrelationId = request.CorrelationId ?? Guid.NewGuid().ToString();
+            
+            // Generate unique decision ID
+            response.DecisionId = Guid.NewGuid().ToString();
+            
+            // Calculate coverage percentages
+            if (request.Amount > 0)
+            {
+                response.SponsorPercent = Math.Round((response.SponsorAmount / request.Amount) * 100, 2);
+                response.ParentPercent = Math.Round((response.ParentAmount / request.Amount) * 100, 2);
+            }
         }
 
         private CoverageEvaluationAudit CreateAuditRecord(

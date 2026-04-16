@@ -406,8 +406,8 @@ namespace ISMSponsor.Controllers
                 // Update sponsor information
                 sponsor.SponsorName = model.SponsorName;
                 sponsor.LegalName = model.LegalName;
-                sponsor.Address = model.Address;
-                sponsor.Tin = model.Tin;
+                sponsor.Address = model.Address ?? string.Empty;
+                sponsor.Tin = model.Tin ?? string.Empty;
                 await _sponsorService.UpdateAsync(sponsor);
 
                 // Queue downstream integrations to ALL targets (non-blocking)
@@ -499,8 +499,8 @@ namespace ISMSponsor.Controllers
             {
                 sponsor.SponsorName = model.SponsorName;
                 sponsor.LegalName = model.LegalName;
-                sponsor.Address = model.Address;
-                sponsor.Tin = model.Tin;
+                sponsor.Address = model.Address ?? string.Empty;
+                sponsor.Tin = model.Tin ?? string.Empty;
 
                 await _sponsorService.UpdateAsync(sponsor);
 

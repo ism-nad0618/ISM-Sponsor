@@ -1,0 +1,122 @@
+@model LogActivityReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "LoG Activity Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>LoG Activity Report</h1>
+        <p class="page-subtitle">Track Letters of Guarantee status, approvals, and coverage rules</p>
+    </div>
+    <div>
+        <a href="?exportFormat=csv&schoolYearId=@Model.Filters.SchoolYearId&status=@Model.Filters.Status" class="btn btn-primary">Export CSV</a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total LoGs</div>
+        <div class="stat-value">@Model.TotalLoGs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active LoGs</div>
+        <div class="stat-value">@Model.ActiveLoGs</div>
+        <div class="stat-footer">@(Model.TotalLoGs > 0 ? Math.Round((decimal)Model.ActiveLoGs / Model.TotalLoGs * 100, 1) : 0)% active</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending Approval</div>
+        <div class="stat-value">@Model.PendingApprovalLoGs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Created in Period</div>
+        <div class="stat-value">@Model.LoGsCreatedInPeriod</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Modified in Period</div>
+        <div class="stat-value">@Model.LoGsModifiedInPeriod</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Status</label>
+            <select name="status" class="form-control">
+                <option value="">All Statuses</option>
+                <option value="Active" selected="@(Model.Filters.Status == "Active")">Active</option>
+                <option value="Inactive" selected="@(Model.Filters.Status == "Inactive")">Inactive</option>
+                <option value="PendingApproval" selected="@(Model.Filters.Status == "PendingApproval")">Pending Approval</option>
+            </select>
+        </div>
+        <div>
+            <label>Start Date</label>
+            <input type="date" name="startDate" class="form-control" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" class="form-control" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+</form>
+
+<!-- LoG Details Table -->
+<div class="card">
+    <h3 class="table-title">LoG Details (@Model.LogDetails.Count records)</h3>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>LoG ID</th>
+                    <th>Sponsor ID</th>
+                    <th>Sponsor Name</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Rules</th>
+                    <th>Created</th>
+                    <th>Activated</th>
+                    <th>Deactivated</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.LogDetails.Any())
+                {
+                    @foreach (var log in Model.LogDetails)
+                    {
+                        <tr>
+                            <td>@log.LogCoverageId</td>
+                            <td>@log.SponsorId</td>
+                            <td>@log.SponsorName</td>
+                            <td>
+                                <span class="status-badge status-@log.Status.ToLower()">@log.Status</span>
+                            </td>
+                            <td>@(log.IsActive ? "Yes" : "No")</td>
+                            <td>@log.RuleCount</td>
+                            <td>@log.CreatedOn.ToString("MMM dd, yyyy")</td>
+                            <td>@(log.ActivatedOn?.ToString("MMM dd, yyyy") ?? "—")</td>
+                            <td>@(log.DeactivatedOn?.ToString("MMM dd, yyyy") ?? "—")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 2rem; color: #666;">
+                            No LoG activity found matching the selected filters
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 1rem; padding: 1rem; background: #f6f8fa; border-radius: 6px; font-size: 0.85rem; color: #586069;">
+    <strong>Report Generated:</strong> @Model.GeneratedAt.ToString("MMM dd, yyyy HH:mm UTC")
+</div>

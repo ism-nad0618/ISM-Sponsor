@@ -320,14 +320,13 @@
                         <button type="button" class="btn-primary btn-add" onclick="addCreateCoverageRuleRow()">+ Add Rule</button>
                     </div>
                     
-                    <p class="help-text" style="margin-bottom: 16px;">Define what items or categories are covered and how much coverage applies</p>
+                    <p class="help-text" style="margin-bottom: 16px;">Define what items are covered and how much coverage applies</p>
                     
                     <div class="table-wrap">
                         <table id="createCoverageRulesTable">
                             <thead>
                                 <tr>
-                                    <th style="width: 100px;">Target</th>
-                                    <th style="width: 150px;">Item/Category</th>
+                                    <th style="width: 250px;">Item</th>
                                     <th style="width: 120px;">Coverage Type</th>
                                     <th style="width: 100px;">Value</th>
                                     <th style="width: 120px;">Effective From</th>
@@ -338,7 +337,7 @@
                             </thead>
                             <tbody id="createCoverageRulesTableBody">
                                 <tr id="createNoRulesRow">
-                                    <td colspan="8" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                    <td colspan="7" style="text-align: center; padding: 2rem; color: var(--gray-500);">
                                         No coverage rules defined. Click "+ Add Rule" to create one.
                                     </td>
                                 </tr>
@@ -411,6 +410,7 @@
         </div>
         
         <div class="modal-body">
+            <div id="editSuccess" class="alert alert-success" style="display: none; margin-bottom: 16px;"></div>
             <div id="editError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
             
             <form id="editLogForm" enctype="multipart/form-data">
@@ -500,14 +500,13 @@
                         }
                     </div>
                     
-                    <p class="help-text" style="margin-bottom: 16px;">Define what items or categories are covered and how much coverage applies</p>
+                    <p class="help-text" style="margin-bottom: 16px;">Define what items are covered and how much coverage applies</p>
                     
                     <div class="table-wrap">
                         <table id="coverageRulesTable">
                             <thead>
                                 <tr>
-                                    <th style="width: 100px;">Target</th>
-                                    <th style="width: 150px;">Item/Category</th>
+                                    <th style="width: 250px;">Item</th>
                                     <th style="width: 120px;">Coverage Type</th>
                                     <th style="width: 100px;">Value</th>
                                     <th style="width: 120px;">Effective From</th>
@@ -518,7 +517,7 @@
                             </thead>
                             <tbody id="coverageRulesTableBody">
                                 <tr id="noRulesRow">
-                                    <td colspan="8" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                    <td colspan="7" style="text-align: center; padding: 2rem; color: var(--gray-500);">
                                         No coverage rules defined. Click "+ Add Rule" to create one.
                                     </td>
                                 </tr>
@@ -582,27 +581,11 @@
             <input type="hidden" id="ruleEditIndex" />
             
             <div class="form-group">
-                <label for="ruleCoverageTarget" class="field-label">Coverage Target <span class="required">*</span></label>
-                <select id="ruleCoverageTarget" onchange="toggleRuleTargetFields()" required>
-                    <option value="Item">Item</option>
-                    <option value="Category">Category</option>
-                </select>
-            </div>
-            
-            <div class="form-group" id="ruleItemField">
-                <label for="ruleItemId" class="field-label">Item</label>
-                <select id="ruleItemId">
+                <label for="ruleItemId" class="field-label">Item <span class="required">*</span></label>
+                <select id="ruleItemId" required>
                     <option value="">-- Select Item --</option>
                 </select>
-                <p class="help-text">Need to add an item? <a href="/Settings/Items" target="_blank" style="color: #2563eb; text-decoration: underline;">Manage Items</a></p>
-            </div>
-            
-            <div class="form-group" id="ruleCategoryField" style="display: none;">
-                <label for="ruleCategoryId" class="field-label">Category</label>
-                <select id="ruleCategoryId">
-                    <option value="">-- Select Category --</option>
-                </select>
-                <p class="help-text">Need to add a category? <a href="/Settings/Items" target="_blank" style="color: #2563eb; text-decoration: underline;">Manage Items & Categories</a></p>
+                <p class="help-text">Filtered by student's grade level. Need to add an item? <a href="/Settings/Items" target="_blank" style="color: #2563eb; text-decoration: underline;">Manage Items</a></p>
             </div>
             
             <div class="form-group">
@@ -730,8 +713,10 @@ let editCoverageRules = [];
 let createCoverageRules = [];
 let editItemsData = [];
 let editCategoriesData = [];
+let editStudentGradeLevel = '';
 let createItemsData = [];
 let createCategoriesData = [];
+let createStudentGradeLevel = '';
 const canEdit = @(User.IsInRole("admin") || User.IsInRole("admissions") ? "true" : "false");
 
 // Import Modal Functions
@@ -809,6 +794,7 @@ async function openEditLogModal(logId) {
     currentStep = 1;
     editCoverageRules = [];
     document.getElementById('editLogModal').style.display = 'flex';
+    document.getElementById('editSuccess').style.display = 'none';
     document.getElementById('editError').style.display = 'none';
     
     try {
@@ -819,6 +805,10 @@ async function openEditLogModal(logId) {
         
         const data = await response.json();
         console.log('Edit data loaded:', data);
+
+        if (!data || data.success === false) {
+            throw new Error(data?.message || 'Failed to load LoG data');
+        }
         
         // Make sure all elements are visible before populating
         goToStep(1);
@@ -843,7 +833,7 @@ async function openEditLogModal(logId) {
         const sponsorSelect = document.getElementById('editSponsorId');
         if (sponsorSelect) {
             sponsorSelect.innerHTML = '<option value="">-- Select Sponsor --</option>';
-            data.sponsors.forEach(sponsor => {
+            (data.sponsors || []).forEach(sponsor => {
                 const option = document.createElement('option');
                 option.value = sponsor.value;
                 option.textContent = sponsor.text;
@@ -887,6 +877,7 @@ async function openEditLogModal(logId) {
         // Store items and categories for rule editing
         editItemsData = data.items || [];
         editCategoriesData = data.categories || [];
+        editStudentGradeLevel = data.studentGradeLevel || '';
         
         // Load coverage rules
         editCoverageRules = data.coverageRules || [];
@@ -932,8 +923,12 @@ async function openEditLogModal(logId) {
         
     } catch (error) {
         console.error('Error loading LoG data:', error);
-        alert('Error loading LoG data. Please try again.');
-        closeEditLogModal();
+        const errorDiv = document.getElementById('editError');
+        if (errorDiv) {
+            errorDiv.textContent = error?.message || 'Error loading LoG data. Please try again.';
+            errorDiv.style.display = 'block';
+        }
+        goToStep(1);
     }
 }
 
@@ -1012,9 +1007,7 @@ function renderCoverageRulesTable() {
     editCoverageRules.forEach((rule, index) => {
         const row = document.createElement('tr');
         
-        const targetName = rule.coverageTarget === 'Item' ? 
-            (editItemsData.find(i => i.value === rule.itemId)?.text || 'Unknown') :
-            (editCategoriesData.find(c => c.value === rule.categoryId)?.text || 'Unknown');
+        const itemDisplay = getItemDisplayById(rule.itemId, editItemsData, editCategoriesData) || 'Unknown';
         
         let valueDisplay = '';
         switch (rule.coverageType) {
@@ -1040,8 +1033,7 @@ function renderCoverageRulesTable() {
         ` : `<td class="action-cell">—</td>`;
         
         row.innerHTML = `
-            <td>${rule.coverageTarget}</td>
-            <td>${targetName}</td>
+            <td>${itemDisplay}</td>
             <td>${rule.coverageType}</td>
             <td>${valueDisplay}</td>
             <td>${rule.effectiveFrom ? new Date(rule.effectiveFrom).toLocaleDateString() : '—'}</td>
@@ -1055,14 +1047,12 @@ function renderCoverageRulesTable() {
 }
 
 function addCoverageRuleRow() {
-    // Open the rule edit modal in "add" mode
     document.getElementById('ruleEditIndex').value = '';
+    document.getElementById('ruleEditIndex').setAttribute('data-mode', 'edit');
     document.getElementById('editRuleError').style.display = 'none';
     
     // Reset form
-    document.getElementById('ruleCoverageTarget').value = 'Item';
     document.getElementById('ruleItemId').value = '';
-    document.getElementById('ruleCategoryId').value = '';
     document.getElementById('ruleCoverageType').value = 'Full';
     document.getElementById('rulePercentage').value = '';
     document.getElementById('ruleFixedAmount').value = '';
@@ -1072,74 +1062,121 @@ function addCoverageRuleRow() {
     document.getElementById('ruleDisplayOrder').value = editCoverageRules.length + 1;
     document.getElementById('ruleExceptionNote').value = '';
     
-    // Populate items and categories dropdowns
-    populateRuleDropdowns();
-    toggleRuleTargetFields();
+    // Populate items dropdown filtered by grade level
+    populateRuleItemsDropdown(editItemsData, editStudentGradeLevel, 'ruleItemId');
     toggleRuleCoverageFields();
     
     document.getElementById('editRuleModal').style.display = 'flex';
 }
 
 function editCoverageRule(index) {
-    const rule = editCoverageRules[index];
+    const normalizedIndex = Number.parseInt(index, 10);
+    if (!Number.isInteger(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= editCoverageRules.length) {
+        console.warn('Invalid coverage rule index for edit:', index, 'Rules length:', editCoverageRules.length);
+        renderCoverageRulesTable();
+        return;
+    }
+    const rule = editCoverageRules[normalizedIndex];
     
-    document.getElementById('ruleEditIndex').value = index;
+    document.getElementById('ruleEditIndex').value = normalizedIndex;
+    document.getElementById('ruleEditIndex').setAttribute('data-mode', 'edit');
     document.getElementById('editRuleError').style.display = 'none';
     
     // Populate form with rule data
-    document.getElementById('ruleCoverageTarget').value = rule.coverageTarget;
-    document.getElementById('ruleItemId').value = rule.itemId || '';
-    document.getElementById('ruleCategoryId').value = rule.categoryId || '';
     document.getElementById('ruleCoverageType').value = rule.coverageType;
     document.getElementById('rulePercentage').value = rule.coveragePercentage || '';
     document.getElementById('ruleFixedAmount').value = rule.coverageFixedAmount || '';
     document.getElementById('ruleCapAmount').value = rule.capAmount || '';
     document.getElementById('ruleEffectiveFrom').value = rule.effectiveFrom ? rule.effectiveFrom.split('T')[0] : '';
     document.getElementById('ruleEffectiveTo').value = rule.effectiveTo ? rule.effectiveTo.split('T')[0] : '';
-    document.getElementById('ruleDisplayOrder').value = rule.displayOrder || index + 1;
+    document.getElementById('ruleDisplayOrder').value = rule.displayOrder || normalizedIndex + 1;
     document.getElementById('ruleExceptionNote').value = rule.exceptionNote || '';
     
-    populateRuleDropdowns();
-    toggleRuleTargetFields();
+    populateRuleItemsDropdown(editItemsData, editStudentGradeLevel, 'ruleItemId');
+    document.getElementById('ruleItemId').value = rule.itemId || '';
     toggleRuleCoverageFields();
     
     document.getElementById('editRuleModal').style.display = 'flex';
 }
 
 function deleteCoverageRule(index) {
+    const normalizedIndex = Number.parseInt(index, 10);
+    if (!Number.isInteger(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= editCoverageRules.length) {
+        console.warn('Invalid coverage rule index for delete:', index, 'Rules length:', editCoverageRules.length);
+        renderCoverageRulesTable();
+        return;
+    }
     if (confirm('Are you sure you want to delete this coverage rule?')) {
-        editCoverageRules.splice(index, 1);
+        editCoverageRules.splice(normalizedIndex, 1);
         renderCoverageRulesTable();
     }
 }
 
-function populateRuleDropdowns() {
-    // Populate items
-    const itemSelect = document.getElementById('ruleItemId');
-    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
-    editItemsData.forEach(item => {
+function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId) {
+    // Populate item dropdown for both edit and create modes
+    const selectElement = document.getElementById(selectElementId);
+    selectElement.innerHTML = '<option value="">-- Select Item --</option>';
+    const categories = itemsData === createItemsData ? createCategoriesData : editCategoriesData;
+    
+    // Filter by grade level and get distinct items by Item Name + Grade Level
+    const seenItemKeys = new Set();
+    const distinctItems = [];
+    
+    itemsData
+        .filter(item => isGradeLevelMatch(item.gradeLevel, studentGradeLevel))
+        .forEach(item => {
+            const itemKey = `${item.text}|${normalizeGradeLevel(item.gradeLevel)}`;
+            if (!seenItemKeys.has(itemKey)) {
+                seenItemKeys.add(itemKey);
+                distinctItems.push(item);
+            }
+        });
+    
+    distinctItems.forEach(item => {
         const option = document.createElement('option');
         option.value = item.value;
-        option.textContent = item.text;
-        itemSelect.appendChild(option);
-    });
-    
-    // Populate categories
-    const categorySelect = document.getElementById('ruleCategoryId');
-    categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
-    editCategoriesData.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.value;
-        option.textContent = category.text;
-        categorySelect.appendChild(option);
+        option.textContent = formatItemDisplay(item, categories);
+        selectElement.appendChild(option);
     });
 }
 
-function toggleRuleTargetFields() {
-    const target = document.getElementById('ruleCoverageTarget').value;
-    document.getElementById('ruleItemField').style.display = target === 'Item' ? 'block' : 'none';
-    document.getElementById('ruleCategoryField').style.display = target === 'Category' ? 'block' : 'none';
+
+
+function normalizeGradeLevel(value) {
+    return (value || '')
+        .toString()
+        .trim()
+        .toUpperCase()
+        .replace(/^GRADE\s*/i, '')
+        .replace(/\s+/g, '');
 }
+
+function isGradeLevelMatch(itemGradeLevel, studentGradeLevel) {
+    const studentGrade = normalizeGradeLevel(studentGradeLevel);
+    if (!studentGrade) {
+        return true;
+    }
+    return normalizeGradeLevel(itemGradeLevel) === studentGrade;
+}
+
+function formatCurrencyValue(value) {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue > 0 ? numericValue.toFixed(2) : '-';
+}
+
+function formatItemDisplay(item, categories) {
+    return `${item.value}`;
+}
+
+function getItemDisplayById(itemId, items, categories) {
+    const matchedItem = items.find(i => i.value === itemId);
+    if (!matchedItem) {
+        return 'Unknown';
+    }
+    return formatItemDisplay(matchedItem, categories);
+}
+
+
 
 function toggleRuleCoverageFields() {
     const type = document.getElementById('ruleCoverageType').value;
@@ -1153,11 +1190,13 @@ function saveRuleEdit() {
     const index = indexInput.value;
     const mode = indexInput.getAttribute('data-mode') || 'edit';
     
+    const itemId = document.getElementById('ruleItemId').value;
+    
     const rule = {
         ruleId: (index !== '' && mode === 'edit') ? editCoverageRules[index].ruleId : 0,
-        coverageTarget: document.getElementById('ruleCoverageTarget').value,
-        itemId: document.getElementById('ruleItemId').value || null,
-        categoryId: document.getElementById('ruleCategoryId').value || null,
+        coverageTarget: 'Item',
+        itemId: itemId || null,
+        categoryId: null,
         coverageType: document.getElementById('ruleCoverageType').value,
         coveragePercentage: document.getElementById('rulePercentage').value || null,
         coverageFixedAmount: document.getElementById('ruleFixedAmount').value || null,
@@ -1168,20 +1207,19 @@ function saveRuleEdit() {
         exceptionNote: document.getElementById('ruleExceptionNote').value || null,
         isActive: true
     };
+
+    const sourceItems = mode === 'create' ? createItemsData : editItemsData;
+    const studentGrade = mode === 'create' ? createStudentGradeLevel : editStudentGradeLevel;
+    const selectedItem = sourceItems.find(i => i.value === rule.itemId);
     
     // Validate
-    if (!rule.coverageTarget) {
-        alert('Please select a coverage target');
-        return;
-    }
-    
-    if (rule.coverageTarget === 'Item' && !rule.itemId) {
+    if (!rule.itemId) {
         alert('Please select an item');
         return;
     }
-    
-    if (rule.coverageTarget === 'Category' && !rule.categoryId) {
-        alert('Please select a category');
+
+    if (selectedItem && !isGradeLevelMatch(selectedItem.gradeLevel, studentGrade)) {
+        alert(`Selected item grade level (${selectedItem.gradeLevel || 'N/A'}) does not match student grade level (${studentGrade || 'N/A'}).`);
         return;
     }
     
@@ -1226,6 +1264,7 @@ document.getElementById('editLogForm').addEventListener('submit', async function
     saveBtn.disabled = true;
     saveBtn.innerHTML = 'Saving...';
     
+    document.getElementById('editSuccess').style.display = 'none';
     document.getElementById('editError').style.display = 'none';
     
     const formData = new FormData(this);
@@ -1242,13 +1281,21 @@ document.getElementById('editLogForm').addEventListener('submit', async function
         const result = await response.json();
         
         if (result.success) {
-            alert('Letter of Guarantee updated successfully!');
-            closeEditLogModal();
-            window.location.reload();
+            const successDiv = document.getElementById('editSuccess');
+            successDiv.textContent = result.message || 'Letter of Guarantee updated successfully!';
+            successDiv.style.display = 'block';
+            document.getElementById('editError').style.display = 'none';
+            goToStep(1);
+
+            setTimeout(() => {
+                closeEditLogModal();
+                window.location.reload();
+            }, 1200);
         } else {
             const errorDiv = document.getElementById('editError');
             errorDiv.textContent = result.message || 'Failed to update LoG';
             errorDiv.style.display = 'block';
+            document.getElementById('editSuccess').style.display = 'none';
             goToStep(1); // Go back to first step to see error
         }
     } catch (error) {
@@ -1256,6 +1303,7 @@ document.getElementById('editLogForm').addEventListener('submit', async function
         const errorDiv = document.getElementById('editError');
         errorDiv.textContent = 'An error occurred while updating the LoG';
         errorDiv.style.display = 'block';
+        document.getElementById('editSuccess').style.display = 'none';
         goToStep(1);
     } finally {
         saveBtn.disabled = false;
@@ -1351,12 +1399,18 @@ function handleSchoolYearChange() {
 // Check if LoG already exists for student/school year
 async function checkExistingLog() {
     const schoolYearId = document.getElementById('createSchoolYearId').value;
-    const studentId = document.getElementById('createStudentId').value;
+    const studentSelect = document.getElementById('createStudentId');
+    const studentId = studentSelect.value;
     
     if (!schoolYearId || !studentId) {
         document.getElementById('createWarning').style.display = 'none';
+        createStudentGradeLevel = '';
         return;
     }
+    
+    // Update student grade level for category filtering
+    const selectedOption = studentSelect.options[studentSelect.selectedIndex];
+    createStudentGradeLevel = selectedOption.dataset.gradeLevel || '';
     
     try {
         const response = await fetch(`/Settings/LetterOfGuarantee/CheckExisting?schoolYearId=${encodeURIComponent(schoolYearId)}&studentId=${encodeURIComponent(studentId)}`);
@@ -1457,13 +1511,14 @@ async function loadCreateFormData() {
             schoolYearSelect.appendChild(option);
         });
         
-        // Populate students
+        // Populate students (store grade level as data attribute)
         const studentSelect = document.getElementById('createStudentId');
         studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
         data.students.forEach(student => {
             const option = document.createElement('option');
             option.value = student.value;
             option.textContent = student.text;
+            option.dataset.gradeLevel = student.gradeLevel || '';
             studentSelect.appendChild(option);
         });
         
@@ -1610,9 +1665,7 @@ function renderCreateCoverageRulesTable() {
     createCoverageRules.forEach((rule, index) => {
         const row = document.createElement('tr');
         
-        const targetName = rule.coverageTarget === 'Item' ? 
-            (createItemsData.find(i => i.value === rule.itemId)?.text || 'Unknown') :
-            (createCategoriesData.find(c => c.value === rule.categoryId)?.text || 'Unknown');
+        const itemDisplay = getItemDisplayById(rule.itemId, createItemsData, createCategoriesData) || 'Unknown';
         
         let valueDisplay = '';
         switch (rule.coverageType) {
@@ -1631,8 +1684,7 @@ function renderCreateCoverageRulesTable() {
         }
         
         row.innerHTML = `
-            <td>${rule.coverageTarget}</td>
-            <td>${targetName}</td>
+            <td>${itemDisplay}</td>
             <td>${rule.coverageType}</td>
             <td>${valueDisplay}</td>
             <td>${rule.effectiveFrom ? new Date(rule.effectiveFrom).toLocaleDateString() : '—'}</td>
@@ -1651,12 +1703,11 @@ function renderCreateCoverageRulesTable() {
 function addCreateCoverageRuleRow() {
     // Open the rule edit modal in "add" mode for create
     document.getElementById('ruleEditIndex').value = '';
+    document.getElementById('ruleEditIndex').setAttribute('data-mode', 'create');
     document.getElementById('editRuleError').style.display = 'none';
     
     // Reset form
-    document.getElementById('ruleCoverageTarget').value = 'Item';
     document.getElementById('ruleItemId').value = '';
-    document.getElementById('ruleCategoryId').value = '';
     document.getElementById('ruleCoverageType').value = 'Full';
     document.getElementById('rulePercentage').value = '';
     document.getElementById('ruleFixedAmount').value = '';
@@ -1666,72 +1717,57 @@ function addCreateCoverageRuleRow() {
     document.getElementById('ruleDisplayOrder').value = createCoverageRules.length + 1;
     document.getElementById('ruleExceptionNote').value = '';
     
-    // Populate dropdowns with create data
-    populateCreateRuleDropdowns();
-    toggleRuleTargetFields();
+    // Populate items dropdown filtered by grade level
+    populateRuleItemsDropdown(createItemsData, createStudentGradeLevel, 'ruleItemId');
     toggleRuleCoverageFields();
-    
-    // Set a flag to indicate we're in create mode
-    document.getElementById('ruleEditIndex').setAttribute('data-mode', 'create');
     
     document.getElementById('editRuleModal').style.display = 'flex';
 }
 
 function editCreateCoverageRule(index) {
-    const rule = createCoverageRules[index];
+    const normalizedIndex = Number.parseInt(index, 10);
+    if (!Number.isInteger(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= createCoverageRules.length) {
+        console.warn('Invalid create coverage rule index for edit:', index, 'Rules length:', createCoverageRules.length);
+        renderCreateCoverageRulesTable();
+        return;
+    }
+    const rule = createCoverageRules[normalizedIndex];
     
-    document.getElementById('ruleEditIndex').value = index;
+    document.getElementById('ruleEditIndex').value = normalizedIndex;
     document.getElementById('ruleEditIndex').setAttribute('data-mode', 'create');
     document.getElementById('editRuleError').style.display = 'none';
     
     // Populate form with rule data
-    document.getElementById('ruleCoverageTarget').value = rule.coverageTarget;
-    document.getElementById('ruleItemId').value = rule.itemId || '';
-    document.getElementById('ruleCategoryId').value = rule.categoryId || '';
     document.getElementById('ruleCoverageType').value = rule.coverageType;
     document.getElementById('rulePercentage').value = rule.coveragePercentage || '';
     document.getElementById('ruleFixedAmount').value = rule.coverageFixedAmount || '';
     document.getElementById('ruleCapAmount').value = rule.capAmount || '';
     document.getElementById('ruleEffectiveFrom').value = rule.effectiveFrom ? rule.effectiveFrom.split('T')[0] : '';
     document.getElementById('ruleEffectiveTo').value = rule.effectiveTo ? rule.effectiveTo.split('T')[0] : '';
-    document.getElementById('ruleDisplayOrder').value = rule.displayOrder || index + 1;
+    document.getElementById('ruleDisplayOrder').value = rule.displayOrder || normalizedIndex + 1;
     document.getElementById('ruleExceptionNote').value = rule.exceptionNote || '';
     
-    populateCreateRuleDropdowns();
-    toggleRuleTargetFields();
+    populateRuleItemsDropdown(createItemsData, createStudentGradeLevel, 'ruleItemId');
+    document.getElementById('ruleItemId').value = rule.itemId || '';
     toggleRuleCoverageFields();
     
     document.getElementById('editRuleModal').style.display = 'flex';
 }
 
 function deleteCreateCoverageRule(index) {
+    const normalizedIndex = Number.parseInt(index, 10);
+    if (!Number.isInteger(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= createCoverageRules.length) {
+        console.warn('Invalid create coverage rule index for delete:', index, 'Rules length:', createCoverageRules.length);
+        renderCreateCoverageRulesTable();
+        return;
+    }
     if (confirm('Are you sure you want to delete this coverage rule?')) {
-        createCoverageRules.splice(index, 1);
+        createCoverageRules.splice(normalizedIndex, 1);
         renderCreateCoverageRulesTable();
     }
 }
 
-function populateCreateRuleDropdowns() {
-    // Populate items
-    const itemSelect = document.getElementById('ruleItemId');
-    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
-    createItemsData.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.value;
-        option.textContent = item.text;
-        itemSelect.appendChild(option);
-    });
-    
-    // Populate categories
-    const categorySelect = document.getElementById('ruleCategoryId');
-    categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
-    createCategoriesData.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.value;
-        option.textContent = category.text;
-        categorySelect.appendChild(option);
-    });
-}
+
 
 // Handle create LoG form submission
 document.getElementById('createLogForm').addEventListener('submit', async function(e) {

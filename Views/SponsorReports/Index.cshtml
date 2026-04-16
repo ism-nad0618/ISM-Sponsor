@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "My Reports";
+    Layout = "_Layout";
+}
+
+<div class="page-header">
+    <div>
+        <h1>My Reports</h1>
+        <p class="page-subtitle">View your students and Letters of Guarantee</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="stat-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label">Available Reports</div>
+        <div class="stat-value">2</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Report Types</div>
+        <div class="stat-value">Sponsor Data</div>
+    </div>
+</div>
+
+<!-- Reports Grid -->
+<div class="card">
+    <h2 class="table-title">Sponsor Reports</h2>
+    <p style="padding: 0 1rem; color: #666;">Reports specific to your sponsored students and Letters of Guarantee</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; padding: 1rem;">
+        <!-- My LoGs -->
+        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">My Letters of Guarantee</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
+                View all Letters of Guarantee associated with your sponsorship
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="@Url.Action("MyLoGs", "SponsorReports")" class="btn btn-primary" style="flex: 1;">View My LoGs</a>
+            </div>
+        </div>
+
+        <!-- My Students -->
+        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">My Students</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
+                Complete roster of students under your sponsorship
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="@Url.Action("MyStudents", "SponsorReports")" class="btn btn-primary" style="flex: 1;">View My Students</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Access -->
+<div class="card" style="margin-top: 2rem;">
+    <h2 class="table-title">Quick Access</h2>
+    <div style="padding: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
+        <a href="@Url.Action("LettersOfGuarantee", "Portal")" class="btn-secondary">Portal - My LoGs</a>
+        <a href="@Url.Action("Requests", "Portal")" class="btn-secondary">Portal - My Requests</a>
+        <a href="@Url.Action("Index", "Home")" class="btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>

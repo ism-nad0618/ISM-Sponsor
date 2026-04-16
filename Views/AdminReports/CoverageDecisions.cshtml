@@ -1,0 +1,120 @@
+@model CoverageDecisionReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Coverage Decisions Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Coverage Decisions Report</h1>
+        <p class="page-subtitle">Analyze coverage evaluations and decision outcomes</p>
+    </div>
+    <div>
+        <a href="?exportFormat=csv&startDate=@Model.Filters.StartDate&endDate=@Model.Filters.EndDate" class="btn btn-primary">Export CSV</a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Evaluations</div>
+        <div class="stat-value">@Model.TotalEvaluations</div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-label">Fully Covered</div>
+        <div class="stat-value">@Model.CoveredCount</div>
+        <div class="stat-footer">@(Model.TotalEvaluations > 0 ? Math.Round((decimal)Model.CoveredCount / Model.TotalEvaluations * 100, 1) : 0)%</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-label">Split Coverage</div>
+        <div class="stat-value">@Model.SplitCount</div>
+        <div class="stat-footer">@(Model.TotalEvaluations > 0 ? Math.Round((decimal)Model.SplitCount / Model.TotalEvaluations * 100, 1) : 0)%</div>
+    </div>
+    <div class="stat-card stat-danger">
+        <div class="stat-label">Not Covered</div>
+        <div class="stat-value">@Model.NotCoveredCount</div>
+        <div class="stat-footer">@(Model.TotalEvaluations > 0 ? Math.Round((decimal)Model.NotCoveredCount / Model.TotalEvaluations * 100, 1) : 0)%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Errors</div>
+        <div class="stat-value">@Model.ErrorCount</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Start Date</label>
+            <input type="date" name="startDate" class="form-control" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" class="form-control" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+</form>
+
+<!-- Decision Details Table -->
+<div class="card">
+    <h3 class="table-title">Coverage Decision Details (@Model.DecisionDetails.Count records)</h3>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Audit ID</th>
+                    <th>Sponsor</th>
+                    <th>Student ID</th>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>Amount</th>
+                    <th>Decision</th>
+                    <th>Coverage %</th>
+                    <th>Covered Amt</th>
+                    <th>Evaluated</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.DecisionDetails.Any())
+                {
+                    @foreach (var decision in Model.DecisionDetails)
+                    {
+                        <tr>
+                            <td>@decision.AuditId</td>
+                            <td>
+                                <div>@decision.SponsorName</div>
+                                <div style="font-size: 0.85em; color: #666;">@decision.SponsorId</div>
+                            </td>
+                            <td>@decision.StudentId</td>
+                            <td>@decision.ItemCode</td>
+                            <td>@decision.ItemName</td>
+                            <td>₱@decision.ItemAmount.ToString("N2")</td>
+                            <td>
+                                <span class="status-badge status-@decision.Decision.ToLower().Replace(" ", "")">@decision.Decision</span>
+                            </td>
+                            <td>@decision.CoveragePercentage.ToString("N1")%</td>
+                            <td>₱@decision.CoveredAmount.ToString("N2")</td>
+                            <td>@decision.EvaluatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 2rem; color: #666;">
+                            No coverage decisions found matching the selected filters
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 1rem; padding: 1rem; background: #f6f8fa; border-radius: 6px; font-size: 0.85rem; color: #586069;">
+    <strong>Report Generated:</strong> @Model.GeneratedAt.ToString("MMM dd, yyyy HH:mm UTC")
+</div>

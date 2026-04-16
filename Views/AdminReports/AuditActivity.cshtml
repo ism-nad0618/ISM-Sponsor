@@ -1,0 +1,154 @@
+@model AuditActivityReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Audit Activity Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Audit Activity Report</h1>
+        <p class="page-subtitle">System activity log with user actions and critical events</p>
+    </div>
+    <div>
+        <a href="?exportFormat=csv&startDate=@Model.Filters.StartDate&endDate=@Model.Filters.EndDate" class="btn btn-primary">Export CSV</a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Audit Entries</div>
+        <div class="stat-value">@Model.TotalAuditEntries</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">User Actions</div>
+        <div class="stat-value">@Model.UserActions</div>
+        <div class="stat-footer">@(Model.TotalAuditEntries > 0 ? Math.Round((decimal)Model.UserActions / Model.TotalAuditEntries * 100, 1) : 0)%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">System Actions</div>
+        <div class="stat-value">@Model.SystemActions</div>
+        <div class="stat-footer">@(Model.TotalAuditEntries > 0 ? Math.Round((decimal)Model.SystemActions / Model.TotalAuditEntries * 100, 1) : 0)%</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-label">Security Events</div>
+        <div class="stat-value">@Model.SecurityEvents</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Start Date</label>
+            <input type="date" name="startDate" class="form-control" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" class="form-control" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+</form>
+
+<!-- Activity by Module and Action -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    @if (Model.AuditByModule.Any())
+    {
+        <div class="card">
+            <h3 class="table-title">Activity by Module</h3>
+            <div style="padding: 1rem;">
+                @foreach (var module in Model.AuditByModule.OrderByDescending(x => x.Value))
+                {
+                    <div style="margin-bottom: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="font-weight: 500;">@module.Key</span>
+                            <span style="color: #666;">@module.Value</span>
+                        </div>
+                        <div style="background: #e1e4e8; height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div style="width: @((decimal)module.Value / Model.TotalAuditEntries * 100)%; background: #0366d6; height: 100%;"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.AuditByAction.Any())
+    {
+        <div class="card">
+            <h3 class="table-title">Activity by Action</h3>
+            <div style="padding: 1rem;">
+                @foreach (var action in Model.AuditByAction.OrderByDescending(x => x.Value).Take(10))
+                {
+                    <div style="margin-bottom: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="font-weight: 500;">@action.Key</span>
+                            <span style="color: #666;">@action.Value</span>
+                        </div>
+                        <div style="background: #e1e4e8; height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div style="width: @((decimal)action.Value / Model.TotalAuditEntries * 100)%; background: #28a745; height: 100%;"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Recent Events -->
+<div class="card">
+    <h3 class="table-title">Recent Audit Events (@Model.RecentEvents.Count records)</h3>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Log ID</th>
+                    <th>Module</th>
+                    <th>Action</th>
+                    <th>User</th>
+                    <th>Entity Type</th>
+                    <th>Entity ID</th>
+                    <th>IP Address</th>
+                    <th>Performed At</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentEvents.Any())
+                {
+                    @foreach (var evt in Model.RecentEvents)
+                    {
+                        <tr>
+                            <td>@evt.ActivityLogId</td>
+                            <td><span class="status-badge">@evt.Module</span></td>
+                            <td>@evt.Action</td>
+                            <td>
+                                <div>@evt.UserDisplay</div>
+                                <div style="font-size: 0.85em; color: #666;">@evt.UserId</div>
+                            </td>
+                            <td>@(evt.EntityType ?? "—")</td>
+                            <td>@(evt.EntityId ?? "—")</td>
+                            <td style="font-family: monospace; font-size: 0.9em;">@(evt.IpAddress ?? "—")</td>
+                            <td>@evt.PerformedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
+                            No audit events found matching the selected filters
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 1rem; padding: 1rem; background: #f6f8fa; border-radius: 6px; font-size: 0.85rem; color: #586069;">
+    <strong>Report Generated:</strong> @Model.GeneratedAt.ToString("MMM dd, yyyy HH:mm UTC")
+</div>

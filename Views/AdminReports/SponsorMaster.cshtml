@@ -1,0 +1,113 @@
+@model ISMSponsor.ViewModels.SponsorMasterReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Sponsor Master Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Sponsor Master Report</h1>
+        <p class="page-subtitle">Complete sponsor roster with activity metrics, merge history, and sync status</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index", "AdminReports")" class="btn-secondary">← Back to Reports</a>
+    </div>
+</div>
+
+<!-- Report Filters -->
+@{
+    ViewBag.ShowSponsorFilter = false;
+    ViewBag.ShowStudentFilter = false;
+    ViewBag.ShowStatusFilter = true;
+    ViewBag.ShowDateRangeFilter = true;
+    ViewBag.ShowExportFormat = true;
+    ViewBag.FormAction = Url.Action("SponsorMaster", "AdminReports");
+}
+@await Html.PartialAsync("_ReportFilters", Model.Filters)
+
+<!-- Summary Statistics -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Total Sponsors</div>
+        <div class="stat-value">@Model.TotalSponsors</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Sponsors</div>
+        <div class="stat-value">@Model.ActiveSponsors</div>
+        <div class="stat-footer">@((Model.TotalSponsors > 0 ? (Model.ActiveSponsors * 100.0 / Model.TotalSponsors) : 0).ToString("F1"))% of total</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Inactive Sponsors</div>
+        <div class="stat-value">@Model.InactiveSponsors</div>
+        <div class="stat-footer">@((Model.TotalSponsors > 0 ? (Model.InactiveSponsors * 100.0 / Model.TotalSponsors) : 0).ToString("F1"))% of total</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Report Generated</div>
+        <div class="stat-value">@Model.GeneratedAt.ToString("MMM d, yyyy")</div>
+        <div class="stat-footer">@Model.GeneratedAt.ToString("h:mm tt")</div>
+    </div>
+</div>
+
+<!-- Sponsor Master Table -->
+<div class="card">
+    <h2 class="table-title">Sponsor Master (@Model.SponsorDetails.Count)</h2>
+    
+    @if (Model.SponsorDetails.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sponsor ID</th>
+                        <th>Sponsor Name</th>
+                        <th>Legal Name</th>
+                        <th>Students</th>
+                        <th>Active LoGs</th>
+                        <th>Status</th>
+                        <th>Synced</th>
+                        <th>Created</th>
+                        <th>Modified</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sponsor in Model.SponsorDetails.OrderBy(s => s.SponsorName))
+                    {
+                        <tr>
+                            <td><strong>@sponsor.SponsorId</strong></td>
+                            <td>@sponsor.SponsorName</td>
+                            <td style="color: #666; font-size: 0.9rem;">@(sponsor.LegalName ?? "—")</td>
+                            <td>@sponsor.StudentCount</td>
+                            <td>@sponsor.ActiveLogCount</td>
+                            <td>
+                                @if (sponsor.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (sponsor.IsSynced)
+                                {
+                                    <span class="status-badge status-success">Synced</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-warning">Not Synced</span>
+                                }
+                            </td>
+                            <td>@sponsor.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td>@(sponsor.ModifiedOn?.ToString("MMM d, yyyy") ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="padding: 2rem; text-align: center; color: #666;">No sponsors found matching the selected filters.</p>
+    }
+</div>

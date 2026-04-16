@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
@@ -414,7 +415,14 @@ namespace ISMSponsor.Controllers
             // Get items and categories for rules
             var items = await _context.Items
                 .Where(i => i.IsActive)
-                .Select(i => new { value = i.ItemId, text = i.ItemName })
+                .Select(i => new
+                {
+                    value = i.ItemId,
+                    text = i.ItemName,
+                    categoryId = i.CategoryId,
+                    gradeLevel = i.GradeLevel
+                })
+                .Cast<object>()
                 .ToListAsync();
 
             var categories = await _context.ItemCategories
@@ -431,7 +439,11 @@ namespace ISMSponsor.Controllers
                     validTo = y.ValidTo.ToString("yyyy-MM-dd")
                 }),
                 sponsors = sponsors.Select(s => new { value = s.SponsorId, text = s.SponsorName }),
-                students = students.Select(s => new { value = s.StudentId, text = $"{s.StudentId} - {s.FirstName} {s.LastName}" }),
+                students = students.Select(s => new {
+                    value = s.StudentId,
+                    text = $"{s.StudentId} - {s.FirstName} {s.LastName}",
+                    gradeLevel = s.GradeLevel
+                }),
                 items,
                 categories
             });
@@ -856,7 +868,11 @@ namespace ISMSponsor.Controllers
         {
             try
             {
-                var log = await _logService.GetByIdAsync(id);
+                var log = await _context.LogCoverages
+                    .Include(l => l.Student)
+                    .Include(l => l.Sponsor)
+                    .FirstOrDefaultAsync(l => l.LogId == id);
+
                 if (log == null)
                 {
                     return Json(new { success = false, message = "LoG not found" });
@@ -870,7 +886,14 @@ namespace ISMSponsor.Controllers
                 // Get items and categories for rules
                 var items = await _context.Items
                     .Where(i => i.IsActive)
-                    .Select(i => new { value = i.ItemId.ToString(), text = i.ItemName })
+                    .Select(i => new
+                    {
+                        value = i.ItemId.ToString(),
+                        text = i.ItemName,
+                        categoryId = i.CategoryId,
+                        gradeLevel = i.GradeLevel
+                    })
+                    .Cast<object>()
                     .ToListAsync();
 
                 var categories = await _context.ItemCategories
@@ -879,26 +902,27 @@ namespace ISMSponsor.Controllers
                     .ToListAsync();
 
                 // Get coverage rules
-                var coverageRules = log.CoverageRules?
-                    .Where(r => r.IsActive)
+                var coverageRules = await _context.LoGCoverageRules
+                    .Where(r => r.LogId == id && r.IsActive)
                     .OrderBy(r => r.DisplayOrder)
                     .Select(r => new
                     {
                         ruleId = r.RuleId,
                         coverageTarget = r.CoverageTarget,
-                        itemId = r.ItemId?.ToString(),
-                        categoryId = r.CategoryId?.ToString(),
+                        itemId = r.ItemId,
+                        categoryId = r.CategoryId,
                         coverageType = r.CoverageType,
                         coveragePercentage = r.CoveragePercentage,
                         coverageFixedAmount = r.CoverageFixedAmount,
                         capAmount = r.CapAmount,
-                        effectiveFrom = r.EffectiveFrom?.ToString("yyyy-MM-dd"),
-                        effectiveTo = r.EffectiveTo?.ToString("yyyy-MM-dd"),
+                        effectiveFrom = r.EffectiveFrom.HasValue ? r.EffectiveFrom.Value.ToString("yyyy-MM-dd") : null,
+                        effectiveTo = r.EffectiveTo.HasValue ? r.EffectiveTo.Value.ToString("yyyy-MM-dd") : null,
                         displayOrder = r.DisplayOrder,
                         exceptionNote = r.ExceptionNote,
                         isActive = r.IsActive
                     })
-                    .ToList();
+                    .Cast<object>()
+                    .ToListAsync();
 
                 return Json(new
                 {
@@ -907,6 +931,7 @@ namespace ISMSponsor.Controllers
                     schoolYearId = log.SchoolYearId,
                     studentId = log.StudentId,
                     studentName = log.Student != null ? $"{log.Student.FirstName} {log.Student.LastName}" : "N/A",
+                    studentGradeLevel = log.Student?.GradeLevel ?? "",
                     sponsorId = log.SponsorId,
                     sponsors,
                     logStatus = log.LogStatus,
@@ -942,6 +967,9 @@ namespace ISMSponsor.Controllers
 
                 var log = await _context.LogCoverages
                     .Include(l => l.CoverageRules)
+                    .ThenInclude(r => r.Item)
+                    .Include(l => l.CoverageRules)
+                    .ThenInclude(r => r.Category)
                     .FirstOrDefaultAsync(l => l.LogId == model.LogId);
 
                 if (log == null)

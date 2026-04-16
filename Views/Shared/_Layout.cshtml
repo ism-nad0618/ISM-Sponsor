@@ -68,8 +68,6 @@
             
             @if (User.IsInRole("sponsor"))
             {
-                <li><strong>Sponsor Portal</strong></li>
-                <li><a class="@navClass("Portal", "Index")" asp-controller="Portal" asp-action="Index">Portal Home</a></li>
                 <li><a class="@navClass("Portal", "LettersOfGuarantee")" asp-controller="Portal" asp-action="LettersOfGuarantee">Letters of Guarantee</a></li>
                 <li><a class="@navClass("Portal", "Students")" asp-controller="Portal" asp-action="Students">Students</a></li>
                 <li><a class="@navClass("Portal", "Requests")" asp-controller="Portal" asp-action="Requests">Change Requests</a></li>
@@ -87,10 +85,7 @@
                 <li><a class="@navClass("LetterOfGuarantee", "")" asp-controller="LetterOfGuarantee" asp-action="Index">Letters of Guarantee</a></li>
             }
             
-            @if (!User.IsInRole("sponsor"))
-            {
-                <li><a class="@navClass("Reports", "Index")" asp-controller="Reports" asp-action="Index">Reports</a></li>
-            }
+            <li><a class="@navClass("Reports", "Index")" asp-controller="Reports" asp-action="Index">Reports</a></li>
 
             @if (User.IsInRole("admin"))
             {
@@ -100,12 +95,6 @@
                 <li><a class="@navClass("Items", "Index")" asp-controller="Items" asp-action="Index">Items</a></li>
                 <li><a class="@navClass("Roles", "Index")" asp-controller="Roles" asp-action="Index">Roles</a></li>
                 <li><a class="@navClass("Users", "Index")" asp-controller="Users" asp-action="Index">Users</a></li>
-                
-                <li><strong>Administration</strong></li>
-                <li><a class="@navClass("Operations", "Dashboard")" asp-controller="Operations" asp-action="Dashboard">Operations Dashboard</a></li>
-                <li><a class="@navClass("Operations", "SyncRetry")" asp-controller="Operations" asp-action="SyncRetry">Integration Retry</a></li>
-                <li><a class="@navClass("Audit", "")" asp-controller="Audit" asp-action="Index">Audit Log</a></li>
-                <li><a class="@navClass("PilotSupport", "")" asp-controller="PilotSupport" asp-action="Index">Pilot Support</a></li>
             }
         </ul>
     </nav>

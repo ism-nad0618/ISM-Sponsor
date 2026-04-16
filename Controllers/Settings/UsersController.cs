@@ -39,6 +39,7 @@ namespace ISMSponsor.Controllers.Settings
             var user = new ApplicationUser
             {
                 UserName = model.Username,
+                Email = model.Email,
                 DisplayName = model.DisplayName,
                 SponsorId = model.SponsorId,
                 IsActive = true
@@ -65,6 +66,7 @@ namespace ISMSponsor.Controllers.Settings
             var user = new ApplicationUser
             {
                 UserName = model.Username,
+                Email = model.Email,
                 DisplayName = model.DisplayName,
                 SponsorId = model.SponsorId,
                 IsActive = true
@@ -126,6 +128,7 @@ namespace ISMSponsor.Controllers.Settings
                 user = new
                 {
                     id = user.Id,
+                    email = user.Email,
                     username = user.UserName,
                     displayName = user.DisplayName,
                     sponsorId = user.SponsorId,
@@ -155,6 +158,7 @@ namespace ISMSponsor.Controllers.Settings
 
             // Update user properties
             user.DisplayName = model.DisplayName;
+            user.Email = model.Email;
             user.SponsorId = model.SponsorId;
             user.IsActive = model.IsActive;
 
@@ -217,6 +221,7 @@ namespace ISMSponsor.Controllers.Settings
         public string Id { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public string? SponsorId { get; set; }
         public string Role { get; set; } = string.Empty;
         public bool IsActive { get; set; }

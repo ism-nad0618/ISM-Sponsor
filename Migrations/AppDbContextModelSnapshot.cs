@@ -214,6 +214,10 @@ namespace ISMSponsor.Migrations
                     b.Property<DateTime>("ChargeDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("Decision")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -259,6 +263,9 @@ namespace ISMSponsor.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal?>("ParentPercent")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("ReasonCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -267,6 +274,10 @@ namespace ISMSponsor.Migrations
                     b.Property<decimal>("RequestedAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RuleSnapshot")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("RuleVersion")
                         .HasMaxLength(50)
@@ -284,6 +295,9 @@ namespace ISMSponsor.Migrations
                     b.Property<string>("SponsorId")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("SponsorPercent")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("StudentId")
                         .IsRequired()
@@ -333,6 +347,12 @@ namespace ISMSponsor.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("TuitionFeePHP")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TuitionFeeUSD")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ItemId");
 

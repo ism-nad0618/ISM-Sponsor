@@ -8,9 +8,44 @@ using ISMSponsor.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Azure.Identity;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using System.Linq;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ============================================================================
+// AZURE KEY VAULT INTEGRATION (Production-Safe Secret Management)
+// ============================================================================
+// Load secrets from Azure Key Vault in non-Development environments
+// Key Vault name is configured via environment variable or appsettings
+if (!builder.Environment.IsDevelopment())
+{
+    var keyVaultName = builder.Configuration["KeyVault:Name"];
+    
+    if (!string.IsNullOrEmpty(keyVaultName))
+    {
+        var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
+        
+        // Use Managed Identity for authentication (recommended for Azure App Service)
+        // Falls back to Azure CLI or Visual Studio credentials for local development
+        builder.Configuration.AddAzureKeyVault(
+            keyVaultUri,
+            new DefaultAzureCredential());
+        
+        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Azure Key Vault configuration loaded from {KeyVaultUri}", keyVaultUri);
+    }
+    else
+    {
+        // Log warning but don't fail - allows deployment without Key Vault in staging
+        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+        logger.LogWarning("KeyVault:Name not configured. Ensure secrets are provided via environment variables or App Service settings.");
+    }
+}
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -43,26 +78,21 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>();
 
 // ============================================================================
-// GOOGLE OAUTH AUTHENTICATION (Optional)
+// GOOGLE OAUTH AUTHENTICATION
 // ============================================================================
-// Uncomment the code below to enable Google Sign-In for ISM staff/admins
+// Google Sign-In enabled for ISM staff/admins
 // 
 // SETUP INSTRUCTIONS:
 // 1. Go to Google Cloud Console: https://console.cloud.google.com
 // 2. Create a new project or select existing project
-// 3. Enable Google+ API
+// 3. Enable Google+ API (or People API for newer projects)
 // 4. Go to Credentials > Create Credentials > OAuth 2.0 Client ID
 // 5. Set Application Type to "Web Application"
-// 6. Add authorized redirect URI: https://yourdomain.com/Account/GoogleCallback
+// 6. Add authorized redirect URIs:
+//    - http://localhost:5001/Account/GoogleCallback (Development)
+//    - https://yourdomain.com/Account/GoogleCallback (Production)
 // 7. Copy Client ID and Client Secret
-// 8. Add to appsettings.json:
-//    "Authentication": {
-//      "Google": {
-//        "ClientId": "YOUR_CLIENT_ID_HERE",
-//        "ClientSecret": "YOUR_CLIENT_SECRET_HERE"
-//      }
-//    }
-// 9. Uncomment the code below and rebuild
+// 8. Update appsettings.Development.json with your credentials
 // 
 // SECURITY NOTES:
 // - Only @ismanila.org emails are allowed (enforced in GoogleCallback)
@@ -70,7 +100,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // - Customize role assignment in AccountController.GoogleCallback if needed
 // ============================================================================
 
-/*
 builder.Services.AddAuthentication()
     .AddGoogle(options =>
     {
@@ -86,7 +115,6 @@ builder.Services.AddAuthentication()
         // Save tokens for potential future use
         options.SaveTokens = true;
     });
-*/
 
 // Secure cookie configuration
 var cookieSecurePolicy = builder.Configuration["Security:CookieSecurePolicy"];
@@ -167,12 +195,12 @@ builder.Services.AddScoped<DemoDataSeeder>();
 
 // Step 7: Health checks
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database")
-    .AddCheck<ConfigurationHealthCheck>("configuration")
-    .AddCheck<SyncHealthCheck>("sync")
-    .AddCheck<AuditHealthCheck>("audit");
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready", "live" })
+    .AddCheck<ConfigurationHealthCheck>("configuration", tags: new[] { "ready" })
+    .AddCheck<SyncHealthCheck>("sync", tags: new[] { "ready" })
+    .AddCheck<AuditHealthCheck>("audit", tags: new[] { "ready" });
 
-// Step 7: Application Insights (if configured)
+// Step 7: Application Insights (mandatory in non-Development environments)
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString))
 {
@@ -180,6 +208,13 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString))
     {
         options.ConnectionString = appInsightsConnectionString;
     });
+}
+else if (!builder.Environment.IsDevelopment())
+{
+    // Fail fast if Application Insights not configured in production/pilot
+    throw new InvalidOperationException(
+        "ApplicationInsights:ConnectionString is required for non-Development environments. " +
+        "Configure in Azure Key Vault or App Service settings.");
 }
 
 // Step 7: Anti-forgery configuration
@@ -206,31 +241,109 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddTransient<DbInitializer>();
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 
+// Step 8: Configure Swagger/OpenAPI for API documentation
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "ISM Sponsor API",
+        Version = "v1",
+        Description = "REST API for Student Charging Portal, PowerSchool, NetSuite, and OBS integration",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "ISM Development Team",
+            Email = "support@ismsponsor.edu"
+        }
+    });
+
+    // Include XML documentation comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (System.IO.File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+
+    // Configure JWT Bearer authentication for Swagger
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
 var app = builder.Build();
 
 // Step 7: Validate configuration on startup (fail fast if misconfigured)
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var configValidation = scope.ServiceProvider.GetRequiredService<ConfigurationValidationService>();
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        configValidation.ValidateConfiguration();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Configuration validation passed");
-    }
-    catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogCritical(ex, "Configuration validation failed. Application cannot start safely.");
-        throw; // Fail fast - do not start with invalid configuration
+        var configValidation = scope.ServiceProvider.GetRequiredService<ConfigurationValidationService>();
+        try
+        {
+            configValidation.ValidateConfiguration();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("[OK] Configuration validation passed");
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogCritical(ex, "[FAIL] Configuration validation failed. Application cannot start safely.");
+            throw; // Fail fast - do not start with invalid configuration
+        }
     }
 }
 
-// initialize database
-using (var scope = app.Services.CreateScope())
+// ============================================================================
+// DATABASE INITIALIZATION (Safe for Production)
+// ============================================================================
+// Initialize database ONLY in Development or if explicitly enabled
+// Production/Pilot migrations should run via deployment pipeline
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var initializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
-    initializer.Initialize();
+    var runMigrationsOnStartup = builder.Configuration.GetValue<bool>("Database:RunMigrationsOnStartup", false);
+    
+    if (app.Environment.IsDevelopment() || runMigrationsOnStartup)
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Running database initialization (environment: {Environment})", app.Environment.EnvironmentName);
+            
+            var initializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
+            initializer.Initialize();
+            
+            logger.LogInformation("[OK] Database initialization complete");
+        }
+    }
+    else
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Skipping database migration on startup (production-safe mode). Migrations should be run via deployment pipeline.");
+        }
+    }
 }
 
 // Step 7: Configure forwarded headers (must be before other middleware)
@@ -241,6 +354,17 @@ app.UseGlobalExceptionHandler();
 
 // Step 7: Security headers middleware
 app.UseSecurityHeaders();
+
+// Step 8: Enable Swagger in Development and Pilot environments
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Pilot"))
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ISM Sponsor API v1");
+        options.RoutePrefix = "api/docs"; // Access at /api/docs
+    });
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -282,6 +406,60 @@ app.Use(async (context, next) =>
     await next();
 });
 
+// Step 7: Map health check endpoints with granular probes
+// /health - Overall health (for monitoring dashboards)
+// /health/ready - Readiness probe (database + config + services ready to accept traffic)
+// /health/live - Liveness probe (process is running, lightweight check)
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            timestamp = DateTime.UtcNow,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds
+            })
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            timestamp = DateTime.UtcNow
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            timestamp = DateTime.UtcNow
+        }));
+    }
+});
+
 app.MapControllerRoute(
     name: "settings",
     pattern: "Settings/{controller}/{action=Index}/{id?}");
@@ -300,9 +478,6 @@ app.MapGet("/favicon.ico", async context =>
 {
     context.Response.Redirect("/icons/icon-192.png", permanent: true);
 });
-
-// Step 7: Map health check endpoints
-app.MapHealthChecks("/health");
 
 app.Run();
 

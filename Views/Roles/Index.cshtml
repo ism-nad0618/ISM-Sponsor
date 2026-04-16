@@ -38,7 +38,7 @@
             }else{
                 @foreach(var role in Model){
                     var description = roleDescriptions.ContainsKey(role.Name?.ToLower() ?? "") 
-                        ? roleDescriptions[role.Name.ToLower()] 
+                        ? roleDescriptions[role.Name?.ToLower() ?? ""] 
                         : "Custom role";
                     <tr data-id="@role.Id">
                         <td>

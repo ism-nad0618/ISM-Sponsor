@@ -22,10 +22,29 @@ namespace ISMSponsor.Data
 
         public void Initialize()
         {
-            _context.Database.Migrate();
+            // ========================================================================
+            // PRODUCTION-SAFE DATABASE INITIALIZATION
+            // ========================================================================
+            // Migrations are NOT run automatically on startup in production.
+            // Migrations should be executed via deployment pipeline (azure-pipelines.yml)
+            // using: dotnet ef database update --connection "{connection-string}"
+            //
+            // In Development, migrations can be enabled via:
+            // "Database": { "RunMigrationsOnStartup": true }
+            //
+            // This approach prevents:
+            // - Concurrent migration conflicts in scale-out scenarios
+            // - Startup delays in production
+            // - Unintended schema changes
+            // ========================================================================
+            
+            // Seed roles (idempotent - safe to run multiple times)
             SeedRoles().Wait();
-            // Never reseed users during startup: existing ChangeRequests reference AspNetUsers.
-            // Startup should be non-destructive for identity data.
+            
+            // Seed users (idempotent - only creates if missing)
+            SeedUsers().Wait();
+            
+            // Seed domain data (idempotent)
             SeedDomainData();
         }
 

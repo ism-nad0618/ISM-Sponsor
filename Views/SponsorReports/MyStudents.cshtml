@@ -1,0 +1,111 @@
+@model List<ISMSponsor.Models.Domain.Student>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Students";
+    var totalStudents = ViewBag.TotalStudents ?? 0;
+    var activeStudents = ViewBag.ActiveStudents ?? 0;
+    var sponsorId = ViewBag.SponsorId ?? "";
+}
+
+<div class="page-header">
+    <div>
+        <h1>My Students</h1>
+        <p class="page-subtitle">All students sponsored by: @sponsorId</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index", "SponsorReports")" class="btn-secondary">← Back to Reports</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="margin: 0 0 1rem 0; padding: 1rem 1rem 0 1rem; font-size: 1.1rem;">📋 Filter Students</h3>
+    <form method="get" action="@Url.Action("MyStudents")" style="padding: 1rem;">
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem;">School Year</label>
+                <select name="schoolYearId" class="form-control">
+                    <option value="">All School Years</option>
+                    @foreach (var year in ViewBag.SchoolYears as List<ISMSponsor.Models.Domain.SchoolYear> ?? new List<ISMSponsor.Models.Domain.SchoolYear>())
+                    {
+                        <option value="@year.SchoolYearId" selected="@(ViewBag.SelectedSchoolYearId == year.SchoolYearId.ToString())">@year.Name</option>
+                    }
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btnprimary">Apply Filter</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Statistics -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">@totalStudents</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Students</div>
+        <div class="stat-value">@activeStudents</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Inactive Students</div>
+        <div class="stat-value">@(totalStudents - activeStudents)</div>
+    </div>
+</div>
+
+<!-- Student List -->
+<div class="card">
+    <h2 class="table-title">Student Roster (@Model.Count)</h2>
+    
+    @if (Model.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Grade Level</th>
+                        <th>School Year</th>
+                        <th>Status</th>
+                        <th>Enrolled</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var student in Model)
+                    {
+                        <tr>
+                            <td><strong>@student.StudentId</strong></td>
+                            <td>
+                                <strong>@student.FirstName @student.LastName</strong>
+                            </td>
+                            <td style="font-size: 0.9rem; color: #666;">—</td>
+                            <td>@(student.GradeLevel ?? "—")</td>
+                            <td>@student.SchoolYearId</td>
+                            <td>
+                                @if (student.StudentStatus == "active")
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">@student.StudentStatus</span>
+                                }
+                            </td>
+                            <td>—</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="padding: 2rem; text-align: center; color: #666;">
+            You have no students matching the selected filters.
+        </p>
+    }
+</div>

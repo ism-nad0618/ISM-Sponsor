@@ -1,0 +1,149 @@
+@model List<ISMSponsor.Models.Domain.LogCoverage>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Letters of Guarantee";
+    var totalLoGs = ViewBag.TotalLoGs ?? 0;
+    var activeLoGs = ViewBag.ActiveLoGs ?? 0;
+    var approvedLoGs = ViewBag.ApprovedLoGs ?? 0;
+    var pendingLoGs = ViewBag.PendingLoGs ?? 0;
+    var sponsorId = ViewBag.SponsorId ?? "";
+}
+
+<div class="page-header">
+    <div>
+        <h1>My Letters of Guarantee</h1>
+        <p class="page-subtitle">All LoGs for Sponsor: @sponsorId</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index", "SponsorReports")" class="btn-secondary">← Back to Reports</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h3 style="margin: 0 0 1rem 0; padding: 1rem 1rem 0 1rem; font-size: 1.1rem;">📋 Filter LoGs</h3>
+    <form method="get" action="@Url.Action("MyLoGs")" style="padding: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem;">School Year</label>
+                <select name="schoolYearId" class="form-control">
+                    <option value="">All School Years</option>
+                    @foreach (var year in ViewBag.SchoolYears as List<ISMSponsor.Models.Domain.SchoolYear> ?? new List<ISMSponsor.Models.Domain.SchoolYear>())
+                    {
+                        <option value="@year.SchoolYearId" selected="@(ViewBag.SelectedSchoolYearId == year.SchoolYearId.ToString())">@year.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem;">Status</label>
+                <select name="status" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="Active" selected="@(ViewBag.SelectedStatus == "Active")">Active</option>
+                    <option value="Inactive" selected="@(ViewBag.SelectedStatus == "Inactive")">Inactive</option>
+                    <option value="Pending" selected="@(ViewBag.SelectedStatus == "Pending")">Pending</option>
+                    <option value="Approved" selected="@(ViewBag.SelectedStatus == "Approved")">Approved</option>
+                    <option value="Rejected" selected="@(ViewBag.SelectedStatus == "Rejected")">Rejected</option>
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Statistics -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Total LoGs</div>
+        <div class="stat-value">@totalLoGs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active LoGs</div>
+        <div class="stat-value">@activeLoGs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Approved</div>
+        <div class="stat-value">@approvedLoGs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending Approval</div>
+        <div class="stat-value">@pendingLoGs</div>
+    </div>
+</div>
+
+<!-- LoG List -->
+<div class="card">
+    <h2 class="table-title">Letters of Guarantee (@Model.Count)</h2>
+    
+    @if (Model.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>LoG ID</th>
+                        <th>School Year</th>
+                        <th>Student</th>
+                        <th>Grade</th>
+                        <th>Status</th>
+                        <th>Active</th>
+                        <th>Coverage Rules</th>
+                        <th>Effective Period</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td><strong>#@log.LogId</strong></td>
+                            <td>@log.SchoolYearId</td>
+                            <td>
+                                <strong>@(log.Student != null ? $"{log.Student.FirstName} {log.Student.LastName}" : log.StudentId)</strong>
+                                <br />
+                                <span style="color: #666; font-size: 0.85rem;">@log.StudentId</span>
+                            </td>
+                            <td>@(log.Student?.GradeLevel ?? "—")</td>
+                            <td><span class="status-badge status-@log.LogStatus.ToLower()">@log.LogStatus</span></td>
+                            <td>
+                                @if (log.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>@(log.CoverageRules?.Count ?? 0) rules</td>
+                            <td>
+                                @if (log.EffectiveFrom.HasValue && log.EffectiveTo.HasValue)
+                                {
+                                    <span>@log.EffectiveFrom.Value.ToString("MMM d, yyyy")</span>
+                                    <br />
+                                    <span style="color: #666; font-size: 0.85rem;">to @log.EffectiveTo.Value.ToString("MMM d, yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">—</span>
+                                }
+                            </td>
+                            <td>@log.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td>
+                                <a href="@Url.Action("Details", "LetterOfGuarantee", new { id = log.LogId })" class="btn-link">View Details</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="padding: 2rem; text-align: center; color: #666;">
+            You have no Letters of Guarantee matching the selected filters.
+        </p>
+    }
+</div>

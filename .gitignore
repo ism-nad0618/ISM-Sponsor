@@ -29,8 +29,13 @@ bld/
 
 # Sensitive configuration files
 appsettings.json
-appsettings.*.json
-!appsettings.Development.json.example
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Local.json
+# Keep example and pilot template files
+!appsettings.json.example
+!appsettings.Pilot.json
 
 # Database files
 *.db

@@ -1,0 +1,138 @@
+@model ISMSponsor.ViewModels.CashierReconciliationReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Cashier Reconciliation Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Cashier Reconciliation Report</h1>
+        <p class="page-subtitle">Recent coverage decisions and student LoG status for billing reconciliation</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index", "CashierReports")" class="btn-secondary">← Back to Reports</a>
+    </div>
+</div>
+
+<!-- Report Filters -->
+@{
+    ViewBag.ShowSponsorFilter = true;
+    ViewBag.ShowStudentFilter = false;
+    ViewBag.ShowStatusFilter = false;
+    ViewBag.ShowDateRangeFilter = true;
+    ViewBag.ShowExportFormat = true;
+    ViewBag.FormAction = Url.Action("ReconciliationReport", "CashierReports");
+}
+@await Html.PartialAsync("_ReportFilters", Model.Filters)
+
+<!-- Summary Statistics -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Recent Decisions</div>
+        <div class="stat-value">@Model.RecentDecisions.Count</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Students with LoGs</div>
+        <div class="stat-value">@Model.StudentLogStatus.Count</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Report Generated</div>
+        <div class="stat-value">@Model.GeneratedAt.ToString("MMM d, yyyy")</div>
+        <div class="stat-footer">@Model.GeneratedAt.ToString("h:mm tt")</div>
+    </div>
+</div>
+
+<!-- Recent Coverage Decisions -->
+<div class="card" style="margin-bottom: 2rem;">
+    <h2 class="table-title">Recent Coverage Decisions (@Model.RecentDecisions.Count)</h2>
+    
+    @if (Model.RecentDecisions.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Student ID</th>
+                        <th>Sponsor</th>
+                        <th>Item</th>
+                        <th>Amount</th>
+                        <th>Decision</th>
+                        <th>Coverage Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var decision in Model.RecentDecisions)
+                    {
+                        <tr>
+                            <td>@decision.EvaluatedAt.ToString("MMM d, yyyy")</td>
+                            <td>@decision.StudentId</td>
+                            <td>@decision.SponsorName</td>
+                            <td>@decision.ItemCode</td>
+                            <td>₱@decision.ItemAmount.ToString("N2")</td>
+                            <td>
+                                <span class="status-badge status-@decision.Decision.ToLower()">@decision.Decision</span>
+                            </td>
+                            <td>₱@decision.CoveredAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="padding: 2rem; text-align: center; color: #666;">No coverage decisions found for the selected filters.</p>
+    }
+</div>
+
+<!-- Student LoG Status -->
+<div cardclass="card">
+    <h2 class="table-title">Student LoG Status (@Model.StudentLogStatus.Count)</h2>
+    
+    @if (Model.StudentLogStatus.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Sponsor</th>
+                        <th>Active LoGs</th>
+                        <th>Inactive LoGs</th>
+                        <th>Most Recent Status</th>
+                        <th>Last Evaluation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var student in Model.StudentLogStatus)
+                    {
+                        <tr>
+                            <td>@student.StudentId</td>
+                            <td>@student.StudentName</td>
+                            <td>@student.SponsorName</td>
+                            <td>@student.ActiveLoGCount</td>
+                            <td>@student.InactiveLoGCount</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(student.MostRecentLogStatus))
+                                {
+                                    <span class="status-badge status-@student.MostRecentLogStatus.ToLower()">@student.MostRecentLogStatus</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #999;">—</span>
+                                }
+                            </td>
+                            <td>@(student.LastEvaluationDate?.ToString("MMM d, yyyy") ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="padding: 2rem; text-align: center; color: #666;">No student LoG status data available.</p>
+    }
+</div>

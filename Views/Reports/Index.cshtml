@@ -4,203 +4,116 @@
     var isAdmin = User.IsInRole("admin");
     var isAdmissions = User.IsInRole("admissions");
     var isCashier = User.IsInRole("cashier");
+    var isSponsor = User.IsInRole("sponsor");
 }
 
 <div class="page-header">
     <div>
-        <h1>Reports Hub</h1>
-        <p class="page-subtitle">Generate insights and analytics for sponsor management and LoG operations</p>
+        <h1>Reports</h1>
+        <p class="page-subtitle">All available reports for your role</p>
     </div>
 </div>
 
-<!-- Quick Stats -->
-<div class="stat-grid" style="margin-bottom: 2rem;">
-    <div class="stat-card">
-        <div class="stat-label">Available Reports</div>
-        <div class="stat-value">@(isAdmin ? "8" : isAdmissions ? "4" : "3")</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Report Categories</div>
-        <div class="stat-value">4</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Export Formats</div>
-        <div class="stat-value">2</div>
-        <div class="stat-footer">CSV, Excel Ready</div>
-    </div>
-</div>
+<style>
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    .report-item {
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        padding: 1rem;
+        background: #fff;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+    }
+    .report-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .report-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        color: #24292e;
+    }
+    .report-desc {
+        font-size: 0.8rem;
+        color: #666;
+        margin: 0 0 0.75rem 0;
+        flex: 1;
+        line-height: 1.3;
+    }
+</style>
 
-<!-- Operational Reports (All Roles) -->
-<div class="card" style="margin-bottom: 2rem;">
-    <h2 class="table-title">Operational Reports</h2>
-    <p style="padding: 0 1rem; color: #666;">Daily operational reports for tracking LoGs, sponsors, and students</p>
+<div class="report-grid">
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; padding: 1rem;">
-        <!-- LoG Activity Report -->
-        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">LoG Activity</h3>
-            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                Track Letters of Guarantee status, approvals, and coverage rules
-            </p>
-            <div style="display: flex; gap: 0.5rem;">
-                @if (isAdmin)
-                {
-                    <a href="@Url.Action("LogActivity", "AdminReports")" class="btn btn-primary" style="flex: 1;">View Report</a>
-                }
-                else
-                {
-                    <button class="btn btn-secondary" style="flex: 1;" disabled>Admin Only</button>
-                }
-            </div>
+    @* Sponsor Reports *@
+    @if (isSponsor)
+    {
+        <div class="report-item">
+            <h3 class="report-title">My Letters of Guarantee</h3>
+            <p class="report-desc">View all your LoGs with status and coverage details</p>
+            <a href="@Url.Action("MyLoGs", "SponsorReports")" class="btn btn-primary btn-sm">View Report</a>
         </div>
-
-        <!-- Coverage Decisions -->
-        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Coverage Decisions</h3>
-            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                Analyze coverage evaluations and decision outcomes
-            </p>
-            <div style="display: flex; gap: 0.5rem;">
-                @if (isAdmin || isCashier)
-                {
-                    <a href="@Url.Action("CoverageDecisions", "AdminReports")" class="btn btn-primary" style="flex: 1;">View Report</a>
-                }
-                else
-                {
-                    <button class="btn btn-secondary" style="flex: 1;" disabled>Admin/Cashier</button>
-                }
-            </div>
+        <div class="report-item">
+            <h3 class="report-title">My Students</h3>
+            <p class="report-desc">Roster of students you sponsor with enrollment details</p>
+            <a href="@Url.Action("MyStudents", "SponsorReports")" class="btn btn-primary btn-sm">View Report</a>
         </div>
+    }
 
-        <!-- Sponsor Performance -->
-        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Sponsor Master</h3>
-            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                Complete sponsor roster with activity metrics and status
-            </p>
-            <div style="display: flex; gap: 0.5rem;">
-                @if (isAdmin)
-                {
-                    <a href="@Url.Action("SponsorMaster", "AdminReports")" class="btn btn-primary" style="flex: 1;">View Report</a>
-                }
-                else
-                {
-                    <button class="btn btn-secondary" style="flex: 1;" disabled>Admin Only</button>
-                }
-            </div>
+    @* Admin Reports *@
+    @if (isAdmin)
+    {
+        <div class="report-item">
+            <h3 class="report-title">LoG Activity</h3>
+            <p class="report-desc">Track LoG status, approvals, and coverage rules</p>
+            <a href="@Url.Action("LogActivity", "AdminReports")" class="btn btn-primary btn-sm">View Report</a>
         </div>
-    </div>
-</div>
-
-<!-- Administrative Reports (Admin Only) -->
-@if (isAdmin)
-{
-    <div class="card" style="margin-bottom: 2rem;">
-        <h2 class="table-title">Administrative Reports</h2>
-        <p style="padding: 0 1rem; color: #666;">System administration and oversight reports</p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; padding: 1rem;">
-            <!-- Sync Status -->
-            <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Sync Status</h3>
-                <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                    Integration sync attempts and success rates by system
-                </p>
-                <a href="@Url.Action("SyncStatus", "AdminReports")" class="btn btn-primary" style="display: block;">View Report</a>
-            </div>
-
-            <!-- Audit Activity -->
-            <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Audit Activity</h3>
-                <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                    System activity log with user actions and critical events
-                </p>
-                <a href="@Url.Action("AuditActivity", "AdminReports")" class="btn btn-primary" style="display: block;">View Report</a>
-            </div>
-
-            <!-- Operations Dashboard -->
-            <div style="border: 1px solid #0066cc; border-radius: 6px; padding: 1.5rem; background: #f0f7ff;">
-                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #0066cc;">Operations Dashboard</h3>
-                <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                    Real-time operational monitoring with health status
-                </p>
-                <a href="@Url.Action("Dashboard", "Operations")" class="btn btn-primary" style="display: block;">View Dashboard</a>
-            </div>
+        <div class="report-item">
+            <h3 class="report-title">Coverage Decisions</h3>
+            <p class="report-desc">Analyze coverage evaluations and outcomes</p>
+            <a href="@Url.Action("CoverageDecisions", "AdminReports")" class="btn btn-primary btn-sm">View Report</a>
         </div>
-    </div>
-}
+        <div class="report-item">
+            <h3 class="report-title">Sponsor Master</h3>
+            <p class="report-desc">Complete sponsor roster with activity metrics</p>
+            <a href="@Url.Action("SponsorMaster", "AdminReports")" class="btn btn-primary btn-sm">View Report</a>
+        </div>
+        <div class="report-item">
+            <h3 class="report-title">Sync Status</h3>
+            <p class="report-desc">Integration sync attempts and success rates</p>
+            <a href="@Url.Action("SyncStatus", "AdminReports")" class="btn btn-primary btn-sm">View Report</a>
+        </div>
+        <div class="report-item">
+            <h3 class="report-title">Audit Activity</h3>
+            <p class="report-desc">System activity log with user actions</p>
+            <a href="@Url.Action("AuditActivity", "AdminReports")" class="btn btn-primary btn-sm">View Report</a>
+        </div>
+    }
 
-<!-- Student & Financial Reports -->
-@if (isAdmin || isAdmissions || isCashier)
-{
-    <div class="card" style="margin-bottom: 2rem;">
-        <h2 class="table-title">Student & Financial Reports</h2>
-        <p style="padding: 0 1rem; color: #666;">Student enrollment and financial coverage reports</p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; padding: 1rem;">
-            <!-- Student Enrollment -->
-            <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Student Enrollment</h3>
-                <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                    Student roster by sponsor with grade levels and status
-                </p>
-                <a href="@Url.Action("Index", "Students")" class="btn btn-primary" style="display: block;">View Students</a>
-            </div>
+    @* Cashier Reports *@
+    @if (isAdmin || isCashier)
+    {
+        <div class="report-item">
+            <h3 class="report-title">Reconciliation Report</h3>
+            <p class="report-desc">Billing reconciliation with coverage decisions and LoG status</p>
+            <a href="@Url.Action("ReconciliationReport", "CashierReports")" class="btn btn-primary btn-sm">View Report</a>
+        </div>
+    }
 
-            <!-- Financial Coverage -->
-            @if (isCashier || isAdmin)
-            {
-                <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;"> Financial Coverage</h3>
-                    <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                        Fee coverage analysis and sponsor contribution reports
-                    </p>
-                    <a href="@Url.Action("Coverage", "LetterOfGuarantee")" class="btn btn-primary" style="display: block;">View Coverage</a>
-                </div>
-            }
-
-            <!-- Change Requests -->
-            @if (isAdmin || isAdmissions)
-            {
-                <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Change Requests</h3>
-                    <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
-                        Sponsor profile change requests and approval workflow
-                    </p>
-                    <a href="@Url.Action("Index", "ReviewRequest")" class="btn btn-primary" style="display: block;">View Requests</a>
-                </div>
-            }
+    @* Admissions Reports *@
+    @if (isAdmin || isAdmissions)
+    {
+        <div class="report-item">
+            <h3 class="report-title">Coverage Tracking</h3>
+            <p class="report-desc">Track coverage alignment by sponsor with progress metrics</p>
+            <a href="@Url.Action("TrackingReport", "AdmissionsReports")" class="btn btn-primary btn-sm">View Report</a>
         </div>
-    </div>
-}
-
-<!-- Help & Documentation -->
-<div class="card" style="background-color: #f8f9fa; border-left: 4px solid #0066cc;">
-    <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem;">Report Guidelines</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-        <div>
-            <strong style="display: block; margin-bottom: 0.5rem;">Filters</strong>
-            <p style="margin: 0; color: #666; font-size: 0.9rem;">
-                All reports support filtering by school year, date range, and status. Use filters to narrow down results.
-            </p>
-        </div>
-        <div>
-            <strong style="display: block; margin-bottom: 0.5rem;">Exports</strong>
-            <p style="margin: 0; color: #666; font-size: 0.9rem;">
-                Export reports to CSV format for further analysis in Excel, Google Sheets, or other tools.
-            </p>
-        </div>
-        <div>
-            <strong style="display: block; margin-bottom: 0.5rem;">Performance</strong>
-            <p style="margin: 0; color: #666; font-size: 0.9rem;">
-                Large reports may take a few moments to generate. Consider using date range filters for faster results.
-            </p>
-        </div>
-        <div>
-            <strong style="display: block; margin-bottom: 0.5rem;">Access</strong>
-            <p style="margin: 0; color: #666; font-size: 0.9rem;">
-                Report availability depends on your role. Admin users have access to all reports.
-            </p>
-        </div>
-    </div>
+    }
+    
 </div>

@@ -57,8 +57,9 @@ namespace ISMSponsor.Services
                 .Include(l => l.CreatedByUser)
                 .Include(l => l.ModifiedByUser)
                 .Include(l => l.CoverageRules)
-                .Include(l => l.CoverageRules!.Select(r => r.Item))
-                .Include(l => l.CoverageRules!.Select(r => r.Category))
+                .ThenInclude(r => r.Item)
+                .Include(l => l.CoverageRules)
+                .ThenInclude(r => r.Category)
                 .FirstOrDefaultAsync(l => l.LogId == logId);
         }
 

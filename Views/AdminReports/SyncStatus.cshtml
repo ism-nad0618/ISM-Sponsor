@@ -1,0 +1,155 @@
+@model SyncStatusReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Sync Status Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Sync Status Report</h1>
+        <p class="page-subtitle">Integration sync attempts and success rates by system</p>
+    </div>
+    <div>
+        <a href="?exportFormat=csv&startDate=@Model.Filters.StartDate&endDate=@Model.Filters.EndDate" class="btn btn-primary">Export CSV</a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Sync Attempts</div>
+        <div class="stat-value">@Model.TotalSyncAttempts</div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-label">Successful Syncs</div>
+        <div class="stat-value">@Model.SuccessfulSyncs</div>
+    </div>
+    <div class="stat-card stat-danger">
+        <div class="stat-label">Failed Syncs</div>
+        <div class="stat-value">@Model.FailedSyncs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Success Rate</div>
+        <div class="stat-value">@Model.SuccessRate.ToString("N1")%</div>
+        <div class="stat-footer">@(Model.SuccessRate >= 95 ? "Excellent" : Model.SuccessRate >= 80 ? "Good" : "Needs Attention")</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Start Date</label>
+            <input type="date" name="startDate" class="form-control" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" class="form-control" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+</form>
+
+<!-- Sync By System -->
+@if (Model.SyncBySystem.Any())
+{
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 class="table-title">Sync Status by System</h3>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>System</th>
+                        <th>Total Attempts</th>
+                        <th>Successful</th>
+                        <th>Failed</th>
+                        <th>Success Rate</th>
+                        <th>Last Success</th>
+                        <th>Last Failure</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var system in Model.SyncBySystem.Values)
+                    {
+                        <tr>
+                            <td><strong>@system.SystemName</strong></td>
+                            <td>@system.TotalAttempts</td>
+                            <td class="text-success">@system.SuccessfulSyncs</td>
+                            <td class="text-danger">@system.FailedSyncs</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>@system.SuccessRate.ToString("N1")%</span>
+                                    <div style="flex: 1; background: #e1e4e8; height: 6px; border-radius: 3px; overflow: hidden;">
+                                        <div style="width: @system.SuccessRate%; background: @(system.SuccessRate >= 95 ? "#28a745" : system.SuccessRate >= 80 ? "#ffc107" : "#dc3545"); height: 100%;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@(system.LastSuccessfulSyncAt?.ToString("MMM dd, yyyy HH:mm") ?? "Never")</td>
+                            <td>@(system.LastFailedSyncAt?.ToString("MMM dd, yyyy HH:mm") ?? "Never")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Recent Failures -->
+<div class="card">
+    <h3 class="table-title">Recent Sync Failures (@Model.RecentFailures.Count records)</h3>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sync ID</th>
+                    <th>Entity Type</th>
+                    <th>Entity ID</th>
+                    <th>Target System</th>
+                    <th>Event Type</th>
+                    <th>Retry Count</th>
+                    <th>Error Message</th>
+                    <th>Attempted</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentFailures.Any())
+                {
+                    @foreach (var failure in Model.RecentFailures)
+                    {
+                        <tr>
+                            <td>@failure.SyncLogId</td>
+                            <td>@failure.EntityType</td>
+                            <td>@failure.EntityId</td>
+                            <td>@failure.TargetSystem</td>
+                            <td>@failure.EventType</td>
+                            <td>
+                                <span class="status-badge @(failure.RetryCount > 3 ? "status-danger" : "status-warning")">
+                                    @failure.RetryCount retries
+                                </span>
+                            </td>
+                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@failure.ErrorMessage">
+                                @failure.ErrorMessage
+                            </td>
+                            <td>@failure.AttemptedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
+                            No recent sync failures found
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 1rem; padding: 1rem; background: #f6f8fa; border-radius: 6px; font-size: 0.85rem; color: #586069;">
+    <strong>Report Generated:</strong> @Model.GeneratedAt.ToString("MMM dd, yyyy HH:mm UTC")
+</div>

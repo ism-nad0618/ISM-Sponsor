@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Cashier Reports";
+    Layout = "_Layout";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Cashier Reports</h1>
+        <p class="page-subtitle">Billing reconciliation and coverage decision reports for financial operations</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="stat-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label">Available Reports</div>
+        <div class="stat-value">1</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Export Formats</div>
+        <div class="stat-value">CSV</div>
+    </div>
+</div>
+
+<!-- Reports Grid -->
+<div class="card">
+    <h2 class="table-title">Financial Reports</h2>
+    <p style="padding: 0 1rem; color: #666;">Reconciliation and billing reports for cashier operations</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; padding: 1rem;">
+        <!-- Reconciliation Report -->
+        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Reconciliation Report</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
+                Recent coverage decisions and student LoG status for billing reconciliation
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="@Url.Action("ReconciliationReport", "CashierReports")" class="btn btn-primary" style="flex: 1;">View Report</a>
+            </div>
+        </div>
+
+        <!-- All Contacts (from AdminReports) -->
+        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">All Sponsor Contacts</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
+                Complete roster of all sponsor contacts for billing and communication purposes
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="@Url.Action("AllContacts", "AdminReports")" class="btn btn-primary" style="flex: 1;">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back to Navigation -->
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="@Url.Action("Index", "Home")" class="btn-secondary">← Back to Dashboard</a>
+</div>

@@ -59,6 +59,20 @@ namespace ISMSponsor.Models.Domain
 
         public decimal ParentAmount { get; set; }
 
+        /// <summary>
+        /// Percentage of requested amount approved to sponsor (0-100).
+        /// Calculated as (SponsorAmount / RequestedAmount) * 100.
+        /// Nullable for backward compatibility.
+        /// </summary>
+        public decimal? SponsorPercent { get; set; }
+
+        /// <summary>
+        /// Percentage of requested amount approved to parent (0-100).
+        /// Calculated as (ParentAmount / RequestedAmount) * 100.
+        /// Nullable for backward compatibility.
+        /// </summary>
+        public decimal? ParentPercent { get; set; }
+
         [Required]
         [MaxLength(50)]
         public string ReasonCode { get; set; } = string.Empty;
@@ -70,6 +84,22 @@ namespace ISMSponsor.Models.Domain
 
         [MaxLength(50)]
         public string? RuleVersion { get; set; }
+
+        /// <summary>
+        /// Unique correlation ID for end-to-end traceability across systems.
+        /// Can be used to track decision through PowerSchool, ISM, NetSuite, OBS.
+        /// Generated if not provided in request.
+        /// </summary>
+        [MaxLength(450)]
+        public string? CorrelationId { get; set; }
+
+        /// <summary>
+        /// JSON snapshot of the matched rule at time of evaluation.
+        /// Enables audit trail replay and compliance reporting.
+        /// Contains rule configuration, effective dates, and coverage parameters.
+        /// </summary>
+        [MaxLength(4000)]
+        public string? RuleSnapshot { get; set; }
 
         [Required]
         public bool Success { get; set; }

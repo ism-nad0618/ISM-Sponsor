@@ -46,6 +46,6 @@ namespace ISMSponsor.Models.Domain
         public ApplicationUser? DeactivatedByUser { get; set; }
         public ApplicationUser? CreatedByUser { get; set; }
         public ApplicationUser? ModifiedByUser { get; set; }
-        public ICollection<LoGCoverageRule>? CoverageRules { get; set; }
+        public ICollection<LoGCoverageRule> CoverageRules { get; set; } = new List<LoGCoverageRule>();
     }
 }

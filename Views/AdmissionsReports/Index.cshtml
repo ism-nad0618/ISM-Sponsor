@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Admissions Reports";
+    Layout = "_Layout";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Admissions Reports</h1>
+        <p class="page-subtitle">Student enrollment tracking and coverage alignment reports for admissions operations</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="stat-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label">Available Reports</div>
+        <div class="stat-value">1</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Export Formats</div>
+        <div class="stat-value">CSV</div>
+    </div>
+</div>
+
+<!-- Reports Grid -->
+<div class="card">
+    <h2 class="table-title">Enrollment & Coverage Reports</h2>
+    <p style="padding: 0 1rem; color: #666;">Track student enrollment, sponsor alignment, and coverage completeness</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; padding: 1rem;">
+        <!-- Admissions Tracking Report -->
+        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Admissions Tracking Report</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
+                Coverage alignment by sponsor showing students with and without LoG coverage
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="@Url.Action("TrackingReport", "AdmissionsReports")" class="btn btn-primary" style="flex: 1;">View Report</a>
+            </div>
+        </div>
+
+        <!-- Student Enrollment (from Reports) -->
+        <div style="border: 1px solid #e1e4e8; border-radius: 6px; padding: 1.5rem; background: #fff;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Student Enrollment Report</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0 0 1rem 0; min-height: 3rem;">
+                Complete student roster by sponsor with grade levels and enrollment status
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="@Url.Action("StudentEnrollment", "Reports")" class="btn btn-primary" style="flex: 1;">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back to Navigation -->
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="@Url.Action("Index", "Home")" class="btn-secondary">← Back to Dashboard</a>
+</div>

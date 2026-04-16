@@ -26,10 +26,11 @@ public class ConfigurationValidationService
         ValidateAuthenticationSettings();
         ValidateSecuritySettings();
         ValidateIntegrationEndpoints();
+        ValidateMonitoring();
 
         if (_errors.Any())
         {
-            var errorMessage = "Configuration validation failed:\n" + string.Join("\n", _errors.Select(e => $"  - {e}"));
+            var errorMessage = "Configuration validation failed:\n" + string.Join("\n", _errors.Select(e => $"  ✗ {e}"));
             throw new InvalidOperationException(errorMessage);
         }
     }
@@ -148,6 +149,27 @@ public class ConfigurationValidationService
             {
                 _errors.Add("IntegrationEndpoints:OnlineBillingSystemApiUrl is required when sync is enabled");
             }
+        }
+    }
+
+    private void ValidateMonitoring()
+    {
+        // Application Insights is mandatory in production/pilot for observability
+        if (_environment.IsProduction() || _environment.EnvironmentName == "Pilot")
+        {
+            var appInsightsConnectionString = _configuration["ApplicationInsights:ConnectionString"];
+            
+            if (string.IsNullOrWhiteSpace(appInsightsConnectionString))
+            {
+                _errors.Add("ApplicationInsights:ConnectionString is required in production/pilot environments for telemetry and monitoring");
+            }
+        }
+
+        // Health checks should be enabled
+        var healthChecksEnabled = _configuration.GetValue<bool>("HealthChecks:Enabled", true);
+        if (!healthChecksEnabled && !_environment.IsDevelopment())
+        {
+            _errors.Add("HealthChecks:Enabled should be true in non-development environments");
         }
     }
 

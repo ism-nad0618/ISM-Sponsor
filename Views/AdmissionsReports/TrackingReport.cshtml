@@ -1,0 +1,150 @@
+@model ISMSponsor.ViewModels.AdmissionsTrackingReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Admissions Tracking Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Admissions Tracking Report</h1>
+        <p class="page-subtitle">Coverage alignment by sponsor showing students with and without LoG coverage</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index", "AdmissionsReports")" class="btn-secondary">← Back to Reports</a>
+    </div>
+</div>
+
+<!-- Report Filters -->
+@{
+    ViewBag.ShowSponsorFilter = true;
+    ViewBag.ShowStudentFilter = false;
+    ViewBag.ShowStatusFilter = false;
+    ViewBag.ShowDateRangeFilter = false;
+    ViewBag.ShowExportFormat = true;
+    ViewBag.FormAction = Url.Action("TrackingReport", "AdmissionsReports");
+}
+@await Html.PartialAsync("_ReportFilters", Model.Filters)
+
+<!-- Summary Statistics -->
+<div class="stat-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <div class="stat-label">Pending Sponsor Requests</div>
+        <div class="stat-value">@Model.PendingSponsorRequests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending LoG Reviews</div>
+        <div class="stat-value">@Model.PendingLoGReviews</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Recent Activity</div>
+        <div class="stat-value">@Model.RecentlyChangedLoGs.Count</div>
+        <div class="stat-footer">LoG changes</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Report Generated</div>
+        <div class="stat-value">@Model.GeneratedAt.ToString("MMM d, yyyy")</div>
+        <div class="stat-footer">@Model.GeneratedAt.ToString("h:mm tt")</div>
+    </div>
+</div>
+
+<!-- Coverage Alignment by Sponsor -->
+<div class="card">
+    <h2 class="table-title">Coverage Alignment by Sponsor (@Model.CoverageAlignment.Count)</h2>
+    
+    @if (Model.CoverageAlignment.Any())
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sponsor ID</th>
+                        <th>Sponsor Name</th>
+                        <th>Total Students</th>
+                        <th>Active LoGs</th>
+                        <th>With Coverage</th>
+                        <th>Without Coverage</th>
+                        <th>Coverage %</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sponsor in Model.CoverageAlignment.OrderByDescending(s => s.CoverageCompleteness))
+                    {
+                        var coverageClass = sponsor.CoverageCompleteness >= 90 ? "success" : 
+                                          sponsor.CoverageCompleteness >= 70 ? "warning" : "error";
+                        
+                        <tr>
+                            <td>@sponsor.SponsorId</td>
+                            <td><strong>@sponsor.SponsorName</strong></td>
+                            <td>@sponsor.StudentCount</td>
+                            <td>@sponsor.ActiveLoGCount</td>
+                            <td>@sponsor.StudentsWithCoverage</td>
+                            <td>
+                                @if (sponsor.StudentsWithoutCoverage > 0)
+                                {
+                                    <span style="color: #dc2626; font-weight: 600;">@sponsor.StudentsWithoutCoverage</span>
+                                }
+                                else
+                                {
+                                    <span>0</span>
+                                }
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                                        <div style="height: 100%; background: var(--@coverageClass); width: @(sponsor.CoverageCompleteness)%;"></div>
+                                    </div>
+                                    <span style="font-weight: 600; min-width: 45px; text-align: right;">@sponsor.CoverageCompleteness.ToString("F1")%</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (sponsor.CoverageCompleteness >= 100)
+                                {
+                                    <span class="status-badge status-success">Complete</span>
+                                }
+                                else if (sponsor.CoverageCompleteness >= 90)
+                                {
+                                    <span class="status-badge status-success">Good</span>
+                                }
+                                else if (sponsor.CoverageCompleteness >= 70)
+                                {
+                                    <span class="status-badge status-warning">Fair</span>
+                                }
+                                else if (sponsor.CoverageCompleteness > 0)
+                                {
+                                    <span class="status-badge status-error">Low</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">None</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight: 600; background: #f9fafb;">
+                        <td colspan="2">TOTAL</td>
+                        <td>@Model.CoverageAlignment.Sum(s => s.StudentCount)</td>
+                        <td>@Model.CoverageAlignment.Sum(s => s.ActiveLoGCount)</td>
+                        <td>@Model.CoverageAlignment.Sum(s => s.StudentsWithCoverage)</td>
+                        <td>@Model.CoverageAlignment.Sum(s => s.StudentsWithoutCoverage)</td>
+                        <td colspan="2">
+                            @{
+                                var totalStudents = Model.CoverageAlignment.Sum(s => s.StudentCount);
+                                var avgCoverage = totalStudents > 0 
+                                    ? (Model.CoverageAlignment.Sum(s => s.StudentsWithCoverage) * 100.0m / totalStudents) 
+                                    : 0;
+                            }
+                            @avgCoverage.ToString("F1")% Average Coverage
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p style="padding: 2rem; text-align: center; color: #666;">No coverage alignment data available.</p>
+    }
+</div>

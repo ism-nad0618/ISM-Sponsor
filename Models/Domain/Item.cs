@@ -9,6 +9,11 @@ namespace ISMSponsor.Models.Domain
         public string Currency { get; set; } = "USD";
         public string Status { get; set; } = "Active";
         public string? CategoryId { get; set; }
+        
+        // Tuition fees (in both currencies for flexibility)
+        public decimal? TuitionFeePHP { get; set; }
+        public decimal? TuitionFeeUSD { get; set; }
+        
         public bool IsActive { get; set; } = true;
 
         // Navigation
