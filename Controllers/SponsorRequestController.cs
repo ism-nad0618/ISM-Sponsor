@@ -61,6 +61,64 @@ namespace ISMSponsor.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public async Task<PartialViewResult> CreateModal()
+        {
+            var sponsorId = User.FindFirstValue("SponsorId");
+            var sponsor = await _sponsorService.GetByIdAsync(sponsorId ?? string.Empty);
+
+            var model = new SponsorChangeRequestViewModel
+            {
+                SponsorId = sponsorId ?? string.Empty,
+                SponsorName = sponsor?.SponsorName ?? string.Empty
+            };
+
+            return PartialView("_CreateRequestModal", model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateModal(SponsorChangeRequestViewModel model)
+        {
+            var sponsorId = User.FindFirstValue("SponsorId");
+            if (string.IsNullOrEmpty(sponsorId) || model.SponsorId != sponsorId)
+            {
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
+            // Get current value from sponsor master data
+            var sponsor = await _sponsorService.GetByIdAsync(sponsorId);
+            if (sponsor == null)
+            {
+                TempData["Error"] = "Sponsor not found";
+                return RedirectToAction("Profile", "Sponsors");
+            }
+
+            model.CurrentValue = GetCurrentFieldValue(sponsor, model.RequestField);
+
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Please fill in all required fields";
+                return RedirectToAction("Profile", "Sponsors");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+            var userDisplay = User.Identity?.Name ?? "Unknown";
+
+            var result = await _requestService.SubmitRequestAsync(model, userId, userDisplay);
+
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
+
+            return RedirectToAction("Profile", "Sponsors");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SponsorChangeRequestViewModel model)

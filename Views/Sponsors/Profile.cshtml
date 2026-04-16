@@ -5,8 +5,23 @@
 }
 
 <div class="page-header">
-    <h1>Sponsor Profile</h1>
-    <p class="page-subtitle">View and manage sponsor information.</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>Sponsor Profile</h1>
+            <p class="page-subtitle">View and manage sponsor information.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn-primary" onclick="openContacts()">View Contacts</button>
+            @if (User.IsInRole("sponsor"))
+            {
+                <button type="button" class="btn-primary" onclick="openRequestChange()">Request Change</button>
+            }
+            else
+            {
+                <button type="button" class="btn-primary" onclick="openChangeRequestAdmin()">Request Change</button>
+            }
+        </div>
+    </div>
 </div>
 
 <div class="card">
@@ -28,18 +43,6 @@
             <p>@Model.Tin</p>
         </div>
     </div>
-
-    <div class="button-group">
-        <button type="button" class="btn-secondary" onclick="openContacts()">View Contacts</button>
-        @if (User.IsInRole("sponsor"))
-        {
-            <a href="/SponsorRequest/Create" class="btn-secondary">Request Change</a>
-        }
-        else
-        {
-            <button type="button" class="btn-secondary" onclick="openChangeRequest()">Request Change</button>
-        }
-    </div>
 </div>
 
 <div id="modalContainer"></div>
@@ -55,8 +58,52 @@
                 });
         }
 
-        function openChangeRequest() {
-            const html = `<div class="modal active" role="dialog" aria-modal="true" onclick="if (event.target === this) closeModal();"><div class="modal-content"><div class="modal-header"><h3>Request Change</h3><button class="close" onclick="closeModal()">&times;</button></div><form method="post" action="/Sponsors/RequestChange"><input type="hidden" name="SponsorId" value="@Model.SponsorId" /><div><label class="field-label" for="fieldSelect">Field to Change</label><select name="Field" id="fieldSelect" onchange="updateLabel()"><option value="sponsorName">Sponsor Name</option><option value="legalName">Legal Name</option><option value="address">Address</option><option value="tin">TIN</option></select></div><div><label class="field-label" id="labelCurrent">Current Value</label><input type="text" name="CurrentValue" id="currentValue" readonly /></div><div><label class="field-label" for="newValue">New Value</label><input type="text" id="newValue" name="NewValue" required /></div><div class="flex-start mt-2"><button type="button" class="btn-secondary btn-add" onclick="closeModal()">Cancel</button><button type="submit" class="btn-primary btn-add">Submit Request</button></div></form></div></div>`;
+        function openRequestChange() {
+            fetch(`/SponsorRequest/CreateModal`)
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('modalContainer').innerHTML = html;
+                    document.querySelector('.modal')?.classList.add('active');
+                })
+                .catch(error => {
+                    console.error('Error loading modal:', error);
+                    alert('Failed to load request form. Please try again.');
+                });
+        }
+
+        function openChangeRequestAdmin() {
+            const html = `<div class="modal active" role="dialog" aria-modal="true" onclick="if (event.target === this) closeModal();">
+                <div class="modal-content" onclick="event.stopPropagation();">
+                    <div class="modal-header">
+                        <h3>Request Change</h3>
+                        <button type="button" class="close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <form method="post" action="/Sponsors/RequestChange">
+                        <input type="hidden" name="SponsorId" value="@Model.SponsorId" />
+                        <div>
+                            <label class="field-label" for="fieldSelect">Field to Change</label>
+                            <select name="Field" id="fieldSelect" onchange="updateLabel()">
+                                <option value="sponsorName">Sponsor Name</option>
+                                <option value="legalName">Legal Name</option>
+                                <option value="address">Address</option>
+                                <option value="tin">TIN</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label" id="labelCurrent">Current Value</label>
+                            <input type="text" name="CurrentValue" id="currentValue" readonly style="background-color: #f5f5f5;" />
+                        </div>
+                        <div>
+                            <label class="field-label" for="newValue">New Value</label>
+                            <input type="text" id="newValue" name="NewValue" required />
+                        </div>
+                        <div class="flex-start mt-2" style="gap: 12px;">
+                            <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                            <button type="submit" class="btn-primary">Submit Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>`;
             document.getElementById('modalContainer').innerHTML = html;
             updateLabel();
         }

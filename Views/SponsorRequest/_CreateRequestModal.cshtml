@@ -1,0 +1,72 @@
+@model ISMSponsor.ViewModels.SponsorChangeRequestViewModel
+<div class="modal active" role="dialog" aria-modal="true" onclick="if (event.target === this) closeModal();">
+    <div class="modal-content" onclick="event.stopPropagation();">
+        <div class="modal-header">
+            <h3>Request Change</h3>
+            <button type="button" class="close" onclick="closeModal()">&times;</button>
+        </div>
+
+        <form asp-controller="SponsorRequest" asp-action="CreateModal" method="post" id="requestModalForm">
+            <input type="hidden" asp-for="SponsorId" />
+            <input type="hidden" asp-for="SponsorName" />
+            <input type="hidden" asp-for="CurrentValue" id="currentValueHidden" />
+
+            <div>
+                <label asp-for="RequestField" class="field-label">Field to Update <span class="required">*</span></label>
+                <select asp-for="RequestField" id="requestFieldModal" asp-items="Html.GetEnumSelectList<ISMSponsor.Models.Domain.SponsorRequestField>()" required>
+                    <option value="">-- Select Field --</option>
+                </select>
+                <span asp-validation-for="RequestField" class="text-danger"></span>
+            </div>
+
+            <div id="currentValueGroupModal" style="display: none;">
+                <label class="field-label">Current Value</label>
+                <input type="text" id="currentValueDisplayModal" readonly style="background-color: #f5f5f5;" />
+            </div>
+
+            <div>
+                <label asp-for="RequestedValue" class="field-label">Requested Value <span class="required">*</span></label>
+                <input asp-for="RequestedValue" maxlength="500" required />
+                <span asp-validation-for="RequestedValue" class="text-danger"></span>
+            </div>
+
+            <div>
+                <label asp-for="RequestReason" class="field-label">Reason for Change</label>
+                <textarea asp-for="RequestReason" rows="4" maxlength="1000" placeholder="Optional: Explain why you need this change"></textarea>
+                <span asp-validation-for="RequestReason" class="text-danger"></span>
+            </div>
+
+            <div class="flex-start mt-2" style="gap: 12px;">
+                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Submit Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('requestFieldModal').addEventListener('change', function() {
+        const field = this.value;
+        const sponsorId = '@Model.SponsorId';
+        
+        if (field) {
+            fetch(`/SponsorRequest/GetCurrentValue?sponsorId=${sponsorId}&field=${field}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('currentValueDisplayModal').value = data.currentValue;
+                        document.getElementById('currentValueHidden').value = data.currentValue;
+                        document.getElementById('currentValueGroupModal').style.display = 'block';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to load current value');
+                });
+        } else {
+            document.getElementById('currentValueGroupModal').style.display = 'none';
+        }
+    });
+</script>
