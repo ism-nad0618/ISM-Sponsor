@@ -143,11 +143,32 @@ namespace ISMSponsor.Services
                 return (false, $"Cannot approve request with status: {request.Status}");
             }
 
-            request.Status = SponsorRequestStatus.Approved.ToString();
+            var sponsor = await _context.Sponsors.FindAsync(request.SponsorId);
+            if (sponsor == null)
+            {
+                return (false, "Sponsor not found");
+            }
+
+            // Store old value for audit
+            string oldValue = GetSponsorFieldValue(sponsor, request.RequestField);
+
+            // Apply the change to sponsor master data
+            bool applied = ApplySponsorFieldChange(sponsor, request.RequestField, request.RequestedValue);
+            if (!applied)
+            {
+                return (false, $"Unable to apply change to field: {request.RequestField}");
+            }
+
+            // Update request status to Applied (auto-applied upon approval)
+            request.Status = SponsorRequestStatus.Applied.ToString();
             request.ReviewedByUserId = userId;
             request.ReviewedByUserDisplay = userDisplay;
             request.ReviewedOn = DateTime.UtcNow;
             request.ReviewNotes = reviewNotes;
+            request.AppliedByUserId = userId;
+            request.AppliedByUserDisplay = userDisplay;
+            request.AppliedOn = DateTime.UtcNow;
+            request.AppliedValue = request.RequestedValue;
 
             await _context.SaveChangesAsync();
 
@@ -155,13 +176,13 @@ namespace ISMSponsor.Services
             var schoolYear1 = "25-26";
             await _logsService.LogActivityAsync(
                 "SponsorRequest",
-                $"Change request #{requestId} approved for {request.Sponsor?.SponsorName}: {request.RequestField}",
+                $"Change request #{requestId} approved and applied for {sponsor.SponsorName}: {request.RequestField}. Changed from '{oldValue}' to '{request.RequestedValue}'",
                 userDisplay,
                 "admin",
                 schoolYear1
             );
 
-            return (true, "Request approved successfully");
+            return (true, "Request approved successfully and changes have been applied to the sponsor record.");
         }
 
         public async Task<(bool Success, string Message)> RejectRequestAsync(

@@ -19,14 +19,14 @@ namespace ISMSponsor.Controllers
         private readonly AppDbContext _context;
         private readonly SponsorService _sponsorService;
         private readonly SchoolYearContextService _schoolYearContext;
-        private readonly ChangeRequestService _changeRequestService;
+        private readonly SponsorChangeRequestService _changeRequestService;
         private readonly ILogger<PortalController> _logger;
 
         public PortalController(
             AppDbContext context,
             SponsorService sponsorService,
             SchoolYearContextService schoolYearContext,
-            ChangeRequestService changeRequestService,
+            SponsorChangeRequestService changeRequestService,
             ILogger<PortalController> logger)
         {
             _context = context;
@@ -67,8 +67,8 @@ namespace ISMSponsor.Controllers
                 ActiveLoGCount = await _context.LogCoverages
                     .Where(l => l.SponsorId == sponsorId && l.SchoolYearId == schoolYearId && l.IsActive)
                     .CountAsync(),
-                PendingRequestCount = await _context.ChangeRequests
-                    .Where(r => r.SponsorId == sponsorId && r.Status == "pending")
+                PendingRequestCount = await _context.SponsorChangeRequests
+                    .Where(r => r.SponsorId == sponsorId && r.Status == "Pending")
                     .CountAsync(),
                 RecentLoGs = await _context.LogCoverages
                     .Include(l => l.Student)
@@ -76,9 +76,9 @@ namespace ISMSponsor.Controllers
                     .OrderByDescending(l => l.CreatedOn)
                     .Take(5)
                     .ToListAsync(),
-                RecentRequests = await _context.ChangeRequests
+                RecentRequests = await _context.SponsorChangeRequests
                     .Where(r => r.SponsorId == sponsorId)
-                    .OrderByDescending(r => r.RequestedOn)
+                    .OrderByDescending(r => r.SubmittedOn)
                     .Take(5)
                     .ToListAsync()
             };
@@ -283,26 +283,21 @@ namespace ISMSponsor.Controllers
 
             var sponsor = await _sponsorService.GetByIdAsync(sponsorId);
 
-            var query = _context.ChangeRequests
-                .Include(r => r.RequestedByUser)
-                .Include(r => r.ResolvedByUser)
-                .Where(r => r.SponsorId == sponsorId);
+            var requests = await _changeRequestService.GetRequestsBySponsorAsync(sponsorId);
 
             if (!string.IsNullOrWhiteSpace(status))
             {
-                query = query.Where(r => r.Status.ToLower() == status.ToLower());
+                requests = requests.Where(r => r.Status.Equals(status, StringComparison.OrdinalIgnoreCase)).ToList();
             }
-
-            var requests = await query.OrderByDescending(r => r.RequestedOn).ToListAsync();
 
             var viewModel = new PortalRequestsViewModel
             {
                 SponsorId = sponsorId,
                 SponsorName = sponsor?.SponsorName ?? "Unknown",
                 ChangeRequests = requests,
-                PendingCount = requests.Count(r => r.Status == "pending"),
-                ApprovedCount = requests.Count(r => r.Status == "approved"),
-                RejectedCount = requests.Count(r => r.Status == "rejected"),
+                PendingCount = requests.Count(r => r.Status.Equals("pending", StringComparison.OrdinalIgnoreCase)),
+                ApprovedCount = requests.Count(r => r.Status.Equals("approved", StringComparison.OrdinalIgnoreCase)),
+                RejectedCount = requests.Count(r => r.Status.Equals("rejected", StringComparison.OrdinalIgnoreCase)),
                 StatusFilter = status
             };
 
@@ -323,23 +318,28 @@ namespace ISMSponsor.Controllers
             }
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var userDisplay = User.Identity?.Name ?? "Unknown";
 
-            var changeRequest = new ChangeRequest
+            var viewModel = new SponsorChangeRequestViewModel
             {
                 SponsorId = sponsorId,
-                Field = field,
-                FieldLabel = fieldLabel,
+                RequestField = Enum.TryParse<SponsorRequestField>(field, out var parsedField) ? parsedField : SponsorRequestField.SponsorName,
                 CurrentValue = currentValue,
-                NewValue = newValue,
-                Reason = reason,
-                RequestedByUserId = userId,
-                RequestedOn = DateTime.UtcNow,
-                Status = "pending"
+                RequestedValue = newValue,
+                RequestReason = reason
             };
 
-            await _changeRequestService.SubmitAsync(changeRequest);
+            var result = await _changeRequestService.SubmitRequestAsync(viewModel, userId, userDisplay);
 
-            TempData["Success"] = "Change request submitted successfully. An administrator will review it.";
+            if (result.Success)
+            {
+                TempData["Success"] = "Change request submitted successfully. An administrator will review it.";
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
+
             return RedirectToAction(nameof(Requests));
         }
 

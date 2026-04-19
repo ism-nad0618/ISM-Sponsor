@@ -85,13 +85,13 @@
                     foreach (var request in Model.ChangeRequests)
                     {
                         <tr>
-                            <td><strong>@request.FieldLabel</strong></td>
+                            <td><strong>@request.RequestField</strong></td>
                             <td>@request.CurrentValue</td>
-                            <td><strong>@request.NewValue</strong></td>
+                            <td><strong>@request.RequestedValue</strong></td>
                             <td>
-                                @if (!string.IsNullOrWhiteSpace(request.Reason))
+                                @if (!string.IsNullOrWhiteSpace(request.RequestReason))
                                 {
-                                    <small>@request.Reason</small>
+                                    <small>@request.RequestReason</small>
                                 }
                                 else
                                 {
@@ -99,15 +99,15 @@
                                 }
                             </td>
                             <td>
-                                @if (request.Status == "pending")
+                                @if (request.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <span class="status-badge" style="background-color: #ffc107; color: #000;">PENDING</span>
                                 }
-                                else if (request.Status == "approved")
+                                else if (request.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <span class="status-badge status-active">APPROVED</span>
                                 }
-                                else if (request.Status == "rejected")
+                                else if (request.Status.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <span class="status-badge" style="background-color: #dc3545; color: #fff;">REJECTED</span>
                                 }
@@ -117,14 +117,14 @@
                                 }
                             </td>
                             <td>
-                                @request.RequestedOn.ToString("MMM d, yyyy")<br />
-                                <small style="color: #666;">@request.RequestedOn.ToString("h:mm tt")</small>
+                                @request.SubmittedOn.ToString("MMM d, yyyy")<br />
+                                <small style="color: #666;">@request.SubmittedOn.ToString("h:mm tt")</small>
                             </td>
                             <td>
-                                @if (request.ResolvedOn.HasValue)
+                                @if (request.ReviewedOn.HasValue)
                                 {
-                                    @request.ResolvedOn.Value.ToString("MMM d, yyyy")<br />
-                                    <small style="color: #666;">@request.ResolvedOn.Value.ToString("h:mm tt")</small>
+                                    @request.ReviewedOn.Value.ToString("MMM d, yyyy")<br />
+                                    <small style="color: #666;">@request.ReviewedOn.Value.ToString("h:mm tt")</small>
                                 }
                                 else
                                 {
@@ -132,9 +132,9 @@
                                 }
                             </td>
                             <td>
-                                @if (!string.IsNullOrWhiteSpace(request.ResolutionComment))
+                                @if (!string.IsNullOrWhiteSpace(request.ReviewNotes))
                                 {
-                                    <small>@request.ResolutionComment</small>
+                                    <small>@request.ReviewNotes</small>
                                 }
                                 else
                                 {
@@ -163,21 +163,21 @@
                 <label for="field" class="field-label">Field to Change <span class="required">*</span></label>
                 <select id="field" name="field" required onchange="updateFieldLabel()">
                     <option value="">-- Select Field --</option>
-                    <option value="SponsorName" data-label="Sponsor Name" data-current="@Model.SponsorName">Sponsor Name</option>
+                    <option value="SponsorName" data-label="Sponsor Name">Sponsor Name</option>
                     <option value="LegalName" data-label="Legal Name">Legal Name</option>
                     <option value="Address" data-label="Address">Address</option>
                     <option value="Tin" data-label="Tax ID (TIN)">Tax ID (TIN)</option>
-                    <option value="ContactInfo" data-label="Contact Information">Contact Information</option>
-                    <option value="Other" data-label="Other">Other</option>
+                    <option value="ContactName" data-label="Contact Name">Contact Name</option>
+                    <option value="ContactEmail" data-label="Contact Email">Contact Email</option>
+                    <option value="ContactPhone" data-label="Contact Phone">Contact Phone</option>
                 </select>
             </div>
             
             <input type="hidden" id="fieldLabel" name="fieldLabel" />
             
             <div class="form-group">
-                <label for="currentValue" class="field-label">Current Value <span class="required">*</span></label>
-                <input type="text" id="currentValue" name="currentValue" required />
-                <small class="help-text">Enter the current value you see in your profile</small>
+                <label for="currentValue" class="field-label">Current Value</label>
+                <input type="text" id="currentValue" name="currentValue" readonly style="background-color: #f5f5f5;" placeholder="Select a field to see current value" />
             </div>
             
             <div class="form-group">
@@ -203,6 +203,7 @@
 function openSubmitRequestModal() {
     document.getElementById('submitRequestModal').style.display = 'flex';
     document.getElementById('submitRequestForm').reset();
+    document.getElementById('currentValue').value = '';
 }
 
 function closeSubmitRequestModal() {
@@ -213,12 +214,29 @@ function updateFieldLabel() {
     const select = document.getElementById('field');
     const selectedOption = select.options[select.selectedIndex];
     const fieldLabel = selectedOption.getAttribute('data-label') || '';
-    const currentValue = selectedOption.getAttribute('data-current') || '';
+    const fieldValue = select.value;
     
     document.getElementById('fieldLabel').value = fieldLabel;
     
-    if (currentValue) {
-        document.getElementById('currentValue').value = currentValue;
+    // Fetch current value from API
+    if (fieldValue) {
+        const sponsorId = '@Model.SponsorId';
+        fetch(`/SponsorRequest/GetCurrentValue?sponsorId=${sponsorId}&field=${fieldValue}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('currentValue').value = data.currentValue;
+                } else {
+                    document.getElementById('currentValue').value = '';
+                    console.error('Failed to fetch current value:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching current value:', error);
+                document.getElementById('currentValue').value = '';
+            });
+    } else {
+        document.getElementById('currentValue').value = '';
     }
 }
 

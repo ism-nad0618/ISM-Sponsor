@@ -120,11 +120,8 @@ namespace ISMSponsor.Controllers
                 .Where(s => s.ApprovalStatus == "PendingApproval")
                 .CountAsync();
 
-            // Phase 3: Failed Integrations (Last 24 hours)
-            var yesterday = DateTime.Now.AddDays(-1);
-            viewModel.FailedIntegrationsToday = await _context.SyncLogs
-                .Where(sl => sl.Status == "Failed" && sl.AttemptedAt >= yesterday)
-                .CountAsync();
+            // Phase 3: Failed Integrations - Disabled (Operations page removed)
+            viewModel.FailedIntegrationsToday = 0;
 
             // Build Recent Activities
             viewModel.RecentActivities = await BuildRecentActivitiesAsync(schoolYearId, "admin");
@@ -419,18 +416,7 @@ namespace ISMSponsor.Controllers
                 });
             }
 
-            // Phase 3: Failed Integrations Alert
-            if (model.FailedIntegrationsToday > 0)
-            {
-                alerts.Add(new DashboardAlert
-                {
-                    Title = "Integration Failures",
-                    Message = $"{model.FailedIntegrationsToday} failed sync operation(s) in last 24 hours",
-                    Severity = "error",
-                    ActionUrl = "/Operations/SyncRetry",
-                    ActionText = "View & Retry"
-                });
-            }
+            // Integration Failures alert removed - Operations page no longer exists
 
             return alerts;
         }

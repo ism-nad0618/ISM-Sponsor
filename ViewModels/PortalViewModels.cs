@@ -12,7 +12,7 @@ namespace ISMSponsor.ViewModels
         public int ActiveLoGCount { get; set; }
         public int PendingRequestCount { get; set; }
         public List<LogCoverage> RecentLoGs { get; set; } = new();
-        public List<ChangeRequest> RecentRequests { get; set; } = new();
+        public List<SponsorChangeRequest> RecentRequests { get; set; } = new();
         public string SelectedSchoolYearId { get; set; } = string.Empty;
         public string SelectedSchoolYearName { get; set; } = string.Empty;
     }
@@ -63,7 +63,7 @@ namespace ISMSponsor.ViewModels
     {
         public string SponsorId { get; set; } = string.Empty;
         public string SponsorName { get; set; } = string.Empty;
-        public List<ChangeRequest> ChangeRequests { get; set; } = new();
+        public List<SponsorChangeRequest> ChangeRequests { get; set; } = new();
         public int PendingCount { get; set; }
         public int ApprovedCount { get; set; }
         public int RejectedCount { get; set; }

@@ -421,4 +421,64 @@ public class ReportService
 
         return report;
     }
+
+    public async Task<CoverageRulesReportViewModel> GenerateCoverageRulesReportAsync(ReportFilterViewModel filters)
+    {
+        var query = _context.LoGCoverageRules
+            .Include(r => r.LetterOfGuarantee)
+                .ThenInclude(l => l.Sponsor)
+            .Include(r => r.Item)
+            .Include(r => r.Category)
+            .AsQueryable();
+
+        // Apply filters
+        if (!string.IsNullOrEmpty(filters.SponsorId))
+            query = query.Where(r => r.LetterOfGuarantee != null && r.LetterOfGuarantee.SponsorId == filters.SponsorId);
+        if (filters.StartDate.HasValue)
+            query = query.Where(r => r.CreatedOn >= filters.StartDate.Value);
+        if (filters.EndDate.HasValue)
+            query = query.Where(r => r.CreatedOn <= filters.EndDate.Value);
+        if (!string.IsNullOrEmpty(filters.Status))
+        {
+            if (filters.Status == "Active")
+                query = query.Where(r => r.IsActive);
+            else if (filters.Status == "Inactive")
+                query = query.Where(r => !r.IsActive);
+        }
+
+        var rules = await query.OrderByDescending(r => r.CreatedOn).ToListAsync();
+
+        var report = new CoverageRulesReportViewModel
+        {
+            Filters = filters,
+            TotalRules = rules.Count,
+            ActiveRules = rules.Count(r => r.IsActive),
+            InactiveRules = rules.Count(r => !r.IsActive),
+            ItemRules = rules.Count(r => r.CoverageTarget == "Item"),
+            CategoryRules = rules.Count(r => r.CoverageTarget == "Category")
+        };
+
+        report.RuleDetails = rules.Select(r => new CoverageRuleRow
+        {
+            RuleId = r.RuleId,
+            LogId = r.LogId,
+            SponsorId = r.LetterOfGuarantee?.SponsorId ?? "",
+            SponsorName = r.LetterOfGuarantee?.Sponsor?.SponsorName ?? "",
+            CoverageTarget = r.CoverageTarget,
+            ItemId = r.ItemId,
+            ItemName = r.Item?.ItemName,
+            CategoryId = r.CategoryId,
+            CategoryName = r.Category?.CategoryName,
+            CoverageType = r.CoverageType,
+            CoveragePercentage = r.CoveragePercentage,
+            CoverageFixedAmount = r.CoverageFixedAmount,
+            CapAmount = r.CapAmount,
+            EffectiveFrom = r.EffectiveFrom,
+            EffectiveTo = r.EffectiveTo,
+            IsActive = r.IsActive,
+            CreatedOn = r.CreatedOn
+        }).ToList();
+
+        return report;
+    }
 }

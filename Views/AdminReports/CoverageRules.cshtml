@@ -1,0 +1,193 @@
+@model CoverageRulesReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Coverage Rules Report";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Coverage Rules Report</h1>
+        <p class="page-subtitle">View all coverage rules configured across all Letters of Guarantee</p>
+    </div>
+    <div>
+        <a href="?exportFormat=csv&sponsorId=@Model.Filters.SponsorId&status=@Model.Filters.Status&startDate=@Model.Filters.StartDate&endDate=@Model.Filters.EndDate" class="btn btn-primary">Export CSV</a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Rules</div>
+        <div class="stat-value">@Model.TotalRules</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Active Rules</div>
+        <div class="stat-value">@Model.ActiveRules</div>
+        <div class="stat-footer">@(Model.TotalRules > 0 ? Math.Round((decimal)Model.ActiveRules / Model.TotalRules * 100, 1) : 0)% active</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Inactive Rules</div>
+        <div class="stat-value">@Model.InactiveRules</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Item Rules</div>
+        <div class="stat-value">@Model.ItemRules</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Category Rules</div>
+        <div class="stat-value">@Model.CategoryRules</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Sponsor ID (optional)</label>
+            <input type="text" name="sponsorId" class="form-control" value="@Model.Filters.SponsorId" placeholder="Enter sponsor ID" />
+        </div>
+        <div>
+            <label>Status</label>
+            <select name="status" class="form-control">
+                <option value="">All Statuses</option>
+                <option value="Active" selected="@(Model.Filters.Status == "Active")">Active</option>
+                <option value="Inactive" selected="@(Model.Filters.Status == "Inactive")">Inactive</option>
+            </select>
+        </div>
+        <div>
+            <label>Start Date</label>
+            <input type="date" name="startDate" class="form-control" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" class="form-control" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+</form>
+
+<!-- Coverage Rules Details Table -->
+<div class="card">
+    <h3 class="table-title">Coverage Rules Details (@Model.RuleDetails.Count records)</h3>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Rule ID</th>
+                    <th>LoG ID</th>
+                    <th>Sponsor</th>
+                    <th>Target</th>
+                    <th>Item/Category</th>
+                    <th>Coverage Type</th>
+                    <th>Details</th>
+                    <th>Effective Period</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RuleDetails.Any())
+                {
+                    @foreach (var rule in Model.RuleDetails)
+                    {
+                        <tr>
+                            <td>@rule.RuleId</td>
+                            <td>@rule.LogId</td>
+                            <td>
+                                <strong>@rule.SponsorId</strong><br />
+                                <small style="color: #666;">@rule.SponsorName</small>
+                            </td>
+                            <td>
+                                <span class="badge-yellow">@rule.CoverageTarget</span>
+                            </td>
+                            <td>
+                                @if (rule.CoverageTarget == "Item")
+                                {
+                                    <strong>@(rule.ItemName ?? "Unknown")</strong><br />
+                                    <small style="color: #666;">@(rule.ItemId ?? "N/A")</small>
+                                }
+                                else
+                                {
+                                    <strong>@(rule.CategoryName ?? "Unknown")</strong><br />
+                                    <small style="color: #666;">@(rule.CategoryId ?? "N/A")</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="role-badge">@rule.CoverageType</span>
+                            </td>
+                            <td>
+                                @if (rule.CoverageType == "Percentage" && rule.CoveragePercentage.HasValue)
+                                {
+                                    <span>@rule.CoveragePercentage.Value%</span>
+                                }
+                                else if (rule.CoverageType == "FixedAmount" && rule.CoverageFixedAmount.HasValue)
+                                {
+                                    <span>₱@rule.CoverageFixedAmount.Value.ToString("N2")</span>
+                                }
+                                else if (rule.CoverageType == "Full")
+                                {
+                                    <span>100%</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                                @if (rule.CapAmount.HasValue)
+                                {
+                                    <br /><small style="color: #666;">Cap: ₱@rule.CapAmount.Value.ToString("N2")</small>
+                                }
+                            </td>
+                            <td>
+                                <small>
+                                    @if (rule.EffectiveFrom.HasValue && rule.EffectiveTo.HasValue)
+                                    {
+                                        @rule.EffectiveFrom.Value.ToString("MMM dd, yyyy")
+                                        <br />
+                                        <span>to</span>
+                                        <br />
+                                        @rule.EffectiveTo.Value.ToString("MMM dd, yyyy")
+                                    }
+                                    else if (rule.EffectiveFrom.HasValue)
+                                    {
+                                        <span>From: @rule.EffectiveFrom.Value.ToString("MMM dd, yyyy")</span>
+                                    }
+                                    else if (rule.EffectiveTo.HasValue)
+                                    {
+                                        <span>Until: @rule.EffectiveTo.Value.ToString("MMM dd, yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Always Active</span>
+                                    }
+                                </small>
+                            </td>
+                            <td>
+                                <span class="status-badge status-@(rule.IsActive ? "active" : "inactive")">
+                                    @(rule.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td>
+                                <small>@rule.CreatedOn.ToString("MMM dd, yyyy")</small>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 2rem; color: #666;">
+                            No coverage rules found matching the selected filters
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 1rem; padding: 1rem; background: #f6f8fa; border-radius: 6px; font-size: 0.85rem; color: #586069;">
+    <strong>Report Generated:</strong> @Model.GeneratedAt.ToString("MMM dd, yyyy HH:mm UTC")
+</div>

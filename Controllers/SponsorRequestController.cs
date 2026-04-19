@@ -235,7 +235,7 @@ namespace ISMSponsor.Controllers
                 return Json(new { success = true, currentValue });
             }
 
-            return Json(new { success = false, message = "Invalid field" });
+            return Json(new { success = false, message = $"Invalid field: {field}" });
         }
 
         private string GetCurrentFieldValue(Sponsor sponsor, SponsorRequestField field)
@@ -246,6 +246,9 @@ namespace ISMSponsor.Controllers
                 SponsorRequestField.LegalName => sponsor.LegalName ?? string.Empty,
                 SponsorRequestField.Address => sponsor.Address ?? string.Empty,
                 SponsorRequestField.Tin => sponsor.Tin ?? string.Empty,
+                SponsorRequestField.ContactName => "N/A - Please use Contacts page",
+                SponsorRequestField.ContactEmail => "N/A - Please use Contacts page",
+                SponsorRequestField.ContactPhone => "N/A - Please use Contacts page",
                 _ => string.Empty
             };
         }

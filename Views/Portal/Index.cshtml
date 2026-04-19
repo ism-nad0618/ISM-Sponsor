@@ -44,7 +44,7 @@
              View Letters of Guarantee
         </a>
         <a href="@Url.Action("Students")" class="btn btn-secondary" style="text-align: center;">
-            👨‍ View Students
+            View Students
         </a>
         <a href="@Url.Action("Requests")" class="btn btn-secondary" style="text-align: center;">
              View Change Requests
@@ -144,15 +144,15 @@
                     foreach (var request in Model.RecentRequests)
                     {
                         <tr>
-                            <td><strong>@request.FieldLabel</strong></td>
+                            <td><strong>@request.RequestField</strong></td>
                             <td>@request.CurrentValue</td>
-                            <td>@request.NewValue</td>
+                            <td>@request.RequestedValue</td>
                             <td>
                                 <span class="status-badge status-@request.Status.ToLower()">
                                     @request.Status.ToUpper()
                                 </span>
                             </td>
-                            <td>@request.RequestedOn.ToString("MMM d, yyyy")</td>
+                            <td>@request.SubmittedOn.ToString("MMM d, yyyy")</td>
                         </tr>
                     }
                 }

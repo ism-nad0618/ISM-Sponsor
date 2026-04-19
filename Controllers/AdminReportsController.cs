@@ -89,6 +89,19 @@ public class AdminReportsController : Controller
         return View(report);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> CoverageRules([FromQuery] ReportFilterViewModel filters)
+    {
+        var report = await _reportService.GenerateCoverageRulesReportAsync(filters);
+
+        if (filters.ExportFormat == "csv")
+        {
+            return ExportCoverageRulesToCsv(report);
+        }
+
+        return View(report);
+    }
+
     /// <summary>
     /// All Sponsor Contacts report - accessible by admin and cashier roles
     /// </summary>
@@ -221,6 +234,33 @@ public class AdminReportsController : Controller
         });
 
         return File(csvData, "text/csv", $"AuditActivityReport_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
+    }
+
+    private FileResult ExportCoverageRulesToCsv(CoverageRulesReportViewModel report)
+    {
+        var headers = new[] { "Rule ID", "LoG ID", "Sponsor ID", "Sponsor Name", "Target", "Item/Category ID", "Item/Category Name", 
+            "Coverage Type", "Coverage %", "Fixed Amount", "Cap Amount", "Effective From", "Effective To", "Is Active", "Created On" };
+
+        var csvData = _exportService.ExportToCsv(report.RuleDetails, headers, row => new[]
+        {
+            row.RuleId.ToString(),
+            row.LogId.ToString(),
+            row.SponsorId,
+            row.SponsorName,
+            row.CoverageTarget,
+            row.CoverageTarget == "Item" ? row.ItemId ?? "" : row.CategoryId ?? "",
+            row.CoverageTarget == "Item" ? row.ItemName ?? "" : row.CategoryName ?? "",
+            row.CoverageType,
+            row.CoveragePercentage?.ToString("F2") ?? "",
+            row.CoverageFixedAmount?.ToString("F2") ?? "",
+            row.CapAmount?.ToString("F2") ?? "",
+            row.EffectiveFrom?.ToString("yyyy-MM-dd") ?? "",
+            row.EffectiveTo?.ToString("yyyy-MM-dd") ?? "",
+            row.IsActive ? "Yes" : "No",
+            row.CreatedOn.ToString("yyyy-MM-dd HH:mm:ss")
+        });
+
+        return File(csvData, "text/csv", $"CoverageRulesReport_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
     }
 
     private static IEnumerable<object> ResolveLogActivityRows(LogActivityReportViewModel report)

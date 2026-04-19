@@ -345,3 +345,43 @@ public class SponsorContactRow
     public string Phone { get; set; } = string.Empty;
     public bool IsActive { get; set; }
 }
+
+/// <summary>
+/// Admin oversight report: Coverage Rules summary across all LoGs.
+/// </summary>
+public class CoverageRulesReportViewModel
+{
+    public ReportFilterViewModel Filters { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    
+    // Summary metrics
+    public int TotalRules { get; set; }
+    public int ActiveRules { get; set; }
+    public int InactiveRules { get; set; }
+    public int ItemRules { get; set; }
+    public int CategoryRules { get; set; }
+    
+    // Detailed data
+    public List<CoverageRuleRow> RuleDetails { get; set; } = new();
+}
+
+public class CoverageRuleRow
+{
+    public int RuleId { get; set; }
+    public int LogId { get; set; }
+    public string SponsorId { get; set; } = string.Empty;
+    public string SponsorName { get; set; } = string.Empty;
+    public string CoverageTarget { get; set; } = string.Empty;
+    public string? ItemId { get; set; }
+    public string? ItemName { get; set; }
+    public string? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public string CoverageType { get; set; } = string.Empty;
+    public decimal? CoveragePercentage { get; set; }
+    public decimal? CoverageFixedAmount { get; set; }
+    public decimal? CapAmount { get; set; }
+    public DateTime? EffectiveFrom { get; set; }
+    public DateTime? EffectiveTo { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedOn { get; set; }
+}
