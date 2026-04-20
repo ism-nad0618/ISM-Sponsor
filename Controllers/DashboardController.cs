@@ -80,7 +80,7 @@ namespace ISMSponsor.Controllers
             
             viewModel.LogStatusDistribution.StatusCounts = logStatuses.ToDictionary(x => x.Status, x => x.Count);
 
-            var changeRequestStatuses = await _context.ChangeRequests
+            var changeRequestStatuses = await _context.SponsorChangeRequests
                 .GroupBy(cr => cr.Status)
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
@@ -92,7 +92,7 @@ namespace ISMSponsor.Controllers
                 .Where(l => l.SchoolYearId == schoolYearId && l.LogStatus == "Pending")
                 .CountAsync();
             
-            viewModel.PendingChangeRequests = await _context.ChangeRequests
+            viewModel.PendingChangeRequests = await _context.SponsorChangeRequests
                 .Where(cr => cr.Status == "Pending")
                 .CountAsync();
 
@@ -340,8 +340,8 @@ namespace ISMSponsor.Controllers
             // Recent Change Requests (for admin)
             if (role == "admin")
             {
-                var recentRequests = await _context.ChangeRequests
-                    .OrderByDescending(cr => cr.RequestedOn)
+                var recentRequests = await _context.SponsorChangeRequests
+                    .OrderByDescending(cr => cr.SubmittedOn)
                     .Take(3)
                     .Include(cr => cr.Sponsor)
                     .ToListAsync();
@@ -351,10 +351,10 @@ namespace ISMSponsor.Controllers
                     activities.Add(new RecentActivityItem
                     {
                         Activity = $"Change Request {request.Status}",
-                        Description = $"{request.Sponsor?.SponsorName} - {request.Field}",
-                        Timestamp = request.RequestedOn,
+                        Description = $"{request.Sponsor?.SponsorName} - {request.RequestField}",
+                        Timestamp = request.SubmittedOn,
                         Icon = "✏️",
-                        ActionUrl = $"/Sponsors/ReviewChangeRequest/{request.ChangeRequestId}",
+                        ActionUrl = $"/ReviewRequest/Details/{request.RequestId}",
                         ActivityType = "request"
                     });
                 }

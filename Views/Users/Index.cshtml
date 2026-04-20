@@ -24,14 +24,6 @@
             <input type="text" id="searchInput" placeholder="Username, display name, or sponsor..." 
                    aria-label="Search users" />
         </div>
-        <div class="filter-group" style="min-width: 160px;">
-            <label class="field-label">Status</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showInactive" onchange="filterUsers()" />
-                <span class="toggle-slider"></span>
-                <span class="toggle-label">Show Inactive</span>
-            </label>
-        </div>
         <div class="filter-group" style="min-width: 180px;">
             <label class="field-label">Sort By</label>
             <select id="sortBy" onchange="sortUsers()">
@@ -41,6 +33,14 @@
                 <option value="role">Role</option>
             </select>
         </div>
+        <div class="filter-group" style="min-width: 160px;">
+            <label class="field-label">Status</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showInactive" onchange="filterUsers()" />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Show Inactive</span>
+            </label>
+        </div>        
         <button type="button" class="btn-secondary" onclick="filterUsers()">Apply</button>
         <button type="button" class="btn-secondary" onclick="clearUserFilters()">Clear</button>
     </form>

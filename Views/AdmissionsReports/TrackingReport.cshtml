@@ -12,23 +12,13 @@
         </div>
         <div style="display: flex; gap: 12px;">
             <a href="/Settings/Reports" class="btn-secondary">← Back to Reports</a>
+            <a href="?exportFormat=csv&sponsorId=@Model.Filters.SponsorId" class="btn-primary btn-add">Export CSV</a>
         </div>
     </div>
 </div>
 
-<!-- Report Filters -->
-@{
-    ViewBag.ShowSponsorFilter = true;
-    ViewBag.ShowStudentFilter = false;
-    ViewBag.ShowStatusFilter = false;
-    ViewBag.ShowDateRangeFilter = false;
-    ViewBag.ShowExportFormat = true;
-    ViewBag.FormAction = Url.Action("TrackingReport", "AdmissionsReports");
-}
-@await Html.PartialAsync("_ReportFilters", Model.Filters)
-
 <!-- Summary Statistics -->
-<div class="stat-grid" style="margin-bottom: 1.5rem;">
+<div class="stat-grid">
     <div class="stat-card">
         <div class="stat-label">Pending Sponsor Requests</div>
         <div class="stat-value">@Model.PendingSponsorRequests</div>
@@ -49,9 +39,24 @@
     </div>
 </div>
 
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Sponsor ID (optional)</label>
+            <input type="text" name="sponsorId" class="form-control" value="@Model.Filters.SponsorId" placeholder="Enter sponsor ID" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+    <input type="hidden" name="exportFormat" value="" />
+</form>
+
 <!-- Coverage Alignment by Sponsor -->
 <div class="card">
-    <h2 class="table-title">Coverage Alignment by Sponsor (@Model.CoverageAlignment.Count)</h2>
+    <h3 class="table-title">Coverage Alignment by Sponsor (@Model.CoverageAlignment.Count records)</h3>
     
     @if (Model.CoverageAlignment.Any())
     {

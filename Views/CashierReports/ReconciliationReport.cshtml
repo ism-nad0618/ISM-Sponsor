@@ -12,23 +12,13 @@
         </div>
         <div style="display: flex; gap: 12px;">
             <a href="/Settings/Reports" class="btn-secondary">← Back to Reports</a>
+            <a href="?exportFormat=csv&sponsorId=@Model.Filters.SponsorId&startDate=@Model.Filters.StartDate&endDate=@Model.Filters.EndDate" class="btn-primary btn-add">Export CSV</a>
         </div>
     </div>
 </div>
 
-<!-- Report Filters -->
-@{
-    ViewBag.ShowSponsorFilter = true;
-    ViewBag.ShowStudentFilter = false;
-    ViewBag.ShowStatusFilter = false;
-    ViewBag.ShowDateRangeFilter = true;
-    ViewBag.ShowExportFormat = true;
-    ViewBag.FormAction = Url.Action("ReconciliationReport", "CashierReports");
-}
-@await Html.PartialAsync("_ReportFilters", Model.Filters)
-
 <!-- Summary Statistics -->
-<div class="stat-grid" style="margin-bottom: 1.5rem;">
+<div class="stat-grid">
     <div class="stat-card">
         <div class="stat-label">Recent Decisions</div>
         <div class="stat-value">@Model.RecentDecisions.Count</div>
@@ -44,9 +34,32 @@
     </div>
 </div>
 
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom: 2rem;">
+    <h3 class="table-title">Filters</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+        <div>
+            <label>Sponsor ID (optional)</label>
+            <input type="text" name="sponsorId" class="form-control" value="@Model.Filters.SponsorId" placeholder="Enter sponsor ID" />
+        </div>
+        <div>
+            <label>Start Date</label>
+            <input type="date" name="startDate" class="form-control" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" class="form-control" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
+        </div>
+    </div>
+    <input type="hidden" name="exportFormat" value="" />
+</form>
+
 <!-- Recent Coverage Decisions -->
 <div class="card" style="margin-bottom: 2rem;">
-    <h2 class="table-title">Recent Coverage Decisions (@Model.RecentDecisions.Count)</h2>
+    <h3 class="table-title">Recent Coverage Decisions (@Model.RecentDecisions.Count records)</h3>
     
     @if (Model.RecentDecisions.Any())
     {
@@ -89,8 +102,8 @@
 </div>
 
 <!-- Student LoG Status -->
-<div cardclass="card">
-    <h2 class="table-title">Student LoG Status (@Model.StudentLogStatus.Count)</h2>
+<div class="card">
+    <h3 class="table-title">Student LoG Status (@Model.StudentLogStatus.Count records)</h3>
     
     @if (Model.StudentLogStatus.Any())
     {

@@ -18,9 +18,9 @@
 
 <div class="stat-grid">
     <div class="stat-card">
-        <div class="stat-label">Total Sponsors</div>
-        <div class="stat-value">@Model.TotalSponsors</div>
-        <div class="stat-sub">@Model.ActiveSponsors active</div>
+        <div class="stat-label">Active Sponsors</div>
+        <div class="stat-value">@Model.ActiveSponsors</div>
+        <div class="stat-sub">@(Model.TotalSponsors - Model.ActiveSponsors) inactive</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Total Students</div>
