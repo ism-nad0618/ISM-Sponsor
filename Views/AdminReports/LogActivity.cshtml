@@ -5,12 +5,15 @@
 }
 
 <div class="page-header">
-    <div>
-        <h1>LoG Activity Report</h1>
-        <p class="page-subtitle">Track Letters of Guarantee status, approvals, and coverage rules</p>
-    </div>
-    <div>
-        <a href="?exportFormat=csv&schoolYearId=@Model.Filters.SchoolYearId&status=@Model.Filters.Status" class="btn btn-primary">Export CSV</a>
+    <div class="page-header-actions">
+        <div>
+            <h1>LoG Activity Report</h1>
+            <p class="page-subtitle">Track Letters of Guarantee status, approvals, and coverage rules</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="/Settings/Reports" class="btn-secondary">← Back to Reports</a>
+            <a href="?exportFormat=csv&schoolYearId=@Model.Filters.SchoolYearId&status=@Model.Filters.Status" class="btn-primary btn-add">Export CSV</a>
+        </div>
     </div>
 </div>
 

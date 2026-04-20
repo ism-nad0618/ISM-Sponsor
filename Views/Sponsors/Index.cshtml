@@ -34,14 +34,6 @@
                    aria-label="Search sponsors" />
             <span id="searchLoadingIndicator" class="search-loader" style="display:none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);"></span>
         </div>
-        <div class="filter-group" style="min-width: 160px;">
-            <label class="field-label">Status</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showInactiveSponsors" name="showInactive" onchange="filterTable()" />
-                <span class="toggle-slider"></span>
-                <span class="toggle-label">Show Inactive</span>
-            </label>
-        </div>
         <div class="filter-group" style="min-width: 180px;">
             <label class="field-label">Approval Status</label>
             <select id="approvalFilter" name="approval" onchange="filterTable()">
@@ -62,6 +54,14 @@
                 <option value="legalName-desc">Legal Name (Z-A)</option>
             </select>
         </div>
+        <div class="filter-group" style="min-width: 160px;">
+            <label class="field-label">Status</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showInactiveSponsors" name="showInactive" onchange="filterTable()" />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Show Inactive</span>
+            </label>
+        </div>        
         <button type="button" class="btn-secondary" onclick="filterTable()">Apply Filters</button>
         <button type="button" class="btn-secondary" onclick="clearFilters()">Clear</button>
     </form>

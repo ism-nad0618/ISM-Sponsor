@@ -664,9 +664,10 @@ namespace ISMSponsor.Controllers
                     var itemErrors = new List<string>();
                     string action = "Skip";
                     
+                    // Minimum 6 columns required (LoG basic info), rest are optional coverage rules
                     if (values.Length < 6)
                     {
-                        itemErrors.Add("Invalid format - expected 6 columns");
+                        itemErrors.Add("Invalid format - expected at least 6 columns");
                     }
                     else
                     {
@@ -677,6 +678,15 @@ namespace ISMSponsor.Controllers
                         var effectiveToStr = values[4].Trim();
                         var notes = values[5].Trim();
 
+                        // Optional coverage rule columns (if 13 columns total)
+                        string? coverageTarget = values.Length > 6 ? values[6].Trim() : null;
+                        string? itemId = values.Length > 7 ? values[7].Trim() : null;
+                        string? categoryId = values.Length > 8 ? values[8].Trim() : null;
+                        string? coverageType = values.Length > 9 ? values[9].Trim() : null;
+                        string? coveragePercentageStr = values.Length > 10 ? values[10].Trim() : null;
+                        string? coverageFixedAmountStr = values.Length > 11 ? values[11].Trim() : null;
+                        string? capAmountStr = values.Length > 12 ? values[12].Trim() : null;
+
                         // Validate required fields
                         if (string.IsNullOrEmpty(schoolYearId))
                             itemErrors.Add("Missing SchoolYearId");
@@ -685,10 +695,14 @@ namespace ISMSponsor.Controllers
                         if (string.IsNullOrEmpty(sponsorId))
                             itemErrors.Add("Missing SponsorId");
 
+                        // Check if coverage rule is provided
+                        bool hasRule = !string.IsNullOrEmpty(coverageTarget);
+
                         // Check if LoG already exists
-                        if (itemErrors.Count == 0 && await _logService.LogExistsForStudentAsync(schoolYearId, studentId))
+                        bool logExists = await _logService.LogExistsForStudentAsync(schoolYearId, studentId);
+                        if (itemErrors.Count == 0 && logExists && !hasRule)
                         {
-                            itemErrors.Add($"LoG already exists for student {studentId} in {schoolYearId}");
+                            itemErrors.Add($"LoG already exists for student {studentId} in {schoolYearId} - add coverage rule columns to add rules");
                         }
 
                         // Validate date formats
@@ -701,9 +715,46 @@ namespace ISMSponsor.Controllers
                             itemErrors.Add("Invalid EffectiveTo date format");
                         }
 
+                        // Validate coverage rule if provided
+                        if (hasRule)
+                        {
+                            if (coverageTarget != "Item" && coverageTarget != "Category")
+                                itemErrors.Add("CoverageTarget must be 'Item' or 'Category'");
+                            
+                            if (coverageTarget == "Item" && string.IsNullOrEmpty(itemId))
+                                itemErrors.Add("ItemId required when CoverageTarget is 'Item'");
+                            
+                            if (coverageTarget == "Category" && string.IsNullOrEmpty(categoryId))
+                                itemErrors.Add("CategoryId required when CoverageTarget is 'Category'");
+                            
+                            if (string.IsNullOrEmpty(coverageType))
+                                itemErrors.Add("CoverageType required when coverage rule is specified");
+                            else if (coverageType != "Full" && coverageType != "Percentage" && coverageType != "FixedAmount" && coverageType != "UpToCap")
+                                itemErrors.Add("CoverageType must be 'Full', 'Percentage', 'FixedAmount', or 'UpToCap'");
+                            
+                            if (coverageType == "Percentage")
+                            {
+                                if (string.IsNullOrEmpty(coveragePercentageStr) || !decimal.TryParse(coveragePercentageStr, out var pct) || pct <= 0 || pct > 100)
+                                    itemErrors.Add("Valid CoveragePercentage (0-100) required for Percentage type");
+                            }
+                            
+                            if (coverageType == "FixedAmount")
+                            {
+                                if (string.IsNullOrEmpty(coverageFixedAmountStr) || !decimal.TryParse(coverageFixedAmountStr, out var amt) || amt <= 0)
+                                    itemErrors.Add("Valid CoverageFixedAmount required for FixedAmount type");
+                            }
+                        }
+
                         if (itemErrors.Count == 0)
                         {
-                            action = "Add";
+                            if (logExists && hasRule)
+                            {
+                                action = "Add Rule";
+                            }
+                            else
+                            {
+                                action = "Add";
+                            }
                             willAdd++;
                         }
                         else
@@ -720,6 +771,9 @@ namespace ISMSponsor.Controllers
                             effectiveFrom = effectiveFromStr,
                             effectiveTo = effectiveToStr,
                             notes = notes?.Length > 50 ? notes.Substring(0, 50) + "..." : notes,
+                            hasRule,
+                            coverageTarget,
+                            coverageType,
                             action,
                             errors = itemErrors,
                             hasError = itemErrors.Count > 0
@@ -760,6 +814,7 @@ namespace ISMSponsor.Controllers
             }
 
             var successCount = 0;
+            var rulesAddedCount = 0;
             var failedCount = 0;
             var errors = new List<string>();
 
@@ -786,7 +841,7 @@ namespace ISMSponsor.Controllers
                     var values = line.Split(',');
                     if (values.Length < 6)
                     {
-                        errors.Add($"Line {lineNumber}: Invalid format - expected 6 columns");
+                        errors.Add($"Line {lineNumber}: Invalid format - expected at least 6 columns");
                         failedCount++;
                         continue;
                     }
@@ -800,6 +855,15 @@ namespace ISMSponsor.Controllers
                         var effectiveTo = DateTime.TryParse(values[4].Trim(), out var to) ? to : (DateTime?)null;
                         var notes = values[5].Trim();
 
+                        // Optional coverage rule columns
+                        string? coverageTarget = values.Length > 6 && !string.IsNullOrWhiteSpace(values[6]) ? values[6].Trim() : null;
+                        string? itemId = values.Length > 7 && !string.IsNullOrWhiteSpace(values[7]) ? values[7].Trim() : null;
+                        string? categoryId = values.Length > 8 && !string.IsNullOrWhiteSpace(values[8]) ? values[8].Trim() : null;
+                        string? coverageType = values.Length > 9 && !string.IsNullOrWhiteSpace(values[9]) ? values[9].Trim() : null;
+                        decimal? coveragePercentage = values.Length > 10 && decimal.TryParse(values[10].Trim(), out var pct) ? pct : null;
+                        decimal? coverageFixedAmount = values.Length > 11 && decimal.TryParse(values[11].Trim(), out var amt) ? amt : null;
+                        decimal? capAmount = values.Length > 12 && decimal.TryParse(values[12].Trim(), out var cap) ? cap : null;
+
                         // Validate required fields
                         if (string.IsNullOrEmpty(schoolYearId) || string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(sponsorId))
                         {
@@ -809,28 +873,87 @@ namespace ISMSponsor.Controllers
                         }
 
                         // Check if LoG already exists
-                        if (await _logService.LogExistsForStudentAsync(schoolYearId, studentId))
+                        var existingLog = await _context.LogCoverages
+                            .Include(l => l.CoverageRules)
+                            .FirstOrDefaultAsync(l => l.SchoolYearId == schoolYearId && l.StudentId == studentId);
+
+                        if (existingLog != null)
                         {
-                            errors.Add($"Line {lineNumber}: LoG already exists for student {studentId} in {schoolYearId}");
-                            failedCount++;
-                            continue;
+                            // LoG exists - only allow if adding a coverage rule
+                            if (string.IsNullOrEmpty(coverageTarget) || string.IsNullOrEmpty(coverageType))
+                            {
+                                errors.Add($"Line {lineNumber}: LoG already exists for student {studentId} in {schoolYearId} - provide coverage rule to add to existing LoG");
+                                failedCount++;
+                                continue;
+                            }
+
+                            // Add coverage rule to existing LoG
+                            var nextDisplayOrder = (existingLog.CoverageRules?.Any() == true) 
+                                ? existingLog.CoverageRules.Max(r => r.DisplayOrder) + 1 
+                                : 1;
+
+                            var rule = new LoGCoverageRule
+                            {
+                                LogId = existingLog.LogId,
+                                CoverageTarget = coverageTarget,
+                                ItemId = coverageTarget == "Item" ? itemId : null,
+                                CategoryId = coverageTarget == "Category" ? categoryId : null,
+                                CoverageType = coverageType,
+                                CoveragePercentage = coveragePercentage,
+                                CoverageFixedAmount = coverageFixedAmount,
+                                CapAmount = capAmount,
+                                DisplayOrder = nextDisplayOrder,
+                                IsActive = true,
+                                CreatedOn = DateTime.UtcNow,
+                                CreatedByUserId = userId
+                            };
+
+                            _context.LoGCoverageRules.Add(rule);
+                            await _context.SaveChangesAsync();
+                            rulesAddedCount++;
                         }
-
-                        // Create the LoG
-                        var log = new LogCoverage
+                        else
                         {
-                            SchoolYearId = schoolYearId,
-                            StudentId = studentId,
-                            SponsorId = sponsorId,
-                            EffectiveFrom = effectiveFrom,
-                            EffectiveTo = effectiveTo,
-                            Notes = notes,
-                            LogStatus = "Draft",
-                            IsActive = false
-                        };
+                            // Create new LoG
+                            var log = new LogCoverage
+                            {
+                                SchoolYearId = schoolYearId,
+                                StudentId = studentId,
+                                SponsorId = sponsorId,
+                                EffectiveFrom = effectiveFrom,
+                                EffectiveTo = effectiveTo,
+                                Notes = notes,
+                                LogStatus = "Draft",
+                                IsActive = false
+                            };
 
-                        await _logService.CreateAsync(log, userId);
-                        successCount++;
+                            await _logService.CreateAsync(log, userId);
+
+                            // If coverage rule data provided, create the rule
+                            if (!string.IsNullOrEmpty(coverageTarget) && !string.IsNullOrEmpty(coverageType))
+                            {
+                                var rule = new LoGCoverageRule
+                                {
+                                    LogId = log.LogId,
+                                    CoverageTarget = coverageTarget,
+                                    ItemId = coverageTarget == "Item" ? itemId : null,
+                                    CategoryId = coverageTarget == "Category" ? categoryId : null,
+                                    CoverageType = coverageType,
+                                    CoveragePercentage = coveragePercentage,
+                                    CoverageFixedAmount = coverageFixedAmount,
+                                    CapAmount = capAmount,
+                                    DisplayOrder = 1,
+                                    IsActive = true,
+                                    CreatedOn = DateTime.UtcNow,
+                                    CreatedByUserId = userId
+                                };
+
+                                _context.LoGCoverageRules.Add(rule);
+                                await _context.SaveChangesAsync();
+                            }
+
+                            successCount++;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -842,7 +965,7 @@ namespace ISMSponsor.Controllers
                 // Log the bulk import activity
                 await _logsService.LogActivityAsync(
                     item: "LoG Bulk Import",
-                    details: $"Imported {successCount} LoGs. Failed: {failedCount}",
+                    details: $"Imported {successCount} LoGs, added {rulesAddedCount} rules. Failed: {failedCount}",
                     userDisplay: user?.DisplayName ?? User.Identity?.Name ?? "System",
                     roleName: User.IsInRole("admin") ? "admin" : "admissions",
                     schoolYearId: ""
@@ -851,14 +974,30 @@ namespace ISMSponsor.Controllers
                 return Json(new
                 {
                     success = true,
-                    message = $"Import completed: {successCount} successful, {failedCount} failed",
-                    details = new { successCount, failedCount, errors }
+                    message = $"Import completed: {successCount} LoGs created, {rulesAddedCount} rules added to existing LoGs, {failedCount} failed",
+                    details = new { successCount, rulesAddedCount, failedCount, errors }
                 });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"Error processing file: {ex.Message}" });
             }
+        }
+
+        [Authorize(Roles = "admin,admissions")]
+        [HttpGet]
+        public IActionResult DownloadImportTemplate()
+        {
+            var templateContent = @"SchoolYearId,StudentId,SponsorId,EffectiveFrom,EffectiveTo,Notes,CoverageTarget,ItemId,CategoryId,CoverageType,CoveragePercentage,CoverageFixedAmount,CapAmount
+2024-2025,STU001,ACME,2024-08-01,2025-06-30,Full tuition coverage,Item,TUITION,,Full,,,
+2024-2025,STU002,BETA,2024-08-01,2025-06-30,Multiple rules example,Item,TUITION,,Full,,,
+2024-2025,STU002,BETA,2024-08-01,2025-06-30,,Category,,BOOKS,Percentage,80,,
+2024-2025,STU002,BETA,2024-08-01,2025-06-30,,Item,UNIFORM,,FixedAmount,,5000,10000
+2024-2025,STU003,GAMMA,2024-08-01,2025-06-30,Single rule with cap,Item,SUPPLIES,,FixedAmount,,3000,5000
+2024-2025,STU004,DELTA,2024-08-01,2025-06-30,No coverage rules,,,,,,";
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(templateContent);
+            return File(bytes, "text/csv", "log_import_template.csv");
         }
 
         // Get LoG data for editing in modal

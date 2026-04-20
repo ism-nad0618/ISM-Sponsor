@@ -5,8 +5,15 @@
 }
 
 <div class="page-header">
-    <h1>School Years</h1>
-    <p class="page-subtitle">Manage school year records and active year status.</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>School Years</h1>
+            <p class="page-subtitle">Manage school year records and active year status.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn-primary btn-add" onclick="openCreateModal()">+ Add School Year</button>
+        </div>
+    </div>
 </div>
 
 @if (TempData["Error"] is string errorText)
@@ -20,10 +27,7 @@
 }
 
 <div class="card">
-    <div class="page-header-actions">
-        <h2 class="table-title">School Year Directory</h2>
-        <button type="button" class="btn-primary btn-add" onclick="openCreateModal()">+ Add School Year</button>
-    </div>
+    <h2 class="table-title">School Year Directory (@Model.Count)</h2>
     <div class="table-wrap">
         <table>
         <thead>
@@ -40,25 +44,25 @@
             @foreach (var y in Model)
             {
                 <tr data-id="@y.SchoolYearId">
-                    <td><strong class="view-mode">@y.SchoolYearId</strong></td>
-                    <td>
+                    <td style="vertical-align: middle;"><strong class="view-mode">@y.SchoolYearId</strong></td>
+                    <td style="vertical-align: middle;">
                         <span class="view-mode">@y.Name</span>
                         <input type="text" class="edit-mode" value="@y.Name" data-field="Name" style="display:none; width: 100%;" />
                     </td>
-                    <td>
+                    <td style="vertical-align: middle;">
                         <span class="view-mode">@y.ValidFrom.ToString("MMMM d, yyyy")</span>
                         <input type="date" class="edit-mode" value="@y.ValidFrom.ToString("yyyy-MM-dd")" data-field="ValidFrom" style="display:none; width: 100%;" />
                     </td>
-                    <td>
+                    <td style="vertical-align: middle;">
                         <span class="view-mode">@y.ValidTo.ToString("MMMM d, yyyy")</span>
                         <input type="date" class="edit-mode" value="@y.ValidTo.ToString("yyyy-MM-dd")" data-field="ValidTo" style="display:none; width: 100%;" />
                     </td>
-                    <td>
+                    <td style="vertical-align: middle;">
                         <span class="status-badge @(y.IsActive ? "status-active" : "status-inactive")">
                             @(y.IsActive ? "Active" : "Inactive")
                         </span>
                     </td>
-                    <td data-label="Actions" class="action-cell">
+                    <td data-label="Actions" class="action-cell" style="vertical-align: middle;">
                         <div class="view-mode">
                             @if (!y.IsActive)
                             {

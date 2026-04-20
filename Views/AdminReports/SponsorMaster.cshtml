@@ -5,25 +5,17 @@
 }
 
 <div class="page-header">
-    <div>
-        <h1>Sponsor Master Report</h1>
-        <p class="page-subtitle">Complete sponsor roster with activity metrics, merge history, and sync status</p>
-    </div>
-    <div>
-        <a href="@Url.Action("Index", "AdminReports")" class="btn-secondary">← Back to Reports</a>
+    <div class="page-header-actions">
+        <div>
+            <h1>Sponsor Master Report</h1>
+            <p class="page-subtitle">Complete sponsor roster with activity metrics, merge history, and sync status</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="/Settings/Reports" class="btn-secondary">← Back to Reports</a>
+            <a href="?exportFormat=csv&status=@Model.Filters.Status&startDate=@Model.Filters.StartDate&endDate=@Model.Filters.EndDate" class="btn-primary btn-add">Export CSV</a>
+        </div>
     </div>
 </div>
-
-<!-- Report Filters -->
-@{
-    ViewBag.ShowSponsorFilter = false;
-    ViewBag.ShowStudentFilter = false;
-    ViewBag.ShowStatusFilter = true;
-    ViewBag.ShowDateRangeFilter = true;
-    ViewBag.ShowExportFormat = true;
-    ViewBag.FormAction = Url.Action("SponsorMaster", "AdminReports");
-}
-@await Html.PartialAsync("_ReportFilters", Model.Filters)
 
 <!-- Summary Statistics -->
 <div class="stat-grid" style="margin-bottom: 1.5rem;">
@@ -48,9 +40,33 @@
     </div>
 </div>
 
+<!-- Report Filters -->
+<div class="card">
+    <form method="get" asp-action="SponsorMaster" asp-controller="AdminReports" class="filter-form">
+        <div class="filter-group" style="flex: 1; min-width: 180px;">
+            <label class="field-label">Status</label>
+            <select name="Status">
+                <option value="">All Statuses</option>
+                <option value="Active" selected="@(Model.Filters.Status == "Active")">Active</option>
+                <option value="Inactive" selected="@(Model.Filters.Status == "Inactive")">Inactive</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex: 1; min-width: 200px;">
+            <label class="field-label">Start Date</label>
+            <input type="date" name="StartDate" value="@Model.Filters.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="filter-group" style="flex: 1; min-width: 200px;">
+            <label class="field-label">End Date</label>
+            <input type="date" name="EndDate" value="@Model.Filters.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <button type="submit" class="btn-secondary">Apply Filters</button>
+        <a href="@Url.Action("SponsorMaster", "AdminReports")" class="btn-secondary">Clear</a>
+    </form>
+</div>
+
 <!-- Sponsor Master Table -->
 <div class="card">
-    <h2 class="table-title">Sponsor Master (@Model.SponsorDetails.Count)</h2>
+    <h2 class="table-title">Sponsor Records (@Model.SponsorDetails.Count)</h2>
     
     @if (Model.SponsorDetails.Any())
     {
@@ -72,13 +88,13 @@
                 <tbody>
                     @foreach (var sponsor in Model.SponsorDetails.OrderBy(s => s.SponsorName))
                     {
-                        <tr>
-                            <td><strong>@sponsor.SponsorId</strong></td>
-                            <td>@sponsor.SponsorName</td>
-                            <td style="color: #666; font-size: 0.9rem;">@(sponsor.LegalName ?? "—")</td>
-                            <td>@sponsor.StudentCount</td>
-                            <td>@sponsor.ActiveLogCount</td>
-                            <td>
+                        <tr class="@(sponsor.IsActive ? "" : "inactive-row")" style="@(sponsor.IsActive ? "" : "opacity: 0.7;")">
+                            <td data-label="Sponsor ID"><strong>@sponsor.SponsorId</strong></td>
+                            <td data-label="Sponsor Name">@sponsor.SponsorName</td>
+                            <td data-label="Legal Name" style="color: #666; font-size: 0.9rem;">@(sponsor.LegalName ?? "—")</td>
+                            <td data-label="Students">@sponsor.StudentCount</td>
+                            <td data-label="Active LoGs">@sponsor.ActiveLogCount</td>
+                            <td data-label="Status">
                                 @if (sponsor.IsActive)
                                 {
                                     <span class="status-badge status-active">Active</span>
@@ -88,7 +104,7 @@
                                     <span class="status-badge status-inactive">Inactive</span>
                                 }
                             </td>
-                            <td>
+                            <td data-label="Synced">
                                 @if (sponsor.IsSynced)
                                 {
                                     <span class="status-badge status-success">Synced</span>
@@ -98,8 +114,8 @@
                                     <span class="status-badge status-warning">Not Synced</span>
                                 }
                             </td>
-                            <td>@sponsor.CreatedOn.ToString("MMM d, yyyy")</td>
-                            <td>@(sponsor.ModifiedOn?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td data-label="Created">@sponsor.CreatedOn.ToString("MMM d, yyyy")</td>
+                            <td data-label="Modified">@(sponsor.ModifiedOn?.ToString("MMM d, yyyy") ?? "—")</td>
                         </tr>
                     }
                 </tbody>
@@ -108,6 +124,13 @@
     }
     else
     {
-        <p style="padding: 2rem; text-align: center; color: #666;">No sponsors found matching the selected filters.</p>
+        <div class="table-wrap">
+            @{
+                ViewData["EmptyIcon"] = "📊";
+                ViewData["EmptyTitle"] = "No sponsors found";
+                ViewData["EmptyMessage"] = "No sponsors match the selected filters. Try adjusting your filter criteria.";
+            }
+            @await Html.PartialAsync("_EmptyState")
+        </div>
     }
 </div>

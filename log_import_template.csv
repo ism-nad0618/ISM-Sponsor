@@ -1,0 +1,5 @@
+SchoolYearId,StudentId,SponsorId,EffectiveFrom,EffectiveTo,Notes,CoverageTarget,ItemId,CategoryId,CoverageType,CoveragePercentage,CoverageFixedAmount,CapAmount
+2024-2025,STU001,ACME,2024-08-01,2025-06-30,Full tuition coverage,Item,TUITION,,Full,,,
+2024-2025,STU002,BETA,2024-08-01,2025-06-30,80% books coverage,Category,,BOOKS,Percentage,80,,
+2024-2025,STU003,GAMMA,2024-08-01,2025-06-30,Uniform with cap,Item,UNIFORM,,FixedAmount,,5000,10000
+2024-2025,STU004,DELTA,2024-08-01,2025-06-30,Basic coverage only,,,,,,
