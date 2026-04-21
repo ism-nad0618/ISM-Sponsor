@@ -427,8 +427,11 @@ app.UseGlobalExceptionHandler();
 // Step 7: Security headers middleware
 app.UseSecurityHeaders();
 
-// Step 8: Enable Swagger in Development and Pilot environments
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Pilot"))
+// Step 8: Enable Swagger (enabled for Development, Pilot, and Production for capstone demo)
+// TODO: Restrict to Development/Pilot only after capstone demo
+if (app.Environment.IsDevelopment() || 
+    app.Environment.IsEnvironment("Pilot") || 
+    app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
