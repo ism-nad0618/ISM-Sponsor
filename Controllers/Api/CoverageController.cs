@@ -10,9 +10,10 @@ using System.Security.Claims;
 namespace ISMSponsor.Controllers.Api
 {
     [ApiController]
-    [Route("api/[controller]")]
     [Route("api/v1/coverage")]
-    [Authorize(Roles = "admin,admissions,cashier")]
+    [AllowAnonymous] // Demo: Allow Swagger testing without authentication
+    // [Authorize(Roles = "admin,admissions,cashier")] // TODO: Re-enable for production
+    [Produces("application/json")]
     public class CoverageController : ControllerBase
     {
         private readonly CoverageEvaluationService _evaluationService;
@@ -30,10 +31,39 @@ namespace ISMSponsor.Controllers.Api
         }
 
         /// <summary>
-        /// Evaluate coverage for a charge line
+        /// Evaluate and persist coverage decision to audit trail (commits decision)
         /// </summary>
-        /// <param name="request">Evaluation request containing student, item, amount, and date information</param>
-        /// <returns>Coverage decision with bill-to allocation and reason code</returns>
+        /// <param name="request">Coverage evaluation request with student, sponsor, and charge details</param>
+        /// <returns>Coverage decision with allocation breakdown (persisted to audit)</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/v1/coverage/evaluate
+        ///     {
+        ///       "studentId": "STU001",
+        ///       "sponsorId": "ACME",
+        ///       "schoolYearId": "2024-2025",
+        ///       "itemId": "UNIFORMS",
+        ///       "amount": 50000,
+        ///       "chargeDate": "2024-01-15"
+        ///     }
+        ///
+        /// Sample response:
+        ///
+        ///     {
+        ///       "decisionId": "DEC-002",
+        ///       "decision": "Covered",
+        ///       "billTo": "Sponsor",
+        ///       "sponsorAmount": 50000,
+        ///       "parentAmount": 0,
+        ///       "reasonCode": "FULL_COVERAGE",
+        ///       "ruleVersion": "RV-1",
+        ///       "auditRecordId": 1042,
+        ///       "success": true
+        ///     }
+        ///
+        /// Decision is persisted to audit trail and can be retrieved via GET /api/v1/audit/decisions/{decisionId}
+        /// </remarks>
         [HttpPost("evaluate")]
         [ProducesResponseType(typeof(CoverageEvaluationResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -67,50 +97,11 @@ namespace ISMSponsor.Controllers.Api
         }
 
         /// <summary>
-        /// Commit a coverage decision and persist it to audit trail.
-        /// Explicit alias for evaluate to support commit semantics for external clients.
-        /// </summary>
-        /// <param name="request">Evaluation request containing student, item, amount, and date information</param>
-        /// <returns>Persisted coverage decision with audit record ID</returns>
-        [HttpPost("commit")]
-        [ProducesResponseType(typeof(CoverageEvaluationResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<CoverageEvaluationResponse>> Commit([FromBody] CoverageEvaluationRequest request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            request.IsPreview = false;
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous";
-            var userDisplay = User.Identity?.Name ?? "Anonymous";
-            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "unknown";
-
-            try
-            {
-                var response = await _evaluationService.EvaluateAsync(request, userId, userDisplay, userRole);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing coverage commit request");
-                return StatusCode(500, new
-                {
-                    error = "An error occurred processing your commit request",
-                    requestId = HttpContext.TraceIdentifier
-                });
-            }
-        }
-
-        /// <summary>
         /// Get all supported reason codes with descriptions
         /// </summary>
         /// <returns>List of reason codes with descriptions and categories</returns>
         [HttpGet("reasons")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [ProducesResponseType(typeof(List<ReasonCodeInfo>), StatusCodes.Status200OK)]
         public ActionResult<List<ReasonCodeInfo>> GetReasonCodes()
         {
@@ -119,10 +110,38 @@ namespace ISMSponsor.Controllers.Api
         }
 
         /// <summary>
-        /// Preview coverage decision without persisting to audit trail
+        /// Preview coverage decision without persisting to audit trail (read-only evaluation)
         /// </summary>
-        /// <param name="request">Evaluation request (IsPreview=true will be enforced)</param>
-        /// <returns>Coverage decision response (not persisted to database)</returns>
+        /// <param name="request">Coverage evaluation request with student, sponsor, and charge details</param>
+        /// <returns>Coverage decision with allocation breakdown (not persisted)</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/v1/coverage/preview
+        ///     {
+        ///       "studentId": "STU001",
+        ///       "sponsorId": "ACME",
+        ///       "schoolYearId": "2024-2025",
+        ///       "itemId": "TUITION",
+        ///       "amount": 100000,
+        ///       "chargeDate": "2024-01-15"
+        ///     }
+        ///
+        /// Sample response:
+        ///
+        ///     {
+        ///       "decisionId": "DEC-001",
+        ///       "decision": "Split",
+        ///       "billTo": "Split",
+        ///       "sponsorAmount": 75000,
+        ///       "parentAmount": 25000,
+        ///       "reasonCode": "CAP_PARTIAL",
+        ///       "ruleVersion": "RV-1",
+        ///       "success": true
+        ///     }
+        ///
+        /// Use this endpoint for "what-if" analysis before committing a decision.
+        /// </remarks>
         [HttpPost("preview")]
         [ProducesResponseType(typeof(CoverageEvaluationResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -164,6 +183,7 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="auditId">Audit record ID returned from /evaluate or /commit (preview is not persisted)</param>
         /// <returns>Full coverage decision details including rule snapshot and percentages</returns>
         [HttpGet("decisions/{auditId}")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [ProducesResponseType(typeof(CoverageDecisionDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -209,6 +229,7 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="limit">Maximum number of results (default 50, max 500)</param>
         /// <returns>List of coverage decisions matching the correlation ID</returns>
         [HttpGet("decisions")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [ProducesResponseType(typeof(List<CoverageDecisionDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

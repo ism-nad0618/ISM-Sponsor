@@ -6,10 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ISMSponsor.Controllers.Api
 {
+    /// <summary>
+    /// Reference data API for charge items, categories, and sponsor lookup (internal use).
+    /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
     [Route("api/v1/reference")]
     [Authorize(Roles = "admin,admissions,cashier,sponsor")]
+    [Produces("application/json")]
+    [ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger - internal reference only
     public class ReferenceController : ControllerBase
     {
         private readonly AppDbContext _context;

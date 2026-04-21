@@ -1,23 +1,48 @@
 namespace ISMSponsor.Models.API
 {
+    /// <summary>
+    /// Coverage evaluation result with allocation breakdown.
+    /// Example: { "decisionId": "DEC-001", "coverageStatus": "Split", "billTo": "Split", "sponsorAmount": 75000, "parentAmount": 25000, "reasonCode": "CAP_PARTIAL", "ruleVersion": "RV-1" }
+    /// </summary>
     public class CoverageEvaluationResponse
     {
+        /// <summary>
+        /// Coverage decision: Covered, NotCovered, or Split
+        /// </summary>
         public CoverageDecision Decision { get; set; }
 
+        /// <summary>
+        /// Bill recipient: Sponsor, Parent, or Split
+        /// </summary>
         public BillTo BillTo { get; set; }
 
+        /// <summary>
+        /// Amount covered by sponsor (in cents)
+        /// </summary>
         public decimal SponsorAmount { get; set; }
 
+        /// <summary>
+        /// Amount payable by parent (in cents)
+        /// </summary>
         public decimal ParentAmount { get; set; }
 
+        /// <summary>
+        /// Machine-readable reason code (e.g., "FULL_COVERAGE", "CAP_PARTIAL", "NO_LOG")
+        /// </summary>
         public string ReasonCode { get; set; } = string.Empty;
 
         public string Explanation { get; set; } = string.Empty;
 
         public int? MatchedRuleId { get; set; }
 
+        /// <summary>
+        /// Version identifier of the coverage rule that was applied (e.g., "RV-1")
+        /// </summary>
         public string? RuleVersion { get; set; }
 
+        /// <summary>
+        /// Audit record ID for traceability (0 if preview mode)
+        /// </summary>
         public int AuditRecordId { get; set; }
 
         public bool Success { get; set; }
@@ -30,7 +55,7 @@ namespace ISMSponsor.Models.API
         public string? CorrelationId { get; set; }
 
         /// <summary>
-        /// Alternative decision identifier (equivalent to AuditRecordId for external consumers).
+        /// Decision identifier for external systems (e.g., "DEC-001")
         /// </summary>
         public string? DecisionId { get; set; }
 

@@ -67,8 +67,25 @@ if (string.IsNullOrEmpty(connectionString))
 
 Console.WriteLine("Database connection string configured");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// Use in-memory database for testing, SQLite for local dev, or SQL Server for Azure
+if (connectionString == "InMemory")
+{
+    Console.WriteLine("Using in-memory database for testing (no persistence)");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseInMemoryDatabase("ISMSponsorTestDB"));
+}
+else if (connectionString.Contains("Data Source=") && connectionString.EndsWith(".db"))
+{
+    Console.WriteLine("Using SQLite database for local development");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(connectionString));
+}
+else
+{
+    Console.WriteLine("Using SQL Server database");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(connectionString));
+}
 
 // Step 7: Configure Identity with security hardening
 var passwordConfig = builder.Configuration.GetSection("SponsorAuth:PasswordRequirements");
@@ -316,6 +333,18 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
+
+    // Filter: Only show core demo API controllers in Swagger
+    options.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        if (apiDesc.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerAction)
+        {
+            var controllerName = controllerAction.ControllerName;
+            var allowedControllers = new[] { "Health", "SponsorsApi", "LogsApi", "Coverage", "AuditApi", "Integration" };
+            return allowedControllers.Contains(controllerName);
+        }
+        return false;
+    });
 });
 
 var app = builder.Build();
@@ -352,9 +381,9 @@ if (!app.Environment.IsEnvironment("Testing"))
 Console.WriteLine("Checking database initialization settings...");
 if (!app.Environment.IsEnvironment("Testing"))
 {
-    var runMigrationsOnStartup = builder.Configuration.GetValue<bool>("Database:RunMigrationsOnStartup", false);
+    var runMigrationsOnStartup = builder.Configuration.GetValue<bool>("Database:RunMigrationsOnStartup", app.Environment.IsDevelopment());
     
-    if (app.Environment.IsDevelopment() || runMigrationsOnStartup)
+    if (runMigrationsOnStartup)
     {
         using (var scope = app.Services.CreateScope())
         {

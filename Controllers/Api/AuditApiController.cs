@@ -11,9 +11,10 @@ namespace ISMSponsor.Controllers.Api
     /// Provides endpoints for querying coverage decisions and integration sync history.
     /// </summary>
     [ApiController]
-    [Route("api/audit")]
     [Route("api/v1/audit")]
-    [Authorize(Roles = "admin,cashier")]
+    [AllowAnonymous] // Demo: Allow Swagger testing without authentication
+    // [Authorize(Roles = "admin,cashier")] // TODO: Re-enable for production
+    [Produces("application/json")]
     public class AuditApiController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -26,11 +27,16 @@ namespace ISMSponsor.Controllers.Api
         }
 
         /// <summary>
-        /// Get detailed coverage decision by decision ID (AuditId).
-        /// Alias for /api/coverage/decisions/{decisionId} to provide audit-centric routing.
+        /// Get detailed coverage decision by decision ID for audit and reconciliation
         /// </summary>
         /// <param name="decisionId">Coverage decision audit ID</param>
-        /// <returns>Detailed coverage decision with audit trail</returns>
+        /// <returns>Detailed coverage decision with audit trail and rule snapshot</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET /api/v1/audit/decisions/1001
+        ///
+        /// </remarks>
         [HttpGet("decisions/{decisionId}")]
         [ProducesResponseType(typeof(CoverageDecisionDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -74,6 +80,7 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="correlationId">Correlation ID for end-to-end traceability</param>
         /// <returns>Sync status across all downstream systems</returns>
         [HttpGet("integrations/{correlationId}")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [ProducesResponseType(typeof(SyncStatusDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

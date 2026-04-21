@@ -10,7 +10,7 @@ namespace ISMSponsor.Controllers;
 /// Public endpoint for load balancers and monitoring systems.
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/health")]
 public class HealthController : ControllerBase
 {
     private readonly HealthCheckService _healthCheckService;
@@ -50,6 +50,7 @@ public class HealthController : ControllerBase
     /// GET /api/health/detailed
     /// </summary>
     [HttpGet("detailed")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetDetailed()
     {
@@ -79,6 +80,7 @@ public class HealthController : ControllerBase
     /// GET /api/health/ready
     /// </summary>
     [HttpGet("ready")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     [AllowAnonymous]
     public async Task<IActionResult> Ready()
     {
@@ -97,6 +99,7 @@ public class HealthController : ControllerBase
     /// GET /api/health/live
     /// </summary>
     [HttpGet("live")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     [AllowAnonymous]
     public IActionResult Live()
     {

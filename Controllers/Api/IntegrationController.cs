@@ -10,9 +10,10 @@ using Microsoft.EntityFrameworkCore;
 namespace ISMSponsor.Controllers.Api
 {
     [ApiController]
-    [Route("api")]
     [Route("api/v1/integrations")]
-    [Authorize(Roles = "admin,cashier")]
+    [AllowAnonymous] // Demo: Allow Swagger testing without authentication
+    // [Authorize(Roles = "admin,cashier")] // TODO: Re-enable for production
+    [Produces("application/json")]
     public class IntegrationController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -45,6 +46,7 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="request">Student-sponsor sync request from PowerSchool</param>
         /// <returns>Sync result with detailed mapping outcomes</returns>
         [HttpPost("powerschool/student-sponsor-sync")]
+        [ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger - PowerSchool internal
         [ProducesResponseType(typeof(StudentSponsorSyncResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -200,6 +202,7 @@ namespace ISMSponsor.Controllers.Api
 
         [HttpPost("netsuite/post-decision")]
         [HttpPost("netsuite/allocation-post")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -246,6 +249,7 @@ namespace ISMSponsor.Controllers.Api
 
         [HttpPost("obs/post-decision")]
         [HttpPost("obs/statement-update")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -299,7 +303,17 @@ namespace ISMSponsor.Controllers.Api
             });
         }
 
-        [HttpGet("netsuite/posting-status/{correlationId}")]
+        /// <summary>
+        /// Get integration sync status across all downstream systems by correlation ID
+        /// </summary>
+        /// <param name="correlationId">Correlation ID for end-to-end traceability</param>
+        /// <returns>Sync status for PowerSchool, SCP, NetSuite, and OBS</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET /api/v1/integrations/sync-status/COR-12345
+        ///
+        /// </remarks>
         [HttpGet("sync-status/{correlationId}")]
         [ProducesResponseType(typeof(SyncStatusDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

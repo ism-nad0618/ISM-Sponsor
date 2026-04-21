@@ -7,13 +7,13 @@ using Microsoft.EntityFrameworkCore;
 namespace ISMSponsor.Controllers.Api
 {
     /// <summary>
-    /// REST API for statement data retrieval.
-    /// Provides coverage allocation data for statement presentation.
+    /// REST API for statement data retrieval (internal use).
     /// </summary>
     [ApiController]
-    [Route("api/statements")]
     [Route("api/v1/statements")]
     [Authorize(Roles = "admin,cashier,sponsor")]
+    [Produces("application/json")]
+    [ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger - not part of core demo
     public class StatementsController : ControllerBase
     {
         private readonly AppDbContext _context;
