@@ -1,0 +1,328 @@
+# Azure DevOps CI/CD Pipeline for ISM Sponsor Management System
+# Implements: Build → Test → Security Scan → Deploy to Dev → Manual Approval → Deploy to Pilot
+# OWASP Alignment: A06 Vulnerable and Outdated Components, A05 Security Misconfiguration
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - docs/**
+      - README.md
+
+variables:
+  buildConfiguration: 'Release'
+  dotnetVersion: '8.x'
+  projectPath: 'ISMSponsor.csproj'
+  
+stages:
+  # Stage 1: Build and Test
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Application'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          # Checkout code
+          - checkout: self
+            fetchDepth: 1
+          
+          # Setup .NET SDK
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              version: $(dotnetVersion)
+          
+          # Restore dependencies
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet Packages'
+            inputs:
+              command: 'restore'
+              projects: '$(projectPath)'
+          
+          # Build application
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Application'
+            inputs:
+              command: 'build'
+              projects: '$(projectPath)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+          
+          # Run unit tests
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              projects: '**/*Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build --logger trx --collect:"XPlat Code Coverage"'
+          
+          # Publish test results
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: 'VSTest'
+              testResultsFiles: '**/*.trx'
+              mergeTestResults: true
+          
+          # Publish code coverage
+          - task: PublishCodeCoverageResults@1
+            displayName: 'Publish Code Coverage'
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: '$(Agent.TempDirectory)/**/*.coverage'
+  
+  # Stage 2: Security Scanning
+  - stage: SecurityScan
+    displayName: 'Security Scanning'
+    dependsOn: Build
+    jobs:
+      - job: SecurityScanJob
+        displayName: 'Run Security Scans'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          # Dependency scanning with OWASP Dependency Check
+          - task: dependency-check-build-task@6
+            displayName: 'OWASP Dependency Check'
+            inputs:
+              projectName: 'ISM Sponsor'
+              scanPath: '$(Build.SourcesDirectory)'
+              format: 'HTML,JSON'
+              additionalArguments: '--disableYarnAudit --failOnCVSS 7'
+            continueOnError: true
+          
+          # Secret scanning (using Credential Scanner or equivalent)
+          - task: CredScan@3
+            displayName: 'Scan for Secrets'
+            inputs:
+              outputFormat: 'sarif'
+              debugMode: false
+            continueOnError: true
+          
+          # Code quality and static analysis
+          - task: DotNetCoreCLI@2
+            displayName: 'Static Code Analysis'
+            inputs:
+              command: 'custom'
+              custom: 'format'
+              arguments: '--verify-no-changes --verbosity diagnostic'
+            continueOnError: true
+          
+          # Publish security scan results
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Security Reports'
+            inputs:
+              pathToPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'SecurityReports'
+  
+  # Stage 3: Publish Artifacts
+  - stage: PublishArtifacts
+    displayName: 'Publish Build Artifacts'
+    dependsOn: SecurityScan
+    jobs:
+      - job: PublishJob
+        displayName: 'Publish Application'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              version: $(dotnetVersion)
+          
+          # Publish application
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish Application'
+            inputs:
+              command: 'publish'
+              publishWebProjects: true
+              arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+              zipAfterPublish: true
+          
+          # Publish build artifacts
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Build Artifacts'
+            inputs:
+              pathToPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'drop'
+  
+  # Stage 4: Deploy to Dev Environment
+  - stage: DeployDev
+    displayName: 'Deploy to Dev'
+    dependsOn: PublishArtifacts
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployDevJob
+        displayName: 'Deploy to Dev Environment'
+        environment: 'ISM-Sponsor-Dev'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Download artifacts
+                - download: current
+                  artifact: drop
+                
+                # Azure App Service Deploy
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service (Dev)'
+                  inputs:
+                    azureSubscription: 'Azure-ISM-Connection'
+                    appName: 'ism-sponsor-dev'
+                    package: '$(Pipeline.Workspace)/drop/**/*.zip'
+                    appSettings: '-ASPNETCORE_ENVIRONMENT Development'
+                
+                # Run database migrations
+                - task: AzureCLI@2
+                  displayName: 'Run Database Migrations'
+                  inputs:
+                    azureSubscription: 'Azure-ISM-Connection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Running database migrations for Dev environment"
+                      # Add EF Core migration command here when ready
+                
+                # Run smoke tests
+                - task: PowerShell@2
+                  displayName: 'Run Smoke Tests (Dev)'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      Write-Host "Running smoke tests against Dev environment"
+                      $baseUrl = "https://ism-sponsor-dev.azurewebsites.net"
+                      
+                      # Health check
+                      $healthResponse = Invoke-WebRequest -Uri "$baseUrl/health" -UseBasicParsing
+                      if ($healthResponse.StatusCode -ne 200) {
+                        throw "Health check failed"
+                      }
+                      Write-Host "✓ Health check passed"
+                      
+                      # Login page accessibility
+                      $loginResponse = Invoke-WebRequest -Uri "$baseUrl/Account/Login" -UseBasicParsing
+                      if ($loginResponse.StatusCode -ne 200) {
+                        throw "Login page not accessible"
+                      }
+                      Write-Host "✓ Login page accessible"
+                      
+                      Write-Host "Smoke tests passed successfully"
+  
+  # Stage 5: Manual Approval Gate
+  - stage: ApprovalGate
+    displayName: 'Approval for Pilot'
+    dependsOn: DeployDev
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: waitForValidation
+        displayName: 'Wait for Manual Approval'
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            displayName: 'Approve Pilot Deployment'
+            inputs:
+              notifyUsers: 'devops-team@ismmanila.org'
+              instructions: |
+                Please review the Dev deployment and approve for Pilot release.
+                
+                Checklist:
+                - Dev smoke tests passed
+                - Security scans reviewed
+                - No critical vulnerabilities
+                - Functional testing complete
+                - Database migration tested
+                
+                Approve to proceed with Pilot deployment.
+  
+  # Stage 6: Deploy to Pilot Environment
+  - stage: DeployPilot
+    displayName: 'Deploy to Pilot'
+    dependsOn: ApprovalGate
+    condition: succeeded()
+    jobs:
+      - deployment: DeployPilotJob
+        displayName: 'Deploy to Pilot Environment'
+        environment: 'ISM-Sponsor-Pilot'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Download artifacts
+                - download: current
+                  artifact: drop
+                
+                # Azure App Service Deploy
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service (Pilot)'
+                  inputs:
+                    azureSubscription: 'Azure-ISM-Connection'
+                    appName: 'ism-sponsor-pilot'
+                    package: '$(Pipeline.Workspace)/drop/**/*.zip'
+                    appSettings: '-ASPNETCORE_ENVIRONMENT Pilot'
+                    deploymentMethod: 'zipDeploy'
+                    slotName: 'staging'
+                
+                # Run database migrations
+                - task: AzureCLI@2
+                  displayName: 'Run Database Migrations'
+                  inputs:
+                    azureSubscription: 'Azure-ISM-Connection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Running database migrations for Pilot environment"
+                      # Add EF Core migration command here when ready
+                
+                # Run smoke tests
+                - task: PowerShell@2
+                  displayName: 'Run Smoke Tests (Pilot)'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      Write-Host "Running smoke tests against Pilot environment"
+                      $baseUrl = "https://ism-sponsor-pilot-staging.azurewebsites.net"
+                      
+                      # Health check
+                      $healthResponse = Invoke-WebRequest -Uri "$baseUrl/health" -UseBasicParsing
+                      if ($healthResponse.StatusCode -ne 200) {
+                        throw "Health check failed"
+                      }
+                      Write-Host "✓ Health check passed"
+                      
+                      # API health
+                      $apiHealthResponse = Invoke-WebRequest -Uri "$baseUrl/api/health" -UseBasicParsing
+                      if ($apiHealthResponse.StatusCode -ne 200) {
+                        throw "API health check failed"
+                      }
+                      Write-Host "✓ API health check passed"
+                      
+                      Write-Host "Pilot smoke tests passed successfully"
+                
+                # Swap staging slot to production
+                - task: AzureAppServiceManage@0
+                  displayName: 'Swap Staging to Production'
+                  inputs:
+                    azureSubscription: 'Azure-ISM-Connection'
+                    appName: 'ism-sponsor-pilot'
+                    resourceGroupName: 'ISM-Sponsor-RG'
+                    sourceSlot: 'staging'
+                    swapWithProduction: true
