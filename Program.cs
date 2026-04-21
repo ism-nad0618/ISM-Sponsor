@@ -28,28 +28,44 @@ if (!builder.Environment.IsDevelopment())
     
     if (!string.IsNullOrEmpty(keyVaultName))
     {
-        var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
-        
-        // Use Managed Identity for authentication (recommended for Azure App Service)
-        // Falls back to Azure CLI or Visual Studio credentials for local development
-        builder.Configuration.AddAzureKeyVault(
-            keyVaultUri,
-            new DefaultAzureCredential());
-        
-        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Azure Key Vault configuration loaded from {KeyVaultUri}", keyVaultUri);
+        try
+        {
+            var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
+            
+            // Use Managed Identity for authentication (recommended for Azure App Service)
+            // Falls back to Azure CLI or Visual Studio credentials for local development
+            builder.Configuration.AddAzureKeyVault(
+                keyVaultUri,
+                new DefaultAzureCredential());
+            
+            Console.WriteLine($"Azure Key Vault configuration loaded from {keyVaultUri}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Failed to load Azure Key Vault: {ex.Message}");
+        }
     }
     else
     {
-        // Log warning but don't fail - allows deployment without Key Vault in staging
-        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        logger.LogWarning("KeyVault:Name not configured. Ensure secrets are provided via environment variables or App Service settings.");
+        Console.WriteLine("KeyVault:Name not configured. Using App Service settings or environment variables.");
     }
 }
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? throw new InvalidOperationException("DefaultConnection not found in configuration.");
+// ============================================================================
+// DATABASE CONNECTION
+// ============================================================================
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine("Checking database connection string...");
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    Console.WriteLine("ERROR: DefaultConnection not found in configuration.");
+    Console.WriteLine("Required: Set ConnectionStrings__DefaultConnection in Azure App Service Settings");
+    throw new InvalidOperationException("DefaultConnection not found in configuration.");
+}
+
+Console.WriteLine("Database connection string configured");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -78,7 +94,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>();
 
 // ============================================================================
-// GOOGLE OAUTH AUTHENTICATION
+// GOOGLE OAUTH AUTHENTICATION (Optional)
 // ============================================================================
 // Google Sign-In enabled for ISM staff/admins
 // 
@@ -100,21 +116,32 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // - Customize role assignment in AccountController.GoogleCallback if needed
 // ============================================================================
 
-builder.Services.AddAuthentication()
-    .AddGoogle(options =>
-    {
-        var googleConfig = builder.Configuration.GetSection("Authentication:Google");
-        options.ClientId = googleConfig["ClientId"] ?? throw new InvalidOperationException("Google ClientId not configured");
-        options.ClientSecret = googleConfig["ClientSecret"] ?? throw new InvalidOperationException("Google ClientSecret not configured");
-        options.CallbackPath = "/Account/GoogleCallback";
-        
-        // Request email and profile scopes
-        options.Scope.Add("email");
-        options.Scope.Add("profile");
-        
-        // Save tokens for potential future use
-        options.SaveTokens = true;
-    });
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.CallbackPath = "/Account/GoogleCallback";
+            
+            // Request email and profile scopes
+            options.Scope.Add("email");
+            options.Scope.Add("profile");
+            
+            // Save tokens for potential future use
+            options.SaveTokens = true;
+        });
+    
+    Console.WriteLine("Google OAuth authentication configured");
+}
+else
+{
+    Console.WriteLine("Google OAuth not configured - skipping (credentials missing)");
+}
 
 // Secure cookie configuration
 var cookieSecurePolicy = builder.Configuration["Security:CookieSecurePolicy"];
@@ -200,7 +227,7 @@ builder.Services.AddHealthChecks()
     .AddCheck<SyncHealthCheck>("sync", tags: new[] { "ready" })
     .AddCheck<AuditHealthCheck>("audit", tags: new[] { "ready" });
 
-// Step 7: Application Insights (mandatory in non-Development environments)
+// Step 7: Application Insights (recommended in non-Development environments)
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrEmpty(appInsightsConnectionString))
 {
@@ -208,13 +235,13 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString))
     {
         options.ConnectionString = appInsightsConnectionString;
     });
+    Console.WriteLine("Application Insights telemetry configured");
 }
 else if (!builder.Environment.IsDevelopment())
 {
-    // Fail fast if Application Insights not configured in production/pilot
-    throw new InvalidOperationException(
-        "ApplicationInsights:ConnectionString is required for non-Development environments. " +
-        "Configure in Azure Key Vault or App Service settings.");
+    // Log warning but allow startup - App Insights can be configured later
+    Console.WriteLine("WARNING: ApplicationInsights:ConnectionString not configured. Telemetry disabled.");
+    Console.WriteLine("Configure in Azure App Service Settings: ApplicationInsights__ConnectionString");
 }
 
 // Step 7: Anti-forgery configuration
@@ -294,6 +321,7 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // Step 7: Validate configuration on startup (fail fast if misconfigured)
+Console.WriteLine("Validating application configuration...");
 if (!app.Environment.IsEnvironment("Testing"))
 {
     using (var scope = app.Services.CreateScope())
@@ -304,9 +332,11 @@ if (!app.Environment.IsEnvironment("Testing"))
             configValidation.ValidateConfiguration();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("[OK] Configuration validation passed");
+            Console.WriteLine("[OK] Configuration validation passed");
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[FAIL] Configuration validation failed: {ex.Message}");
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogCritical(ex, "[FAIL] Configuration validation failed. Application cannot start safely.");
             throw; // Fail fast - do not start with invalid configuration
@@ -319,6 +349,7 @@ if (!app.Environment.IsEnvironment("Testing"))
 // ============================================================================
 // Initialize database ONLY in Development or if explicitly enabled
 // Production/Pilot migrations should run via deployment pipeline
+Console.WriteLine("Checking database initialization settings...");
 if (!app.Environment.IsEnvironment("Testing"))
 {
     var runMigrationsOnStartup = builder.Configuration.GetValue<bool>("Database:RunMigrationsOnStartup", false);
@@ -329,11 +360,22 @@ if (!app.Environment.IsEnvironment("Testing"))
         {
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Running database initialization (environment: {Environment})", app.Environment.EnvironmentName);
+            Console.WriteLine($"Running database initialization (environment: {app.Environment.EnvironmentName})");
             
-            var initializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
-            initializer.Initialize();
-            
-            logger.LogInformation("[OK] Database initialization complete");
+            try
+            {
+                var initializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
+                initializer.Initialize();
+                
+                logger.LogInformation("[OK] Database initialization complete");
+                Console.WriteLine("[OK] Database initialization complete");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "[FAIL] Database initialization failed");
+                Console.WriteLine($"[FAIL] Database initialization failed: {ex.Message}");
+                throw;
+            }
         }
     }
     else
@@ -342,6 +384,7 @@ if (!app.Environment.IsEnvironment("Testing"))
         {
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Skipping database migration on startup (production-safe mode). Migrations should be run via deployment pipeline.");
+            Console.WriteLine("Skipping database migrations (production-safe mode)");
         }
     }
 }

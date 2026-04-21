@@ -33,9 +33,11 @@ appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
 appsettings.Local.json
+appsettings.AzureMigration.json
 # Keep example and pilot template files
 !appsettings.json.example
 !appsettings.Pilot.json
+!appsettings.AzureMigration.json.example
 
 # Database files
 *.db
@@ -135,5 +137,6 @@ connectionstrings.json
 # wwwroot generated files
 wwwroot/lib/
 
-*.md
+# Ignore Azure pipeline YAML but keep documentation
 *.yml
+!azure-pipelines.yml

@@ -51,21 +51,18 @@ public class ConfigurationValidationService
 
     private void ValidateAuthenticationSettings()
     {
-        // Azure AD validation for non-development environments
-        if (!_environment.IsDevelopment())
+        // Azure AD validation - only if configured (optional, mutually exclusive with Google OAuth)
+        var azureAdConfigured = !string.IsNullOrWhiteSpace(_configuration["AzureAd:ClientId"]) &&
+                                !_configuration["AzureAd:ClientId"]!.Contains("PLACEHOLDER", StringComparison.OrdinalIgnoreCase);
+        
+        if (azureAdConfigured && !_environment.IsDevelopment())
         {
             var tenantId = _configuration["AzureAd:TenantId"];
-            var clientId = _configuration["AzureAd:ClientId"];
             var clientSecret = _configuration["AzureAd:ClientSecret"];
 
             if (string.IsNullOrWhiteSpace(tenantId) || tenantId.Contains("PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
             {
-                _errors.Add("AzureAd:TenantId is missing or contains placeholder value");
-            }
-
-            if (string.IsNullOrWhiteSpace(clientId) || clientId.Contains("PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
-            {
-                _errors.Add("AzureAd:ClientId is missing or contains placeholder value");
+                _errors.Add("AzureAd:TenantId is missing or contains placeholder value (if using Azure AD)");
             }
 
             if (string.IsNullOrWhiteSpace(clientSecret) || clientSecret.Contains("PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
@@ -154,14 +151,15 @@ public class ConfigurationValidationService
 
     private void ValidateMonitoring()
     {
-        // Application Insights is mandatory in production/pilot for observability
+        // Application Insights is recommended but not mandatory (can be configured post-deployment)
         if (_environment.IsProduction() || _environment.EnvironmentName == "Pilot")
         {
             var appInsightsConnectionString = _configuration["ApplicationInsights:ConnectionString"];
             
             if (string.IsNullOrWhiteSpace(appInsightsConnectionString))
             {
-                _errors.Add("ApplicationInsights:ConnectionString is required in production/pilot environments for telemetry and monitoring");
+                // Log warning but don't fail validation - telemetry can be added later
+                Console.WriteLine("WARNING: ApplicationInsights:ConnectionString not configured. Telemetry disabled.");
             }
         }
 
