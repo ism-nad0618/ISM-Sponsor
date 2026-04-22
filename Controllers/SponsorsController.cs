@@ -749,6 +749,10 @@ namespace ISMSponsor.Controllers
                 var sponsor = await _sponsorService.GetByIdAsync(sponsorId);
                 if (sponsor == null)
                 {
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                    {
+                        return Json(new { success = false, message = "Sponsor not found" });
+                    }
                     TempData["Error"] = "Sponsor not found";
                     return RedirectToAction("Index");
                 }
@@ -778,12 +782,24 @@ namespace ISMSponsor.Controllers
                     schoolYearId: ""
                 );
 
+                // Return JSON for AJAX requests
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = true, message = $"Sponsor '{sponsor.SponsorName}' has been approved" });
+                }
+
                 TempData["Success"] = $"Sponsor '{sponsor.SponsorName}' has been approved";
                 return RedirectToAction("Profile", new { id = sponsorId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error approving sponsor {SponsorId}", sponsorId);
+                
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = false, message = "An error occurred while approving the sponsor" });
+                }
+                
                 TempData["Error"] = "An error occurred while approving the sponsor";
                 return RedirectToAction("Index");
             }
@@ -799,6 +815,10 @@ namespace ISMSponsor.Controllers
                 var sponsor = await _sponsorService.GetByIdAsync(sponsorId);
                 if (sponsor == null)
                 {
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                    {
+                        return Json(new { success = false, message = "Sponsor not found" });
+                    }
                     TempData["Error"] = "Sponsor not found";
                     return RedirectToAction("Index");
                 }
@@ -824,12 +844,24 @@ namespace ISMSponsor.Controllers
                     schoolYearId: ""
                 );
 
+                // Return JSON for AJAX requests
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = true, message = $"Sponsor '{sponsor.SponsorName}' has been rejected" });
+                }
+
                 TempData["Success"] = $"Sponsor '{sponsor.SponsorName}' has been rejected";
                 return RedirectToAction("Profile", new { id = sponsorId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error rejecting sponsor {SponsorId}", sponsorId);
+                
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = false, message = "An error occurred while rejecting the sponsor" });
+                }
+                
                 TempData["Error"] = "An error occurred while rejecting the sponsor";
                 return RedirectToAction("Index");
             }
