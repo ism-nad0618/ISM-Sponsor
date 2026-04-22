@@ -1045,12 +1045,27 @@
         try {
             const formData = new FormData();
             formData.append('sponsorId', sponsorId);
-            formData.append('notes', notes);
+            formData.append('approvalNotes', notes);
+            
+            // Add anti-forgery token
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append('__RequestVerificationToken', token.value);
+            }
             
             const response = await fetch('/Sponsors/ApproveSponsor', {
                 method: 'POST',
                 body: formData
             });
+            
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    alert('You must be logged in as an admin to approve sponsors.');
+                    window.location.href = '/Account/Login';
+                    return;
+                }
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
@@ -1095,12 +1110,27 @@
         try {
             const formData = new FormData();
             formData.append('sponsorId', sponsorId);
-            formData.append('reason', reason);
+            formData.append('rejectionReason', reason);
+            
+            // Add anti-forgery token
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append('__RequestVerificationToken', token.value);
+            }
             
             const response = await fetch('/Sponsors/RejectSponsor', {
                 method: 'POST',
                 body: formData
             });
+            
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    alert('You must be logged in as an admin to reject sponsors.');
+                    window.location.href = '/Account/Login';
+                    return;
+                }
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
