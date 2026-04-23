@@ -77,7 +77,7 @@
             
             @if (User.IsInRole("admin") || User.IsInRole("cashier"))
             {
-                <li><a class="@navClass("Sponsors", "Index")" asp-controller="Sponsors" asp-action="Index">All Sponsors</a></li>
+                <li><a class="@navClass("Sponsors", "Index")" href="/Settings/Sponsors">All Sponsors</a></li>
                 <li><a class="@navClass("AdminReports", "AllContacts")" asp-controller="AdminReports" asp-action="AllContacts">All Contacts</a></li>
             }
             @if (User.IsInRole("admin") || User.IsInRole("admissions") || User.IsInRole("cashier"))
