@@ -17,11 +17,11 @@
 }
 
 <div class="stat-grid">
-    <div class="stat-card">
+    <a href="/Settings/Sponsors" class="stat-card" style="text-decoration: none; color: inherit; cursor: pointer;">
         <div class="stat-label">Active Sponsors</div>
         <div class="stat-value">@Model.ActiveSponsors</div>
         <div class="stat-sub">@(Model.TotalSponsors - Model.ActiveSponsors) inactive</div>
-    </div>
+    </a>
     <div class="stat-card">
         <div class="stat-label">Total Students</div>
         <div class="stat-value">@Model.TotalStudents</div>
@@ -96,5 +96,10 @@
 <style>
 .stat-card-warning {
     border-left: 4px solid #f59e0b;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    transition: all 0.2s ease;
 }
 </style>
