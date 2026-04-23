@@ -411,7 +411,7 @@ namespace ISMSponsor.Controllers
                     Title = "Sponsors Awaiting Approval",
                     Message = $"{model.PendingApprovals} new sponsor(s) pending approval",
                     Severity = "warning",
-                    ActionUrl = "/Sponsors",
+                    ActionUrl = "/Settings/Sponsors",
                     ActionText = "Review Sponsors"
                 });
             }
@@ -503,7 +503,7 @@ namespace ISMSponsor.Controllers
                 {
                     Title = "Create Sponsor",
                     Description = "Add a new sponsor to the system",
-                    ActionUrl = "/Sponsors/Create",
+                    ActionUrl = "/Settings/Sponsors/Create",
                     Icon = "➕",
                     BadgeText = ""
                 },
