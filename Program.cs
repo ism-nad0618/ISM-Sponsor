@@ -308,7 +308,13 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddTransient<DbInitializer>();
-builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+
+// Configure MVC with conditional runtime compilation for development only
+var mvcBuilder = builder.Services.AddControllersWithViews();
+if (builder.Environment.IsDevelopment())
+{
+    mvcBuilder.AddRazorRuntimeCompilation();
+}
 
 // Step 8: Configure Swagger/OpenAPI for API documentation
 builder.Services.AddEndpointsApiExplorer();
