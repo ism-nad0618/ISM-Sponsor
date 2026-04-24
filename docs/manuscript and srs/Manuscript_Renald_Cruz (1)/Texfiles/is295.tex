@@ -1,0 +1,106 @@
+%Sample for is295.cls
+%Author: Katrina Joy Abriol-Santos
+%Reminders: Omit \lipsum commands
+
+\documentclass{is295}
+\usepackage{lipsum} %for generating dummy text
+\usepackage{hyperref} %for hyperlinks
+
+\usepackage{array}
+\usepackage{xcolor}
+
+% Tables (wrapping + nice rules)
+\usepackage{tabularx,booktabs,threeparttable,makecell,ragged2e}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.12}
+
+
+% Define a smaller font for the table
+\newcommand{\smalltable}{\fontsize{9pt}{11pt}\selectfont}
+
+%\usepackage{showframe} %for debugging the margins
+                              
+%Replace the values here, various commands depend on this variables  
+\renewcommand{\TITLE}{SPONSOR MANAGEMENT AND LETTER OF GUARANTEE (LoG) COVERAGE INTEGRATION SYSTEM FOR INTERNATIONAL SCHOOL MANILA (ISM)}
+\renewcommand{\AUTHOR}{RENALD E. CRUZ}
+\renewcommand{\DEGREE}{MASTER OF INFORMATION SYSTEMS}
+\renewcommand{\ADVISER}{KATRINA JOY M. ABRIOL-SANTOS}
+\renewcommand{\FACULTY}{Faculty of Information and Communication Studies}
+\renewcommand{\MONTH}{APRIL}
+\renewcommand{\YEAR}{2026}
+\renewcommand{\DAY}{24}
+
+% Choose between YES and NO here
+\renewcommand{\INVENTION}{NO}
+\renewcommand{\PUBLICATION}{YES}
+\renewcommand{\CONFIDENTIAL}{NO}
+\renewcommand{\FREE}{YES}
+% ---------------------
+
+\newcommand{\PROGRAMCHAIR}{DR. RIA MAE H. BORROMEO}
+\newcommand{\DEAN}{DR. DIEGO S. MARANAN}
+
+\begin{document}
+	\emergencystretch 3em
+	\begin{frontmatter}
+            
+		%TITLE PAGE
+		\maketitle
+
+            %PERMISSION PAGE
+            \include{Texfiles/permission}
+
+            %APPROVAL PAGE
+            \include{Texfiles/approval}
+            
+		%ACKOWLEDGEMENT
+            \include{Texfiles/acknowkedgement}
+		
+            %ABSTRACT
+            \include{Texfiles/abstract}
+		
+		%TABLE OF CONTENTS
+		\maketableofcontents
+		
+		%LIST OF TABLES
+		\makelistoftables
+
+		%LIST OF FIGURES
+		\makelistoffigures
+
+	\end{frontmatter}
+	
+	%BODY OF MANUSCRIPT HERE (Use up to 3 levels only, (sec -> subsec -> subsubsec)
+	\begin{mainmatter}
+		
+            %INTRODUCTION
+            \include{Texfiles/introduction}
+
+            %REVIEW OF EXISTING ALTERNATIVES
+		\include{Texfiles/review-of-alternatives}
+
+		%PROJECT DETAILS
+            \include{Texfiles/project-details}
+
+            %PROJECT ASSESSMENT
+            \include{Texfiles/project-assessment}
+
+            %RESULTS AND DISCUSSION
+            \include{Texfiles/results}
+		
+		%SUMMARY AND CONCLUSION
+            \include{Texfiles/summary-conclusion}
+
+            %FUTURE WORK
+            \include{Texfiles/future-work}
+            
+            %APPENDICES
+            \include{Texfiles/appendix-test-results}
+            
+		%REFERENCES
+		%Parameter is the references bib file without extension
+		\makereferences{references}
+			
+	\end{mainmatter}
+\end{document}

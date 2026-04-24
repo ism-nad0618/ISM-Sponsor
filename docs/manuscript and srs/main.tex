@@ -1,0 +1,482 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{hyperref}
+
+% Define instruction formatting (red italic)
+\newcommand{\instruction}[1]{\textcolor{red}{\textit{#1}}}
+
+% Section formatting
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+% ------------------------
+% Title Page
+% ------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{4cm}
+    {\LARGE \textbf{System Requirements Specification (SRS)} \par}
+    \vspace{1cm}
+    {\Large Project Name: \textit{Sponsor Management and Letter of Guarantee (LoG) Coverage Integration System for International School Manila (ISM)} \par}
+    \vspace{2cm}
+    Version 2.0 \par
+    \vspace{0.5cm}
+    Prepared by: Renald Cruz \par
+    Date: 2025-12-17 \par
+    \vfill
+\end{titlepage}
+
+% ------------------------
+% Revision History
+% ------------------------
+\section*{Revision History}
+
+\begin{longtable}{|p{3cm}|p{3cm}|p{7cm}|}
+\hline
+\textbf{Date} & \textbf{Version} & \textbf{Description / Changes Made} \\
+\hline
+2025-10-17& 1.0 & Initial draft \\
+\hline
+2025-12-17& 2.0 & Final draft \\
+\hline
+\end{longtable}
+
+% ------------------------
+% Table of Contents
+% ------------------------
+\tableofcontents
+\newpage
+
+% ------------------------
+% 1. Introduction
+% ------------------------
+\section{Introduction}
+
+\subsection{Background of the Project}
+
+In response to persistent gaps in sponsorship billing and the growing demand for reliable financial records, this study proposes an integration first SPONSOR MANAGEMENT AND LETTER OF GUARANTEE (LoG) COVERAGE INTEGRATION SYSTEM FOR INTERNATIONAL SCHOOL MANILA (ISM). The system recognizes sponsorship coverage as a common institutional reference rather than a local setup within a single application. Its architecture is based on a centralized Sponsor Master and a coverage rules engine, with uniform identifiers synchronized across PowerSchool as the Student Information System (SIS) that stores the primary student profile, NetSuite as the finance system that records student charges and maintains the student ledger, the in house Student Charging Portal that processes student charges, and the Online Billing System that displays statements of account for parents and sponsors.
+
+International School Manila currently conducts student billing through these four systems, which were implemented at different points in time to satisfy specific operational requirements. PowerSchool holds enrollment and demographic records. Front line staff use the Student Charging Portal to create itemized charges. This is recorded in NetSuite and included in the student ledger to be reported financially. These ledger entries are then presented as statements of account of parents and sponsors, which is displayed on the Online Billing System.
+
+In this multi system setting, sponsorship billing is being facilitated by Letters of Guarantee (LoG) which are given by the sponsors stating the items or categories they will cover. When a charge entry is made in Student Charging Portal, operators read and decode each LoG, and determine whether a line item is to be covered, and give the Bill To designation, either to a sponsor or to a parent. Such decisions are made by passing the chain of integration: the charges are entered into NetSuite and the Online Billing System reflects it in the statements of account that parents and sponsors see. Staff members use spreadsheet and comma separated value (CSV) files to manually match records across platforms to keep these systems synchronized.
+
+This manual interpretation and file based reconciliation has over time shown some significant limitations. Spreadsheet parallel references and unofficial notes lose their connection to authoritative information. Staff are interpreting similar LoG provisions in different ways and thus providing different Bill To decisions on similar charges. Mispostings, late amendments, and missing documentation decrease confidence in the student ledger, complicate the reconciliation and put the institution at risk of audit and regulatory scrutiny. These problems are found within a regulatory environment that requires accuracy, openness, and accountability.
+
+ISM has to match student data in a third party SIS, billing capture in an in house portal, statements in an in house billing system, and accounting data in a third party finance platform and needs to follow the Bureau of Internal Revenue policy of the Ease of Paying Taxes (EoPT), which promotes well documented and clear billing records. A person dependent, fragmented vision of the sponsorship coverage in such context would impeccate more pressure on operations and governance. There are a number of other solutions but they pose serious trade offs to ISM.
+
+The first option is to implement a monolithic enterprise resource planning system which integrates student records, billing, ledgers and accounting to a single vendor system. Although this will minimize the number of applications, it will involve a massive migration of the system, renegotiation of the current integrations, and customization of school processes to vendor recommended workflow, which might not mirror the PowerSchool, NetSuite, and in house system combination that ISM has established.
+
+The second option is to implement specialized sponsorship management software or sponsor billing portals that are concerned with invoicing and collections. These tools tend to enhance payment tracking and usually still have manual interpretation at charge entry and rely on spreadsheets to reconcile, which leads to the same inconsistency in Bill To decisions.
+
+The third option is to keep enhancing the existing spreadsheet based process with tightening of the templates and more review control but this is also very much manual, person-based and is not easy to scale or audit. The proposed SPONSOR MANAGEMENT and LETTER of GUARANTEE (LoG) COVERAGE INTEGRATION SYSTEM in International School of Manila (ISM) is different than the other alternatives since it does not replace the existing core systems in the school but aims at and corrects the cause of inconsistency: the lack of a single, rule driven sponsorship coverage source. Instead of replacing PowerSchool, NetSuite, or the in house portals, the system positions the Sponsor Master and coverage rules engine as a shared institutional service that evaluates every charge in a consistent way. This allows line level, deterministic Bill To decisions to be returned at the moment of charge entry, carried forward into NetSuite as correctly posted transactions, and displayed in the Online Billing System as clear statements of account for parents and sponsors. In doing so, the proposal combines the strengths of the current landscape with centralized logic and explainable decisions, providing a more practical, lower risk, and institution specific solution than full system replacement or continued reliance on manual spreadsheets.
+
+\subsection{Objectives}
+
+\textbf{General Objective}
+
+To design and develop an integrated SPONSOR MANAGEMENT AND LETTER OF GUARANTEE (LoG) COVERAGE INTEGRATION SYSTEM FOR INTERNATIONAL SCHOOL MANILA (ISM) that automates sponsor management and Letter of Guarantee coverage validation across PowerSchool, NetSuite, the Student Charging Portal, and the Online Billing System.
+
+\textbf{Specific Objectives}
+
+1. To synchronize and combine the sponsor management and coverage validation between PowerSchool, NetSuite, the Student Charging Portal and the Online Billing System through authoring and maintaining similar identifiers, updates being made based on business events such as create, update and merge.
+
+2. To achieve real time, explainable coverage evaluation in the Student Charging Portal based on a deterministic rules engine, which implements sponsor coverage rules on entry of charge and provides human readable reason codes on Bill To determinations.
+
+3. To create a centralized Sponsor Master that keeps canonical records of sponsor data, such as sponsor data, coverage policies, limits, and effective dates, and status and provides the identifiers needed to tag students and record financial transactions in PowerSchool and NetSuite.
+
+4. To make sure that the correct Bill To designation is set up in NetSuite and the Online Billing System so that it can be complied with and audited, to produce documentation that satisfies the BIR Ease of Paying Taxes requirements, and to record correct sponsor-parent allocations to the student ledger and the general ledger.
+
+5. To enforce data quality and governance within the Sponsor Master through validation of required fields and classification attributes, duplicate detection and merge workflows, and maintenance of authoritative cross system identifiers.
+
+\subsection{Scope}
+
+\textbf{SCOPE}
+
+The project covers the analysis, design, and prototype implementation of the SPONSOR MANAGEMENT AND LETTER OF GUARANTEE (LoG) COVERAGE INTEGRATION SYSTEM FOR INTERNATIONAL SCHOOL MANILA (ISM) hosted on Microsoft Azure. It includes the design and deployment of the Sponsor Master repository that stores sponsor records, coverage attributes, and cross system identifiers, as well as the development of a rules model for item and category level coverage with limits and defined exceptions.
+
+The scope further includes implementation of real time coverage evaluation within the Student Charging Portal, propagation of coverage decisions to NetSuite for posting and maintenance of the student ledger, and synchronized presentation of covered and non covered items in the Online Billing System as statements of account for parents and sponsors. Statements will show sponsor and parent responsibility, the governing rule, and relevant metadata. Primary users include Cashiers and Student Charging Portal operators, Finance and Accounting staff in NetSuite, and authorized administrators at the department and school level, with parents and sponsors viewing statements through the Online Billing System.
+
+The project focuses on core integration flows, coverage evaluation logic, essential user interface components needed to test coverage preview and explanations in the Student Charging Portal, and control and logging mechanisms that support review of sponsor related transactions.
+
+\subsubsection{In Scope}
+\begin{itemize}
+  \item Design of the integrated Sponsor Management and LoG Coverage Integration System hosted on Microsoft Azure.
+  \item Design and deployment of the Sponsor Master repository, including sponsor records, coverage attributes, and cross system identifiers.
+  \item Definition and implementation of a deterministic coverage rules model, including item and category coverage, limits, effective dates, and defined exceptions.
+  \item Propagation of coverage decisions to NetSuite for correct posting and maintenance of the student ledger.
+  \item Synchronized display of covered and non covered items in the Online Billing System as statements of account for parents and sponsors.
+  \item Essential user interface components required to test coverage evaluation and explanations in the Student Charging Portal.
+  \item Control and logging mechanisms that support review and traceability of sponsor related transactions.
+\end{itemize}
+
+\subsubsection{Out of Scope}
+\begin{itemize}
+  \item Full replacement of existing core systems (PowerSchool, NetSuite, Student Charging Portal, and Online Billing System).
+  \item A full enterprise resource planning migration or consolidation into a single monolithic platform.
+  \item Development of a standalone sponsor billing portal focused on collections, payment tracking, or payment processing.
+  \item Redesign of broader school billing workflows unrelated to sponsor coverage determination and Bill To allocation.
+  \item Organization wide deployment activities beyond prototype implementation, including full scale rollout, long term operations staffing, and enterprise change management.
+  \item Regulatory certification activities beyond producing clearer, auditable outputs aligned with record keeping requirements.
+\end{itemize}
+
+
+\subsection{Definitions, Acronyms, and Abbreviations}
+
+\begin{itemize}
+  \item \textbf{AR:} Accounts Receivable
+  \item \textbf{Azure:} Microsoft Azure, the cloud platform used to host system services and data
+  \item \textbf{Bill To:} The party to be billed on an invoice in NS (ERP)
+  \item \textbf{BIR EoPT:} Bureau of Internal Revenue Ease of Paying Taxes
+  \item \textbf{Cashier:} Staff who tag a student’s Sponsor in PS (SIS) using the sponsor drop-down sourced from the LoG system
+  \item \textbf{Coverage Evaluation:} The rule-based process that determines whether a sponsor covers a charge line item or category
+  \item \textbf{Coverage Rule:} A deterministic rule that defines sponsor coverage by item or category, including limits, exceptions, and effective dates
+  \item \textbf{CSV:} Comma-Separated Values, a flat-file format commonly used for data export and import
+  \item \textbf{ERP:} Enterprise Resource Planning
+  \item \textbf{Identifier:} A unique reference value used to match and synchronize records across systems (for example, sponsor IDs and student IDs)
+  \item \textbf{ISM:} International School Manila
+  \item \textbf{IT Administrator:} Staff who configure integrations and schedules; under the target state, maintain sponsor records in the LoG system and monitor synchronization
+  \item \textbf{Ledger:} The financial record of student charges and related transactions maintained within the finance system
+  \item \textbf{LoG:} Letter of Guarantee
+  \item \textbf{NetSuite:} The finance and accounting system used to record student charges and maintain the student ledger
+  \item \textbf{NS (ERP):} NetSuite, the Enterprise Resource Planning system
+  \item \textbf{OBS:} Online Billing System
+  \item \textbf{Online Billing System:} The system that displays statements of account to parents and sponsors
+  \item \textbf{PowerSchool:} The Student Information System (SIS) used to store primary student enrollment and profile data
+  \item \textbf{PS (SIS):} PowerSchool, the Student Information System
+  \item \textbf{Reason Code:} A machine readable label that explains a coverage or billing decision
+  \item \textbf{Rules Engine:} The software component that applies coverage rules to charge entries and produces consistent, explainable outcomes
+  \item \textbf{SCP:} Student Charging Portal
+  \item \textbf{SCP Operator:} Staff who enter student charges in SCP and rely on the coverage decision
+  \item \textbf{SIS:} Student Information System
+  \item \textbf{Sponsor:} An organization or entity that provides financial coverage for a student through an LoG or related agreement
+  \item \textbf{Sponsor Master:} The centralized repository that stores canonical sponsor records, coverage policies, limits, effective dates, status, and cross-system identifiers
+  \item \textbf{SponsorID:} Canonical unique identifier for a sponsor in this system
+  \item \textbf{Statement of Account (SOA):} An itemized billing statement showing charges and the allocation of responsibility between sponsor and parent
+  \item \textbf{Student Charging Portal:} The in-house system used by staff to create and submit itemized student charges
+  \item \textbf{Transaction:} A recorded financial event, such as a charge entry, that is posted to the finance system and reflected in billing statements
+\end{itemize}
+
+% ------------------------
+% 2. Overall Description
+% ------------------------
+
+\section{Overall Description}
+
+\subsection{Product Perspective}
+The Sponsor Management and Letter of Guarantee (LoG) Coverage Integration System is an integration-focused solution that operates within International School Manila’s existing billing and student information landscape. The system does not replace PowerSchool (PS), NetSuite (NS), the Student Charging Portal (SCP), or the Online Billing System (OBS). Instead, it introduces a centralized Sponsor Master and a deterministic coverage rules engine that serve as the single institutional source of truth for sponsorship coverage decisions.
+
+PowerSchool remains the system of record for student enrollment and profile data, including sponsor tagging that references sponsor values maintained by the LoG system. The Student Charging Portal remains the point of charge entry. During charge entry, SCP requests a real-time coverage decision from the LoG system, which evaluates the charge against LoG rules and returns the Bill To designation and a Reason Code. NetSuite remains the finance and accounting platform that records student charges and allocations in Accounts Receivable (AR) and the student ledger. The Online Billing System continues to display statements of account, including sponsor and parent responsibilities derived from posted and synchronized data.
+
+\subsection{Product Functions}
+\begin{itemize}
+  \item Sponsor Master administration, including sponsor creation, update, validation, and controlled merge workflows.
+  \item Maintenance of canonical SponsorID values and cross-system identifier mapping.
+  \item LoG coverage policy setup, including covered items or categories, limits, exceptions, and effective dates.
+  \item Real-time coverage evaluation for charge entries from SCP, returning Bill To and Reason Code outputs.
+  \item Synchronization of coverage decisions and identifiers to NS (ERP) for accurate AR and ledger posting.
+  \item Support for OBS statement presentation through synchronized responsibility labels and coverage metadata.
+  \item Audit logging for coverage evaluations and sponsor-related billing decisions.
+  \item Operational monitoring for integration runs, failures, and data synchronization status.
+\end{itemize}
+
+\subsection{User Classes and Characteristics}
+\begin{itemize}
+  \item \textbf{Cashier:} Tags a student’s sponsor in PS (SIS) using the sponsor drop-down sourced from the LoG system. Requires accurate sponsor values and minimal disruption to existing workflow.
+  \item \textbf{SCP Operator:} Enters student charges in SCP and relies on real-time coverage decisions. Requires fast responses, consistent Bill To outcomes, and clear Reason Codes.
+  \item \textbf{Finance and Accounting Staff:} Reviews postings and allocations in NS (ERP), supports AR processes, and performs reconciliation. Requires traceability, reporting, and auditable decision history.
+  \item \textbf{IT Administrator:} Configures integrations and schedules, maintains operational monitoring, and supports synchronization. Under the target state, maintains sponsor records in the LoG system and monitors cross-system data consistency.
+  \item \textbf{Parents and Sponsors (View Only):} View statements in OBS. Requires clear presentation of sponsor versus parent responsibility per line item.
+\end{itemize}
+
+\subsection{Operating Environment}
+\begin{itemize}
+  \item \textbf{Hosting:} Microsoft Azure cloud environment.
+  \item \textbf{Application Runtime:} Web services for Sponsor Master and rules evaluation, deployed as managed app services or container-based workloads.
+  \item \textbf{Database:} Centralized database for Sponsor Master, LoG policies, rule versions, and decision logs.
+  \item \textbf{Client Platforms:} Administrative interface accessible through modern web browsers, including Chrome, Edge, and Safari.
+  \item \textbf{Integration Protocols:} HTTPS-based REST APIs for real-time evaluation with SCP; scheduled synchronization jobs or API-based integration for PS, NS, and OBS depending on available endpoints.
+\end{itemize}
+
+\subsection{Constraints}
+\begin{itemize}
+  \item The system shall operate with the existing PS, SCP, NS, and OBS systems and shall not require full system replacement.
+  \item The system shall support deterministic and explainable coverage decisions, returning Bill To and Reason Code outputs for each evaluation.
+  \item The system shall comply with applicable institutional policies and legal requirements for privacy, record keeping, and audit support.
+  \item Real-time evaluation shall meet performance constraints suitable for SCP charge entry workflows.
+  \item Integration methods shall be constrained by the available APIs, exports, and data structures of PS, SCP, NS, and OBS.
+\end{itemize}
+
+% ------------------------
+% 3. Functional Requirements
+% ------------------------
+\section{Functional Requirements}
+
+\subsection{Authentication and Access Control}
+
+\textbf{FR-01: User Login}\\
+The system shall allow authorized users to log in using valid credentials.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} User enters valid credentials $\rightarrow$ system grants access within 3 seconds. Invalid credentials $\rightarrow$ system denies access and displays an error message.
+
+\textbf{FR-02: Role-Based Access Control}\\
+The system shall enforce role-based permissions for all administrative and operational functions.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} A user without the required role cannot access restricted pages or perform restricted actions and receives an authorization error.
+
+\subsection{Sponsor Master Management}
+
+\textbf{FR-03: Create Sponsor Record}\\
+The system shall allow an authorized user to create a sponsor record in the Sponsor Master.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} When required fields are provided, the sponsor record is saved and a unique SponsorID is generated.
+
+\textbf{FR-04: Update Sponsor Record}\\
+The system shall allow an authorized user to update sponsor profile information and status.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} When a sponsor record is updated, the changes persist and appear correctly in subsequent searches and retrieval.
+
+\textbf{FR-05: Validate Sponsor Data}\\
+The system shall validate required sponsor fields and classification attributes before saving changes.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} If a required field is missing or invalid, the system blocks saving and displays a clear validation message indicating the field to correct.
+
+\textbf{FR-06: Duplicate Detection and Merge}\\
+The system shall detect potential duplicate sponsor records and provide a controlled merge workflow.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} When duplicates are detected, the system flags the records. When an authorized user merges them, the system retains a single SponsorID and preserves an audit log of the merge.
+
+\subsection{LoG Coverage Policy Management}
+
+\textbf{FR-07: Create and Maintain Coverage Policies}\\
+The system shall allow authorized users to create and maintain LoG coverage policies, including covered items or categories, limits, exceptions, and effective dates.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} A saved policy is retrievable and includes item or category coverage, limits, exceptions, and effective dates.
+
+\textbf{FR-08: Rule Versioning}\\
+The system shall retain a history of coverage policy versions for audit and traceability.\\
+\textbf{Priority:} Should have\\
+\textbf{Acceptance Criteria:} When a policy is updated, the system stores a new version and preserves the prior version with its effective period.
+
+\subsection{Real-Time Coverage Evaluation}
+
+\textbf{FR-09: Coverage Evaluation Request}\\
+The system shall accept a coverage evaluation request from SCP containing student reference, sponsor reference, charge item or category, amount, and transaction date.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} For a valid request, the system returns a response containing Bill To, coverage outcome, and Reason Code.
+
+\textbf{FR-10: Deterministic Coverage Decision}\\
+The system shall apply deterministic rules to produce consistent coverage decisions for identical inputs.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} The same input request submitted multiple times returns the same Bill To and Reason Code, unless a rule version or effective date changes.
+
+\textbf{FR-11: Reason Code Generation}\\
+The system shall return a Reason Code for each coverage or billing decision.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} Each evaluation response includes a non-empty Reason Code that references the governing rule, limit, or exception.
+
+\textbf{FR-12: Performance for Real-Time Evaluation}\\
+The system shall return a coverage evaluation response within acceptable time for charge entry.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} 95\% of evaluation responses are returned within 2 seconds under normal operating load.
+
+\subsection{Integration and Synchronization}
+
+\textbf{FR-13: Sponsor Reference Publishing to PS (SIS)}\\
+The system shall provide sponsor reference values for use in PS (SIS) sponsor tagging.\\
+\textbf{Priority:} Should have\\
+\textbf{Acceptance Criteria:} PS receives updated sponsor values or mapping outputs according to the configured synchronization schedule.
+
+\textbf{FR-14: Bill To Propagation to NS (ERP)}\\
+The system shall propagate coverage decisions and identifiers to NS (ERP) to support correct AR and student ledger posting.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} A sponsor-billed charge results in the correct sponsor allocation in NS within the defined synchronization window.
+
+\textbf{FR-15: Statement Support for OBS}\\
+The system shall provide coverage responsibility and metadata to OBS for statement presentation.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} OBS displays sponsor and parent responsibilities for each line item and includes the governing rule reference or coverage metadata.
+
+\subsection{Audit and Monitoring}
+
+\textbf{FR-16: Decision Audit Logging}\\
+The system shall log each coverage evaluation request and result, including identifiers, timestamps, and the rule version used.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} An authorized reviewer can retrieve an audit record showing input, output, Reason Code, and rule version for a given transaction.
+
+\textbf{FR-17: Integration Monitoring}\\
+The system shall provide monitoring information for synchronization jobs, failures, and retry outcomes.\\
+\textbf{Priority:} Should have\\
+\textbf{Acceptance Criteria:} Administrators can view job status and error details for failures and confirm successful retries.
+
+\textbf{FR-18: Error Handling for Evaluation Failures}\\
+The system shall return a clear error response when coverage evaluation cannot be completed.\\
+\textbf{Priority:} Must have\\
+\textbf{Acceptance Criteria:} When required inputs are missing or the service is unavailable, the system returns a standardized error message and logs the failure for review.
+
+
+% ------------------------
+% 4. Non-Functional Requirements
+% ------------------------
+\section{Non-Functional Requirements}
+
+\begin{itemize}
+  \item \textbf{Performance:} The system shall support real-time coverage evaluation for SCP charge entry and shall return a response within 2 seconds for at least 95\% of requests under normal operating load.
+  \item \textbf{Capacity:} The system shall support concurrent evaluation requests during peak billing periods without service degradation that prevents charge entry operations.
+  \item \textbf{Availability:} The system shall achieve 99.5\% monthly availability for the coverage evaluation service, excluding scheduled maintenance windows.
+  \item \textbf{Reliability:} The system shall handle transient integration failures using retries and shall record failures for later reconciliation and review.
+  \item \textbf{Security:} The system shall enforce role-based access control for administrative functions and shall restrict access to Sponsor Master data and rule authoring features.
+  \item \textbf{Encryption in Transit:} The system shall use HTTPS (TLS 1.2 or higher) for all external communications between PS, SCP, NS, OBS, and the LoG system.
+  \item \textbf{Auditability:} The system shall produce tamper-evident audit logs for coverage evaluations, including timestamps, identifiers, rule version, Bill To result, and Reason Code.
+  \item \textbf{Data Integrity:} The system shall enforce validation rules for required fields and shall prevent saving incomplete sponsor records or invalid coverage policies.
+  \item \textbf{Maintainability:} The system shall support updates to sponsor records and coverage rules through configuration interfaces without requiring code changes for routine operational updates.
+  \item \textbf{Interoperability:} The system shall integrate with PS, SCP, NS, and OBS through supported interfaces, including REST APIs and scheduled synchronization where applicable.
+  \item \textbf{Usability:} The administrative interface shall provide clear validation errors, confirmation messages, and searchable views for sponsors, rules, and integration logs.
+  \item \textbf{Logging and Monitoring:} The system shall provide operational monitoring for integration jobs and evaluation services, including error logs and status indicators for administrators.
+  \item \textbf{Backup and Recovery:} The system shall support regular backups of Sponsor Master and policy data and shall provide a documented restoration procedure.
+\end{itemize}
+
+
+% ------------------------
+% 5. External Interface Requirements
+% ------------------------
+\section{External Interface Requirements}
+
+\subsection{APIs}
+
+\begin{itemize}
+  \item \textbf{Coverage Evaluation API (SCP $\rightarrow$ LoG System):}
+  \begin{itemize}
+    \item \textbf{Endpoint:} \texttt{POST /api/v1/coverage/evaluate}
+    \item \textbf{Request Format:} JSON
+    \item \textbf{Request Inputs:} Student reference, SponsorID or sponsor mapping reference, charge item or category code, amount, transaction date, and optional context fields required for rule evaluation.
+    \item \textbf{Response Outputs:} Coverage decision (covered or not covered), Bill To designation, Reason Code, governing rule reference, and decision timestamp.
+  \end{itemize}
+
+  \item \textbf{Sponsor Master Query API (Authorized Systems $\rightarrow$ LoG System):}
+  \begin{itemize}
+    \item \textbf{Endpoint:} \texttt{GET /api/v1/sponsors/\{SponsorID\}}
+    \item \textbf{Response Outputs:} Sponsor profile fields, status, effective dates, and identifiers required for cross-system mapping.
+  \end{itemize}
+
+  \item \textbf{Sponsor List Publishing Interface (LoG System $\rightarrow$ PS (SIS)):}
+  \begin{itemize}
+    \item \textbf{Method:} Scheduled export or API-based synchronization depending on PS interface constraints.
+    \item \textbf{Outputs:} Sponsor reference values and mapping data required for PS sponsor tagging.
+  \end{itemize}
+
+  \item \textbf{Decision Propagation Interface (LoG System $\rightarrow$ NS (ERP)):}
+  \begin{itemize}
+    \item \textbf{Method:} API-based posting or scheduled synchronization job depending on NS integration constraints.
+    \item \textbf{Outputs:} Bill To allocation details, SponsorID references, rule references, and supporting metadata required for AR and student ledger posting.
+  \end{itemize}
+
+  \item \textbf{Statement Support Interface (LoG System $\rightarrow$ OBS):}
+  \begin{itemize}
+    \item \textbf{Method:} API-based data provisioning or scheduled synchronization.
+    \item \textbf{Outputs:} Coverage responsibility labels, sponsor versus parent allocations, and explanatory metadata for statement presentation.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Communication Interfaces}
+
+\begin{itemize}
+  \item \textbf{Transport:} HTTPS only for all external interfaces.
+  \item \textbf{Security:} TLS 1.2 or higher shall be used for data in transit.
+  \item \textbf{Authentication:} API keys, signed tokens, or OAuth 2.0 depending on institutional standards and system capability.
+  \item \textbf{Data Format:} JSON for REST APIs; CSV may be used for scheduled exports when required by downstream systems.
+\end{itemize}
+
+% ------------------------
+% 6. Assumptions and Dependencies
+% ------------------------
+\section{Assumptions and Dependencies}
+
+\subsection{Assumptions}
+\begin{itemize}
+  \item PowerSchool (PS (SIS)) remains the system of record for student profile and enrollment data.
+  \item Sponsor tagging in PS (SIS) can reference sponsor values sourced from the LoG system.
+  \item The Student Charging Portal (SCP) can call an external HTTPS REST API during charge entry without blocking normal operations.
+  \item Letters of Guarantee (LoG) coverage rules can be expressed in a deterministic format using item or category coverage, limits, exceptions, and effective dates.
+  \item NetSuite (NS (ERP)) supports recording sponsor versus parent billing allocations in Accounts Receivable (AR) and the student ledger.
+  \item The Online Billing System (OBS) can display line-level responsibility labels and related metadata based on synchronized data.
+  \item Authorized staff will maintain sponsor records and coverage rules in the LoG system as the single source of truth under the target state.
+  \item Institutional policies define audit retention periods and access rules for billing and sponsor-related records.
+\end{itemize}
+
+\subsection{Dependencies}
+\begin{itemize}
+  \item \textbf{Hosting Dependency:} Microsoft Azure services for application hosting, database storage, logging, and monitoring.
+  \item \textbf{Integration Dependency:} Availability and stability of integration interfaces for PS, SCP, NS, and OBS (APIs, export/import, or scheduled jobs).
+  \item \textbf{Identity Dependency:} Availability of a supported authentication mechanism for administrative users (local accounts or institutional identity provider).
+  \item \textbf{Network Dependency:} Reliable connectivity between SCP, the LoG system, and downstream systems with HTTPS access.
+  \item \textbf{Data Dependency:} Consistent identifier mapping across systems, including SponsorID mapping and student reference alignment.
+  \item \textbf{Operational Dependency:} Administrative ownership for rule maintenance, data validation, and monitoring of synchronization jobs.
+  \item \textbf{Compliance Dependency:} Alignment with institutional privacy policies and regulatory record keeping expectations, including BIR EoPT documentation needs.
+\end{itemize}
+
+
+% ------------------------
+% 7. Appendices
+% ------------------------
+\section{Appendices}
+
+\subsection{Glossary}
+\begin{itemize}
+  \item \textbf{Accounts Receivable (AR):} The accounting function and ledger area that tracks amounts owed by parents or sponsors and records billing allocations in NS (ERP).
+  \item \textbf{Bill To:} The party to be billed on an invoice in NS (ERP), typically the sponsor or the parent, as determined by coverage evaluation.
+  \item \textbf{Coverage Evaluation:} The deterministic process of applying LoG policies and rules to a charge line item to determine coverage status, Bill To, and Reason Code.
+  \item \textbf{Coverage Rule:} A rule definition that specifies whether coverage applies to an item or category, including limits, effective dates, and defined exceptions.
+  \item \textbf{Decision Log:} A tamper-evident record of an evaluation request and response, including identifiers, timestamps, rule version, Bill To, and Reason Code.
+  \item \textbf{Effective Date:} A start and end date range that determines when a sponsor coverage policy or rule is valid for evaluation.
+  \item \textbf{Letter of Guarantee (LoG):} A sponsor-issued document specifying items or categories that the sponsor will cover and any applicable limits or conditions.
+  \item \textbf{NetSuite (NS (ERP)):} The Enterprise Resource Planning system that records student charges, AR allocations, and the student ledger.
+  \item \textbf{Online Billing System (OBS):} The system that displays statements of account to parents and sponsors, including responsibility per line item.
+  \item \textbf{PowerSchool (PS (SIS)):} The Student Information System that stores primary student profile and enrollment records and supports sponsor tagging.
+  \item \textbf{Reason Code:} A machine readable label that explains a coverage or billing decision by referencing the governing rule, limit, or exception.
+  \item \textbf{Sponsor Master:} The centralized repository that stores sponsor records, SponsorID, coverage policies, limits, effective dates, and cross-system identifiers.
+  \item \textbf{SponsorID:} The canonical unique identifier for a sponsor in the LoG system used for cross-system mapping and transaction tagging.
+  \item \textbf{Student Charging Portal (SCP):} The in-house portal used by staff to enter itemized student charges and receive coverage decisions.
+  \item \textbf{Synchronization Job:} A scheduled or triggered process that propagates sponsor reference data and coverage outcomes across PS, NS, and OBS.
+\end{itemize}
+
+\subsection{Traceability Matrix}
+\begin{center}
+\begin{tabular}{p{0.16\textwidth} p{0.40\textwidth} p{0.34\textwidth}}
+\textbf{Requirement ID} & \textbf{Design Reference} & \textbf{Test Case ID} \\ \hline
+FR-01 & Authentication Component Specification & TC-01: Verify login with valid credentials \\
+FR-02 & RBAC and Authorization Design & TC-02: Deny restricted access for unauthorized role \\
+FR-03 & Sponsor Master Data Model and UI Design & TC-03: Create sponsor record and generate SponsorID \\
+FR-04 & Sponsor Update Workflow Design & TC-04: Update sponsor record and verify persistence \\
+FR-05 & Sponsor Validation Rules Specification & TC-05: Block save when required fields are missing \\
+FR-06 & Duplicate Detection and Merge Workflow Design & TC-06: Merge duplicates and preserve audit trail \\
+FR-07 & Coverage Policy Authoring Design & TC-07: Create policy with limits, dates, and exceptions \\
+FR-08 & Rule Versioning and History Design & TC-08: Update rule and verify version history retained \\
+FR-09 & Coverage Evaluation API Specification & TC-09: Evaluate request returns Bill To and Reason Code \\
+FR-10 & Deterministic Rules Engine Design & TC-10: Same input yields same output under same rules \\
+FR-11 & Reason Code Standards Specification & TC-11: Response contains valid Reason Code mapping \\
+FR-12 & Performance and Load Test Plan & TC-12: 95\% responses within 2 seconds under normal load \\
+FR-13 & PS Sponsor Reference Sync Design & TC-13: PS receives updated sponsor reference values \\
+FR-14 & NS Allocation and Posting Integration Design & TC-14: Sponsor billed charge posts correctly in NS \\
+FR-15 & OBS Statement Data Mapping Design & TC-15: OBS displays sponsor vs parent responsibility \\
+FR-16 & Audit Logging Design & TC-16: Retrieve decision log with rule version reference \\
+FR-17 & Monitoring and Job Status Dashboard Design & TC-17: View job status and error details for failures \\
+FR-18 & Error Handling and Response Standards & TC-18: Standard error returned and logged on failure \\
+\end{tabular}
+\end{center}
+
+\subsection{Change History}
+\begin{center}
+\begin{tabular}{p{0.12\textwidth} p{0.18\textwidth} p{0.22\textwidth} p{0.40\textwidth}}
+\textbf{Version} & \textbf{Date} & \textbf{Author} & \textbf{Summary of Changes} \\ \hline
+0.1 & 2025-10-17 & Renald Cruz & Initial draft of SRS structure and baseline content. \\
+0.2 & 2025-12-17 & Renald Cruz & Added Overall Description sections, updated Definitions list, Added Functional Requirements, Traceability Matrix, Added Non-Functional Requirements, External Interfaces, Added Assumptions, Dependencies, and Appendices.\\
+\end{tabular}
+\end{center}
+
+\end{document}

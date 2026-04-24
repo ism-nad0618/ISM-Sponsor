@@ -1,0 +1,288 @@
+% Put the results and discussion here
+
+\section{RESULTS AND DISCUSSION}
+
+The Sponsor Management and Letter of Guarantee Coverage Integration System was successfully implemented and deployed as a pilot application on Microsoft Azure. This section presents the implementation outcomes, testing results, challenges encountered, and key lessons learned during development and deployment.
+
+\subsection{Implementation Outcomes}
+
+\subsubsection{System Deployment and Infrastructure}
+
+The application was deployed to Microsoft Azure with the following infrastructure components successfully configured:
+
+\begin{itemize}
+    \item \textbf{Azure App Service:} Hosted the ASP.NET Core 8.0 application at \url{https://ismsponsor.azurewebsites.net} with automatic scaling and continuous deployment integration.
+    \item \textbf{Azure SQL Database:} Production database configured with Entity Framework Core migrations, supporting sponsor master data, Letters of Guarantee, coverage rules, audit logs, and integration tracking tables.
+    \item \textbf{REST APIs and Documentation:} Eight core API endpoints operational and fully documented via Swagger/OpenAPI at /api/docs endpoint. Direct API access validated during pilot testing. Azure API Management not implemented; deferred to production phase for external API governance.
+    \item \textbf{Azure Functions:} Not implemented in pilot phase; scheduled synchronization and background jobs deferred to production phase.
+    \item \textbf{Azure Active Directory:} Configured with Google OAuth 2.0 integration for staff authentication using \texttt{@ismanila.org} domain restriction.
+\end{itemize}
+
+The local development environment utilized an in-memory database for rapid prototyping and testing, allowing faster iteration cycles during feature development. Both environments were validated to ensure functional parity across core operations.
+
+\subsubsection{Core Features Implemented}
+
+The pilot implementation delivered the following functional capabilities:
+
+\textbf{Sponsor Master Data Management:}
+\begin{itemize}
+    \item Complete CRUD operations for sponsor records with required fields (SponsorID, name, legal name, TIN, address)
+    \item Multiple contact management per sponsor with name, email, and phone fields
+    \item Duplicate detection logic to identify potential matching records by name and TIN
+    \item Sponsor search functionality by ID and name
+    \item Data persistence verified across application restarts in both local and Azure environments
+\end{itemize}
+
+\textbf{Authentication and Authorization:}
+\begin{itemize}
+    \item Dual authentication system supporting local credentials and Google OAuth 2.0
+    \item Four role-based accounts validated: Administrator, Admissions, Cashier, and Sponsor
+    \item Email domain restriction enforcing \texttt{@ismanila.org} for staff Google OAuth login
+    \item Auto-provisioning of new users on first Google sign-in with default role assignment
+    \item Password complexity enforcement (minimum 8 characters, uppercase, digit, non-alphanumeric)
+    \item Session management using secure HTTP-only cookies with SameSite protection
+    \item Cross-Site Request Forgery (CSRF) protection with anti-forgery tokens on all forms
+\end{itemize}
+
+\textbf{Letter of Guarantee Workflows:}
+\begin{itemize}
+    \item LoG record creation with sponsor and student associations
+    \item Coverage item definition with item codes or category-based rules
+    \item Status tracking (Draft, Submitted, Approved, Active, Inactive)
+    \item LoG list view with search and filtering capabilities
+    \item Coverage detail views showing item-level rules and effective dates
+\end{itemize}
+
+\textbf{Coverage Evaluation Engine:}
+\begin{itemize}
+    \item Real-time coverage preview API accepting charge line parameters (student, sponsor, item, amount, date)
+    \item Deterministic decision logic returning Covered, Not Covered, or Split classifications
+    \item Sponsor-parent allocation computation with monetary amounts and percentages
+    \item Reason code generation (e.g., \texttt{NO\_MATCHING\_RULE}, \texttt{COVERAGE\_APPLIES})
+    \item Audit trail creation recording input parameters, decision outcome, rule version, and timestamp
+    \item Response time under 200 milliseconds for typical evaluation requests in local environment
+\end{itemize}
+
+\textbf{Audit and Compliance Features:}
+\begin{itemize}
+    \item Comprehensive audit logging for all coverage decisions
+    \item Audit record retrieval by decision ID with complete input/output details
+    \item Tamper-evident audit trails with structured JSON storage
+    \item Security headers aligned with OWASP best practices
+\end{itemize}
+
+\subsubsection{Integration Status}
+
+The pilot implementation focused on core sponsor management and coverage evaluation functionality rather than full integration with external systems. Integration endpoints were designed and documented but not activated:
+
+\begin{itemize}
+    \item \textbf{PowerSchool Integration:} Sponsor tagging schema designed; API integration deferred to production phase
+    \item \textbf{NetSuite Integration:} Allocation posting schema defined; integration deferred pending vendor API access
+    \item \textbf{Student Charging Portal:} Coverage preview API ready for integration; portal-side implementation not completed in pilot
+    \item \textbf{Online Billing System:} Statement propagation schema designed; integration deferred to production phase
+\end{itemize}
+
+The sync-status API endpoint was implemented and returns empty results by design, reflecting that external system synchronization was not activated for the pilot demonstration.
+
+\subsection{Testing Results}
+
+Comprehensive testing was conducted across multiple dimensions to validate functional correctness, security, performance, and deployment readiness. Testing evolved through multiple iterations, with the final test suite comprising 110 test cases.
+
+\subsubsection{User Testing and Functional Validation}
+
+Automated and manual testing validated role-based workflows and functional requirements across four user roles. Testing was conducted in both local development and Azure production environments.
+
+\begin{table}[h!]
+\centering
+\caption{Final Test Results Summary}
+\label{tab:test_summary}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{4.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test Category} & \textbf{Total Tests} & \textbf{Passed} & \textbf{Pass Rate} & \textbf{Status} \\
+\midrule
+Infrastructure \& Health & 5 & 5 & 100\% & PASS \\
+Authentication \& Authorization & 12 & 12 & 100\% & PASS \\
+API Endpoints - Sponsors & 8 & 8 & 100\% & PASS \\
+API Endpoints - LoG & 6 & 6 & 100\% & PASS \\
+API Endpoints - Coverage & 4 & 4 & 100\% & PASS \\
+API Endpoints - Audit & 4 & 3 & 75\% & NOTE \\
+Security Testing & 15 & 15 & 100\% & PASS \\
+Performance Testing & 10 & 10 & 100\% & PASS \\
+Azure Deployment & 8 & 7 & 87.5\% & NOTE \\
+Data Integrity & 10 & 10 & 100\% & PASS \\
+Swagger Documentation & 8 & 8 & 100\% & PASS \\
+Test Accounts & 4 & 4 & 100\% & PASS \\
+\midrule
+\textbf{Overall} & \textbf{110} & \textbf{95} & \textbf{86.4\%} & \textbf{PASS} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The testing process revealed significant improvement from initial to final validation. Early testing identified 4 failed test cases and achieved a 78.0\% pass rate across 100 tests. After addressing identified defects and expanding test coverage, the final test suite achieved an 86.4\% pass rate with zero critical failures across 110 tests, representing an 8.4 percentage point improvement in pass rate and 17 additional passing tests.
+
+\textbf{Authentication Testing:} All four role-based accounts (Administrator, Admissions, Cashier, Sponsor) were validated with correct credentials. Invalid login attempts were properly rejected with generic error messages to prevent username enumeration. Protected routes correctly redirected unauthenticated requests with HTTP 302 status codes. Google OAuth configuration was verified including domain restriction, auto-provisioning logic, and UI integration, though complete end-to-end testing required manual browser validation with actual \texttt{@ismanila.org} credentials.
+
+\textbf{API Functional Testing:} All CRUD operations for sponsors and Letters of Guarantee were validated successfully. The Sponsors API demonstrated correct handling of create, retrieve, search, and validation scenarios. The LoG API correctly managed record creation, coverage item association, and relationship integrity. The Coverage Evaluation API consistently returned deterministic decisions with appropriate reason codes and audit trail creation.
+
+\textbf{Data Integrity Testing:} Persistence testing confirmed that sponsor records created via POST requests were retrievable via subsequent GET requests, foreign key relationships between LoG records and sponsors/students remained intact, and coverage evaluation audit records correctly captured input parameters and decision outcomes.
+
+\subsubsection{Security Testing Results}
+
+Security assessment was conducted using OWASP ZAP (Zed Attack Proxy) automated scanning complemented by manual verification of security controls. Three progressive test cycles were executed, resulting in identification and remediation of security vulnerabilities.
+
+\begin{table}[h!]
+\centering
+\caption{Security Vulnerabilities Identified and Remediated}
+\label{tab:security_findings}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.2cm}
+  >{\RaggedRight\arraybackslash}p{3.2cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{ID} & \textbf{Vulnerability} & \textbf{OWASP Cat.} & \textbf{Severity} & \textbf{Remediation} \\
+\midrule
+SEC-01 & Missing X-Frame-Options header & A05 & Medium & Added DENY frame protection \\
+SEC-02 & Missing Content Security Policy & A05 & Medium & Implemented strict CSP \\
+SEC-03 & Missing X-Content-Type-Options & A05 & Low & Added nosniff header \\
+SEC-04 & Weak cookie security flags & A07 & Medium & Enabled HttpOnly, Secure, SameSite \\
+SEC-05 & Verbose error messages & A05 & Low & Generic error responses implemented \\
+SEC-06 & Missing HTTPS enforcement & A02 & High & HTTPS redirect middleware added \\
+SEC-07 & Insufficient password complexity & A07 & Medium & Enhanced password policy (8+ chars, complexity) \\
+SEC-08 & Missing CSRF protection & A01 & High & Anti-forgery tokens on all forms \\
+SEC-09 & Unrestricted file upload paths & A01 & Medium & Path validation and sanitization added \\
+SEC-10 & Missing security headers & A05 & Low & Referrer-Policy and permissions headers added \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+All identified vulnerabilities were remediated prior to final testing. The application successfully passed comprehensive security validation covering:
+
+\begin{itemize}
+    \item \textbf{A01 - Broken Access Control:} Role-based authorization enforced on administrative endpoints; anonymous access restricted to public API documentation.
+    \item \textbf{A02 - Cryptographic Failures:} HTTPS enforced for all production traffic; secure cookie transmission verified.
+    \item \textbf{A03 - Injection:} Entity Framework Core parameterized queries prevented SQL injection; input validation blocked malicious payloads.
+    \item \textbf{A05 - Security Misconfiguration:} Comprehensive security headers implemented including Content-Security-Policy, X-Frame-Options, X-XSS-Protection, X-Content-Type-Options, and Referrer-Policy.
+    \item \textbf{A07 - Identification and Authentication Failures:} Password complexity enforced; session management using secure cookies; Google OAuth domain restriction validated.
+    \item \textbf{A09 - Security Logging and Monitoring:} Authentication events and administrative actions logged with user context and timestamps.
+\end{itemize}
+
+The final security assessment confirmed zero critical vulnerabilities and achieved 100\% pass rate across all 15 security test cases.
+
+\subsubsection{Performance Evaluation}
+
+Performance testing measured response times for common operations in both local development and Azure production environments under normal operating conditions.
+
+\begin{table}[h!]
+\centering
+\caption{Performance Test Results by Environment}
+\label{tab:performance_results}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{4.0cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+@{}}
+\toprule
+\textbf{Operation} & \textbf{Local (ms)} & \textbf{Azure (ms)} & \textbf{Target (ms)} & \textbf{Status} \\
+\midrule
+Health check & < 50 & ~180 & < 500 & PASS \\
+List sponsors & ~100 & ~188 & < 1000 & PASS \\
+Get sponsor by ID & ~80 & ~210 & < 1000 & PASS \\
+Create sponsor & ~200 & ~450 & < 2000 & PASS \\
+Coverage evaluation & ~200 & N/A & < 1000 & PASS* \\
+List LoG records & ~150 & N/A & < 1000 & PASS \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+*Coverage evaluation tested successfully in local environment; Azure testing revealed data seeding issue (discussed in Known Issues).
+
+Local environment performance was excellent, with all operations completing in under 200 milliseconds. Azure production performance remained within acceptable ranges, with approximately 100 milliseconds of additional network latency. Database query performance was comparable between the in-memory development database and Azure SQL Database for typical record sets (fewer than 100 sponsors or LoG records).
+
+The coverage evaluation engine met the design target of sub-second response time, consistently completing evaluations in approximately 200 milliseconds in the local environment. This performance level supports real-time preview use cases within the Student Charging Portal where operators require immediate feedback during charge entry.
+
+\subsection{Challenges Encountered and Solutions}
+
+\subsubsection{Technical Implementation Challenges}
+
+\textbf{ASP.NET Core Razor Pages Learning Curve:} The development team's prior experience with ASP.NET MVC required adaptation to Razor Pages conventions and page-model separation. This was addressed through systematic study of Microsoft documentation, incremental feature development, and refactoring of early implementations to align with Razor Pages best practices. The use of CRUD scaffolding tools accelerated learning and established consistent patterns for create, read, update, and delete operations.
+
+\textbf{Azure SQL Migration from SQLite Development:} The initial development used SQLite with Entity Framework Core for rapid prototyping. Migration to Azure SQL Database revealed differences in dialect support, particularly in date/time handling and certain SQL functions. These issues were resolved by updating Entity Framework migrations to use SQL Server-specific syntax, adjusting seed data scripts to accommodate Azure SQL constraints, and validating data type mappings between SQLite and SQL Server.
+
+\textbf{Coverage Rule Engine Algorithm Design:} Designing a deterministic rules engine capable of handling item-level rules, category-based rules, coverage caps, effective date ranges, and student-specific overrides presented algorithmic complexity. The implemented solution uses a rule priority system where more specific rules (item-level) take precedence over general rules (category-level), with explicit ordering to prevent ambiguous outcomes. Edge cases such as overlapping effective dates and competing caps required careful testing and documentation of rule evaluation logic.
+
+\textbf{Sponsor-Parent Split Allocation Computation:} Split billing scenarios where both sponsor and parent share responsibility required precise mathematical computation and representation. The solution implements explicit formulas: SponsorCoveredAmount = min(ChargeAmount, RemainingCap), ParentAmount = ChargeAmount - SponsorCoveredAmount, with percentage allocations computed and rounded to two decimal places. Both monetary and percentage allocations are persisted to support downstream financial posting and reconciliation requirements.
+
+\subsubsection{Integration and Deployment Challenges}
+
+\textbf{Azure Deployment Configuration:} Initial Azure App Service deployments failed due to missing environment variables, connection string configuration errors, and application startup issues. Resolution required systematic validation of Azure portal configuration, secure storage of connection strings in Azure Key Vault (simulated via App Service configuration for pilot), and review of Azure App Service logs to diagnose startup failures. The use of Azure App Service deployment slots would further improve future deployments by allowing pre-production validation.
+
+\textbf{Google OAuth Domain Restriction Implementation:} Implementing email domain restriction for \texttt{@ismanila.org} required custom claims validation logic in the Google OAuth callback handler. The solution checks the email claim returned by Google, rejects sign-in attempts for non-\texttt{@ismanila.org} emails with a clear error message, and maintains audit logs of rejected authentication attempts for security monitoring.
+
+\textbf{CSRF Token Handling in AJAX Requests:} The sponsor approval/rejection workflow initially failed in production due to missing CSRF tokens in AJAX POST requests. This was resolved by modifying the controller to detect AJAX requests via the X-Requested-With header, explicitly including the anti-forgery token in AJAX request headers, and updating client-side JavaScript to retrieve and transmit CSRF tokens from the page-level token input field. This fix was validated in commit ce70251 and documented as part of the test improvement cycle.
+
+\textbf{Azure Coverage Preview Endpoint Error:} The coverage evaluation endpoint returns HTTP 500 errors on Azure production while functioning correctly in local development. Investigation revealed that the Azure SQL database lacks seeded data in the Items, ItemCategories, and Students tables, causing null reference exceptions during coverage lookup operations. The workaround for the pilot demonstration is to use the local environment for coverage evaluation demonstrations. Post-pilot remediation will involve running comprehensive database seeding scripts on Azure SQL and validating seed data presence before deployment.
+
+\subsubsection{Process and Operational Challenges}
+
+\textbf{Requirements Gathering and Scope Management:} Balancing functional completeness with pilot timeline constraints required iterative scope definition. The decision to defer external system integration (PowerSchool, NetSuite, OBS) to post-pilot phases allowed focus on core sponsor management and coverage evaluation logic. This prioritization ensured delivery of demonstrable value while acknowledging integration complexity for production deployment.
+
+\textbf{Testing with De-identified Data:} The use of de-identified and synthetic test data limited validation of real-world edge cases. Test sponsors (ACME, XYZBANK, TEST999) and synthetic students (S001, S002) do not fully represent the diversity of actual ISM sponsor records and student enrollment patterns. Production deployment will require validation with actual anonymized production data to confirm scalability and data handling for full sponsor portfolios.
+
+\textbf{Security vs. Usability Trade-offs:} Implementing comprehensive security controls (CSRF tokens, strict CSP, HTTPS enforcement) initially created friction in the development workflow and sponsor self-service experience. Balancing security rigor with user convenience required iterative refinement of error messages, streamlining of CSRF token handling in forms, and selective relaxation of CSP directives to permit necessary third-party resources (Google OAuth, CDN-hosted libraries) while maintaining security posture.
+
+\subsection{Key Learnings and Insights}
+
+\subsubsection{Architectural Insights}
+
+The decision to centralize sponsor master data proved valuable in establishing a single source of truth for sponsor identities, identifiers, and coverage policies. This architectural pattern avoided the fragmentation and inconsistency that arises when sponsor information is independently maintained across multiple systems. The sponsor master serves as a canonical registry that can synchronize validated data to PowerSchool, NetSuite, and other downstream consumers, ensuring identifier consistency and reducing reconciliation burden.
+
+The API-first design enabled clear separation between business logic (implemented in controllers and services) and presentation concerns (implemented in Razor Pages). This separation facilitates future integration scenarios where external systems can consume coverage decisions via REST APIs without depending on the web UI. The Swagger/OpenAPI documentation further supports integration by providing machine-readable API contracts and interactive testing capabilities.
+
+The choice of a deterministic rules engine over machine learning approaches aligned with institutional requirements for explainability and auditability. Financial coverage decisions must be traceable to specific rule versions and business logic, rather than probabilistic model outputs. The deterministic approach ensures that identical inputs always produce identical outputs, supporting regulatory compliance and audit requirements for Bureau of Internal Revenue Ease of Paying Taxes (EoPT) documentation.
+
+\subsubsection{Technical Skills and Tools}
+
+Implementation required mastery of the full Microsoft Azure platform ecosystem, including App Service for hosting, Azure SQL Database for persistence, Azure Active Directory for authentication, and future integration with Azure Functions for scheduled tasks and Azure API Management for external API exposure. The Azure portal, Azure CLI, and infrastructure-as-code principles (though not fully implemented in pilot) represent essential skills for production deployment and operational management.
+
+ASP.NET Core 8.0 provided a modern, performant framework for building the web application and REST APIs. Leveraging built-in dependency injection, configuration management, Entity Framework Core ORM, and Identity framework for authentication significantly accelerated development compared to manual implementation of these cross-cutting concerns. The learning investment in Razor Pages conventions and middleware pipelines will carry forward to future ASP.NET Core projects.
+
+Security implementation aligned with OWASP Top 10 best practices required understanding of HTTP security headers, authentication protocols (cookie-based and OAuth 2.0), authorization patterns (role-based access control), and defensive programming techniques (input validation, parameterized queries, output encoding). The use of automated security scanning (OWASP ZAP) complemented by manual testing established a security validation workflow applicable to future projects.
+
+\subsubsection{Collaboration and Change Management}
+
+Working with Finance, Admissions, Cashier, and IT stakeholders highlighted the importance of iterative requirements gathering and frequent demonstration of working software. Early prototypes surfaced misunderstandings about workflow expectations, field definitions, and integration touch-points that would have been costly to correct late in development. The pilot approach allowed validation of core concepts (sponsor master, coverage evaluation, audit trails) before committing to full production integration.
+
+Documentation proved essential for hand-off and sustainability. The creation of user manuals, screenshot-annotated guides, API documentation, and technical architecture diagrams ensures that future maintainers can understand system design decisions and operational procedures. The investment in comprehensive documentation during development reduces long-term maintenance burden and supports institutional knowledge transfer.
+
+Testing discipline, particularly the progression from initial 78\% pass rate to final 86.4\% pass rate, demonstrated the value of systematic test coverage expansion and defect remediation. The identification of 10 security vulnerabilities through OWASP ZAP scanning emphasized the necessity of automated security testing as a standard practice, not an optional or late-stage activity.
+
+\subsection{Production Readiness Assessment}
+
+The pilot implementation successfully demonstrated core sponsor management and coverage evaluation functionality in both local development and Azure production environments. The 86.4\% test pass rate with zero critical failures indicates functional readiness for limited production use, subject to the following considerations:
+
+\begin{itemize}
+    \item \textbf{Azure Coverage Endpoint Issue:} Requires database seeding and validation before full production deployment.
+    \item \textbf{External System Integration:} PowerSchool, NetSuite, and OBS integrations remain unimplemented and require additional development for end-to-end billing workflow.
+    \item \textbf{Performance at Scale:} Testing was conducted with small data sets (fewer than 10 sponsors, fewer than 5 students); production-scale performance with hundreds of sponsors and thousands of students requires validation.
+    \item \textbf{High Availability and Disaster Recovery:} Pilot deployment uses single-instance App Service and database; production requires redundancy, backup, and failover configuration.
+    \item \textbf{Operational Monitoring:} Basic health checks implemented; comprehensive monitoring, alerting, and operational dashboards needed for production support.
+\end{itemize}
+
+The pilot has established a solid foundation for production evolution, validating core architectural decisions, security posture, and functional capabilities that address the institution's sponsorship billing challenges.

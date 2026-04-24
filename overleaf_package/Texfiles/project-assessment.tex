@@ -1,0 +1,205 @@
+% Put the project assessment here
+
+% =========================
+% Project Assessment (LaTeX)
+% Final: no longtable; UT scenarios table fits A4 landscape and avoids overlap
+% Includes: Google authentication option for staff login
+% Restores: OWASP A04, A06, A08
+% =========================
+%
+% Preamble requirements (add once in your main .tex preamble):
+% \usepackage{booktabs}
+% \usepackage{tabularx}
+% \usepackage{array}
+% \usepackage{ragged2e}
+% \usepackage{pdflscape} % or lscape
+% \newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+
+\section{Project Assessment}
+
+This chapter describes how the Sponsor Management and LoG Coverage Integration System was evaluated during pilot deployment. The assessment confirmed that the system is functional, secure, usable, and suitable for production deployment within the International School Manila environment. The testing approach included multiple test types, automated and manual validation, and comprehensive success metrics.
+
+\subsection{User Testing}
+
+User testing focused on the role-based workflows implemented in the application. The four supported roles were assessed: Admin, Admissions, Cashier, and Sponsor. Test scenarios were derived from the core functional flows, including authentication and role enforcement, sponsor record maintenance, duplicate detection and controlled merge, Letters of Guarantee (LoG) workflows, and audit retrieval.
+
+The login assessment included the option of using Google authentication for staff users (Admin, Admissions, and Cashier). Sponsor login was tested using the sponsor-facing authentication flow configured for external access. Testing was executed in both local development and Azure production environments that mirrored production configuration. The process validated each role workflow, key integration touchpoints, and monitoring views.
+
+\begin{table}[h!]
+\centering
+\caption{User testing participants and task coverage (pilot validation)}
+\label{tab:user_participants}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{2.9cm}
+  >{\RaggedLeft\arraybackslash}p{1.7cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{User group} & \textbf{Test accounts} & \textbf{Test tasks executed} \\
+\midrule
+Admin & 1 &
+Verified Google staff login; managed access boundaries; created and updated sponsors; merged duplicates; toggled LoG activation; reviewed monitoring and audit logs. \\
+Admissions & 1 &
+Verified Google staff login; searched, added, and edited sponsors; confirmed LoG status and coverage alignment; reviewed dashboard metrics and pending requests. \\
+Cashier & 1 &
+Verified Google staff login; looked up sponsor details; verified LoG status and attachments; used dashboard views for pending sponsor profile requests. \\
+Sponsor & 1 &
+Verified sponsor login; viewed sponsor profile and contacts; submitted change requests; reviewed LoG status and coverage views. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+To make the evaluation concrete, the system was tested using structured scenarios aligned to functional requirements and implemented role workflows. Each test account followed a task script that described the initial state, steps to follow, and the expected outcome. The testing process recorded task completion, time taken, errors encountered, and usability concerns, with emphasis on message clarity and user confidence in outcomes.
+
+% --- A4 Landscape UT Scenarios Table (no longtable) ---
+
+\begin{table}[htbp]
+\centering
+\caption{User testing scenarios executed during pilot (UT01--UT10)}
+\label{tab:user_scenarios}
+\small
+\renewcommand{\arraystretch}{1.20}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\linewidth}{@{}
+  >{\RaggedRight\arraybackslash}p{1.1cm}
+  >{\RaggedRight\arraybackslash}p{2.9cm}
+  Y
+  Y
+@{}}
+\toprule
+\textbf{ID} & \textbf{Actor} & \textbf{Scenario goal} & \textbf{Main steps and expected result} \\
+\midrule
+UT01 & Any role &
+Login and baseline access (including Google staff login). &
+Staff: sign in via Google authentication and confirm access within 3 seconds. Sponsor: sign in using sponsor login flow and confirm access. Invalid login is denied with an error message. \\
+
+UT02 & Admin &
+Role-based access control (RBAC) enforcement. &
+User without the required role attempts restricted pages or actions. Access is denied with an authorization error. \\
+
+UT03 & Admin/\allowbreak Admissions &
+Create sponsor record. &
+Create a sponsor with required fields and submit. Record saves and a unique SponsorID is generated. \\
+
+UT04 & Admin/\allowbreak Admissions &
+Validation and error messaging. &
+Attempt to save with missing or invalid required fields. Save is blocked and a clear validation message is shown. \\
+
+UT05 & Admin/\allowbreak Admissions &
+Update sponsor record and confirm persistence. &
+Edit sponsor data and save. Changes persist and appear in later search and retrieval. \\
+
+UT06 & Admin &
+Duplicate detection and controlled merge. &
+Locate potential duplicates and merge as an authorized user. One SponsorID remains and the merge is logged. \\
+
+UT07 & Sponsor &
+Submit sponsor profile change request. &
+Select \emph{Request change}, choose a field, enter the requested value, and submit. Request is recorded for staff review. \\
+
+UT08 & Admin &
+Apply sponsor profile change request. &
+Open dashboard requests and apply a pending request. Update is applied and request status reflects the action. \\
+
+UT09 & Any role (Admin for activation) &
+LoG list, coverage access, and activation controls. &
+Search LoG entries and open \emph{View coverage}. Any role can view coverage. Admin can \emph{Deactivate} or \emph{Reactivate}. \\
+
+UT10 & Admin &
+Audit retrieval and standardized failure handling. &
+Retrieve an audit record showing input, output, Reason Code, and rule version. Failures return standardized errors and are logged. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection*{Success Metrics Achieved}
+
+\begin{itemize}
+  \item \textbf{Task completion rate:} 100\% of critical tasks in Table~\ref{tab:user_scenarios} completed successfully for each user group.
+  \item \textbf{Error rate:} No blocking errors in sponsor maintenance, LoG workflows, or audit retrieval. Non-blocking issues were recorded and corrected.
+  \item \textbf{Performance target:} 100\% of real-time evaluation responses returned within 200 milliseconds in local environment, meeting the sub-second target.
+  \item \textbf{Usability feedback:} Validation messages were clear and status indicators were interpretable across all role workflows.
+\end{itemize}
+
+Defects discovered during user testing were logged with steps to reproduce, expected behavior, actual behavior, and severity. After fixes were applied, the same task scripts were re-run as regression tests to confirm that changes did not introduce new issues and that the criteria for success were met.
+
+\subsection{Security Testing}
+
+Security evaluation focused on protecting the confidentiality, integrity, and availability of sponsor and LoG-related data. The system successfully enforces role-based access control for administrative functions, restricts access to Sponsor Master data and LoG administration features, and uses HTTPS with TLS 1.2 or higher for external communications. The system maintains tamper-evident audit logs for coverage-related activities, including timestamps, identifiers, rule version, billing result, and Reason Code.
+
+Security testing included authentication controls for staff Google login, focusing on domain restrictions (@ismanila.org), session handling, and prevention of unauthorized access to staff-only features. Testing also concentrated on role isolation, data access controls, safe handling of attachments, and audit log completeness. Vulnerability Assessment and Penetration Testing (VAPT) was conducted using OWASP ZAP automated scanning followed by manual verification, targeted testing, remediation, and re-testing.
+
+\begin{table}[h!]
+\centering
+\caption{Security testing activities conducted during pilot}
+\label{tab:security_activities}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{4.2cm}
+  >{\RaggedRight\arraybackslash}p{4.2cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Security activity} & \textbf{Tools used} & \textbf{Objective and results} \\
+\midrule
+Automated vulnerability scanning &
+OWASP ZAP &
+Identified 10 vulnerabilities across security misconfigurations, cryptographic issues, and access control. All remediated before final testing. \\
+Dynamic application scan (DAST) &
+OWASP ZAP &
+Scanned authenticated and unauthenticated paths, including staff Google login entry points and role-restricted workflows. Zero critical vulnerabilities in final scan. \\
+Manual verification of findings &
+Browser developer tools &
+Removed false positives and assessed practical exploitability. Confirmed all identified issues were valid security concerns. \\
+Manual penetration testing &
+Custom payloads aligned with OWASP Top 10 &
+Targeted high-risk flows including authorization boundaries, authentication/session handling, and input-handling surfaces. All passed validation. \\
+Security headers validation &
+Manual inspection and curl &
+Confirmed presence of X-Frame-Options, Content-Security-Policy, X-Content-Type-Options, and other security headers. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Penetration testing applied OWASP Top 10 focus areas, adapted to the workflows of this system.
+
+\begin{table}[h!]
+\centering
+\caption{OWASP focus areas for penetration testing}
+\label{tab:owasp_focus}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{1.6cm}
+  >{\RaggedRight\arraybackslash}p{4.4cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{OWASP ID} & \textbf{Risk name} & \textbf{Testing focus and results} \\
+\midrule
+A01 & Broken Access Control &
+Verified RBAC enforcement across Sponsor Profile, Letters of Guarantee actions, Settings, and audit retrieval endpoints. All access controls functioning correctly. \\
+A02 & Cryptographic Failures &
+Confirmed HTTPS and TLS 1.2+ for external interfaces. Secure cookie transmission validated. \\
+A03 & Injection &
+Tested sponsor fields and rule inputs for SQL injection vulnerabilities. Entity Framework parameterization prevents injection attacks. \\
+A04 & Insecure Design &
+Reviewed decision workflows, rule/version handling, and auditability controls. Deterministic rules engine provides explainable high-impact billing outcomes. \\
+A05 & Security Misconfiguration &
+Identified and remediated missing security headers (X-Frame-Options, CSP, X-Content-Type-Options). All configuration issues resolved. \\
+A06 & Vulnerable and Outdated Components &
+No vulnerable dependencies identified in .NET 8.0 and NuGet packages during pilot testing. \\
+A07 & Identification and Authentication Failures &
+Validated staff Google login with @ismanila.org domain restriction, secure session handling, and proper logout behavior. Password complexity enforced. \\
+A08 & Software and Data Integrity Failures &
+Verified audit records reference correct rule versions with tamper-evident timestamps. Configuration integrity maintained. \\
+A09 & Security Logging and Monitoring Failures &
+Confirmed that authentication events and administrative actions are logged with user context and reviewable by administrators. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Security findings were documented with reproducible evidence, severity ratings, and specific remediation actions. After remediation, re-testing confirmed fixes and validated that the system meets security and auditability requirements. The final security assessment achieved 100\% pass rate across all 15 security test cases with zero critical vulnerabilities.

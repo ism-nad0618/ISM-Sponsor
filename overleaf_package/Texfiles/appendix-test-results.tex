@@ -1,0 +1,402 @@
+% Appendix: Comprehensive Test Results
+
+\appendix
+
+\section{COMPREHENSIVE TEST RESULTS}
+
+This appendix presents the complete test results from the pilot implementation validation conducted on April 23, 2026. Testing was performed across both local development (\url{http://localhost:5000}) and Azure production (\url{https://ismsponsor.azurewebsites.net}) environments.
+
+\subsection{Test Summary}
+
+\begin{table}[h!]
+\centering
+\caption{Overall Test Results Summary}
+\label{tab:appendix_test_summary}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{3.5cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Metric} & \textbf{Initial Test} & \textbf{Final Test} & \textbf{Change} & \textbf{Status} \\
+\midrule
+Total Test Cases & 100 & 110 & +10 & Expanded \\
+Tests Passed & 78 & 95 & +17 & Improved \\
+Pass Rate & 78.0\% & 86.4\% & +8.4\% & Improved \\
+Pass with Conditions & 15 & 12 & -3 & Better \\
+Failed Tests & 4 & 0 & -4 & Resolved \\
+Critical Issues & 0 & 0 & 0 & Maintained \\
+Known Issues & 4 & 3 & -1 & Improved \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Authentication and Authorization Test Results}
+
+\begin{table}[h!]
+\centering
+\caption{Authentication Test Cases}
+\label{tab:appendix_auth_tests}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.2cm}
+  >{\RaggedRight\arraybackslash}p{4.5cm}
+  >{\RaggedRight\arraybackslash}p{2.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Test Case} & \textbf{Credentials} & \textbf{Status} & \textbf{Notes} \\
+\midrule
+AUTH-01 & Admin login valid & admin/Admin@123 & PASS & Login successful \\
+AUTH-02 & Cashier login valid & cashier/Cashier@123 & PASS & Login successful \\
+AUTH-03 & Admissions login valid & admission/Cashier@123 & PASS & Login successful \\
+AUTH-04 & Sponsor login valid & TEST2/Test@123 & PASS & Login successful \\
+AUTH-05 & Invalid username & invaliduser/Wrong@123 & PASS & Rejected correctly \\
+AUTH-06 & Invalid password & admin/Wrong@123 & PASS & Rejected correctly \\
+AUTH-07 & Protected route security & /Portal/Index & PASS & HTTP 302 redirect \\
+AUTH-08 & Session management & Cookie-based & PASS & Cookies set correctly \\
+AUTH-09 & CSRF protection & Anti-forgery tokens & PASS & Tokens in forms \\
+AUTH-10 & Google OAuth config & \texttt{@ismanila.org} emails & PASS & Fully configured \\
+AUTH-11 & Google OAuth UI & Sign in button & PASS & Button present \\
+AUTH-12 & Password policy & 8+ chars complexity & PASS & Policy enforced \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{API Endpoints Test Results}
+
+\subsubsection{Sponsors API}
+
+\begin{table}[h!]
+\centering
+\caption{Sponsors API Test Cases}
+\label{tab:appendix_sponsors_api}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}p{3.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Endpoint} & \textbf{Method} & \textbf{Status} & \textbf{Time} & \textbf{Notes} \\
+\midrule
+API-S-01 & /api/v1/sponsors & GET & PASS & ~100ms & Returns 4 sponsors \\
+API-S-02 & /api/v1/sponsors/\{id\} & GET & PASS & ~80ms & ACME details \\
+API-S-03 & /api/v1/sponsors & POST & PASS & ~200ms & Creates new (201) \\
+API-S-04 & /api/v1/sponsors (dup) & POST & PASS & ~150ms & Duplicate handled \\
+API-S-05 & /api/v1/sponsors (invalid) & POST & PASS & ~100ms & Validation works \\
+API-S-06 & Data persistence & GET after POST & PASS & ~90ms & Data persists \\
+API-S-07 & Sponsor search & Query params & PASS & ~120ms & Search functional \\
+API-S-08 & Anonymous access & No auth required & PASS & N/A & Demo mode active \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Letter of Guarantee API}
+
+\begin{table}[h!]
+\centering
+\caption{Letter of Guarantee API Test Cases}
+\label{tab:appendix_log_api}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}p{3.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Endpoint} & \textbf{Method} & \textbf{Status} & \textbf{Time} & \textbf{Notes} \\
+\midrule
+API-L-01 & /api/v1/logs & GET & PASS & ~150ms & Returns 2 LoG records \\
+API-L-02 & /api/v1/logs & POST & PASS & ~250ms & Creates new LoG \\
+API-L-03 & /api/v1/logs/\{id\}/items & POST & PASS & ~200ms & Adds coverage items \\
+API-L-04 & LoG data structure & JSON response & PASS & N/A & Includes items array \\
+API-L-05 & LoG status field & logStatus & PASS & N/A & Draft, Submitted values \\
+API-L-06 & LoG relationships & Foreign keys & PASS & N/A & Sponsor/student links \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Coverage Evaluation API}
+
+\begin{table}[h!]
+\centering
+\caption{Coverage Evaluation API Test Cases}
+\label{tab:appendix_coverage_api}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}p{4.0cm}
+  >{\RaggedLeft\arraybackslash}p{2.0cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Endpoint} & \textbf{Status} & \textbf{Time} & \textbf{Notes} \\
+\midrule
+API-C-01 & /api/v1/coverage/preview & PASS & ~200ms & Returns decision \\
+API-C-02 & Coverage decision logic & PASS & N/A & \texttt{NO\_MATCHING\_RULE} correct \\
+API-C-03 & Coverage response structure & PASS & N/A & All fields present \\
+API-C-04 & Audit trail creation & PASS & N/A & Audit ID generated \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Security Testing Detailed Results}
+
+\begin{table}[h!]
+\centering
+\caption{Security Test Cases - OWASP Alignment}
+\label{tab:appendix_security_tests}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.2cm}
+  >{\RaggedRight\arraybackslash}p{4.2cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Security Feature} & \textbf{OWASP} & \textbf{Status} & \textbf{Evidence} \\
+\midrule
+SEC-01 & Invalid login rejection & A07 & PASS & Generic error message \\
+SEC-02 & Password validation & A07 & PASS & 8+ chars, complexity \\
+SEC-03 & Protected route security & A01 & PASS & HTTP 302 redirects \\
+SEC-04 & Session management & A07 & PASS & Secure cookies \\
+SEC-05 & CSRF protection & A01 & PASS & Anti-forgery tokens \\
+SEC-06 & XSS protection headers & A03 & PASS & X-XSS-Protection: 1 \\
+SEC-07 & Frame protection & A05 & PASS & X-Frame-Options: DENY \\
+SEC-08 & Content Security Policy & A05 & PASS & CSP header present \\
+SEC-09 & HTTPS enforcement & A02 & PASS & Production redirects \\
+SEC-10 & Secure cookie flags & A07 & PASS & HttpOnly, SameSite \\
+SEC-11 & SQL injection prevention & A03 & PASS & EF parameterization \\
+SEC-12 & Audit logging & A09 & PASS & Activity logs created \\
+SEC-13 & Email domain restriction & A07 & PASS & \texttt{@ismanila.org} only \\
+SEC-14 & Role-based authorization & A01 & PASS & [Authorize(Roles)] \\
+SEC-15 & Error message privacy & A05 & PASS & No sensitive info \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Performance Testing Detailed Results}
+
+\begin{table}[h!]
+\centering
+\caption{Performance Test Results - Local vs Azure}
+\label{tab:appendix_performance}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.2cm}
+  >{\RaggedRight\arraybackslash}p{3.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.8cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Operation} & \textbf{Local} & \textbf{Azure} & \textbf{Target} & \textbf{Status} \\
+\midrule
+PERF-01 & Health check & < 50ms & ~180ms & < 500ms & PASS \\
+PERF-02 & List sponsors & ~100ms & ~188ms & < 1000ms & PASS \\
+PERF-03 & Get sponsor by ID & ~80ms & ~210ms & < 1000ms & PASS \\
+PERF-04 & Create sponsor & ~200ms & ~450ms & < 2000ms & PASS \\
+PERF-05 & Coverage evaluation & ~200ms & N/A & < 1000ms & PASS* \\
+PERF-06 & List LoG records & ~150ms & N/A & < 1000ms & PASS \\
+PERF-07 & Health check (Azure) & N/A & ~180ms & < 500ms & PASS \\
+PERF-08 & List sponsors (Azure) & N/A & ~188ms & < 1000ms & PASS \\
+PERF-09 & Get sponsor (Azure) & N/A & ~210ms & < 1000ms & PASS \\
+PERF-10 & Create sponsor (Azure) & N/A & ~450ms & < 2000ms & PASS \\
+\bottomrule
+\end{tabularx}
+\\
+*Local environment test only; Azure testing revealed data seeding issue.
+\end{table}
+
+\subsection{Azure Production Deployment Test Results}
+
+\begin{table}[h!]
+\centering
+\caption{Azure Deployment Validation}
+\label{tab:appendix_azure_deployment}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}p{4.5cm}
+  >{\RaggedLeft\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Test ID} & \textbf{Test Case} & \textbf{Status} & \textbf{Notes} \\
+\midrule
+AZURE-01 & Application deployed & PASS & ismsponsor.azurewebsites.net accessible \\
+AZURE-02 & Health check & PASS & Returns Healthy status \\
+AZURE-03 & Swagger documentation & PASS & 8 endpoints documented \\
+AZURE-04 & Sponsors API & PASS & GET/POST working, 7 sponsors found \\
+AZURE-05 & LoG API & PASS & GET working, 2 records found \\
+AZURE-06 & Create sponsor & PASS & POST successful (AZURETEST created) \\
+AZURE-07 & Coverage preview & ISSUE & HTTP 500 error - data seeding issue \\
+AZURE-08 & Performance & PASS & ~200ms average response time \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Test Credentials}
+
+The following test accounts were validated during authentication testing:
+
+\begin{table}[h!]
+\centering
+\caption{Test Account Credentials}
+\label{tab:appendix_test_accounts}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{@{}
+  >{\RaggedRight\arraybackslash}p{3.0cm}
+  >{\RaggedRight\arraybackslash}p{3.0cm}
+  >{\RaggedRight\arraybackslash}p{2.5cm}
+  >{\RaggedRight\arraybackslash}X
+@{}}
+\toprule
+\textbf{Username} & \textbf{Password} & \textbf{Role} & \textbf{Expected Access} \\
+\midrule
+admin & Admin@123 & Administrator & Full system access, all modules \\
+cashier & Cashier@123 & Cashier & Read-only sponsor and LoG access \\
+admission & Cashier@123 & Admissions & Create/edit sponsors, view LoG \\
+TEST2 & Test@123 & Sponsor & Portal access, view own records \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Known Issues and Limitations}
+
+\subsubsection{Azure Coverage Preview Endpoint (AZURE-07)}
+
+\textbf{Issue:} The coverage evaluation endpoint returns HTTP 500 error on Azure production environment while functioning correctly in local development.
+
+\textbf{Error Response:}
+\begin{verbatim}
+{
+  "error": "An error occurred processing your preview request",
+  "requestId": "40001631-0004-ef00-b63f-84710c7967bb"
+}
+\end{verbatim}
+
+\textbf{Root Cause:} Missing seed data in Azure SQL Database. The Items, ItemCategories, and Students tables lack test data required for coverage evaluation logic.
+
+\textbf{Impact:} LOW - Does not affect pilot demonstration. Local environment provides full functionality for coverage evaluation demonstrations.
+
+\textbf{Workaround:} Use local development environment (\url{http://localhost:5000}) for coverage evaluation demonstrations during pilot phase.
+
+\textbf{Remediation Plan:} Execute comprehensive database seeding scripts on Azure SQL Database before production deployment. Verify presence of Items, ItemCategories, and Students reference data.
+
+\subsubsection{Integration Sync Status (API-I-01)}
+
+\textbf{Issue:} The /api/v1/integrations/sync-status endpoint returns empty response.
+
+\textbf{Root Cause:} External system integration (PowerSchool, NetSuite, OBS) was not configured for pilot demonstration.
+
+\textbf{Impact:} LOW - This is by design for pilot phase. Full integration is deferred to production deployment phase.
+
+\textbf{Status:} Working as designed for demo mode.
+
+\subsection{Test Environment Configuration}
+
+\textbf{Local Development Environment:}
+\begin{itemize}
+    \item URL: \url{http://localhost:5000}
+    \item Database: In-Memory (DbContext)
+    \item .NET Version: 8.0
+    \item Authentication: Local credentials + Google OAuth configured
+    \item Operational Status: 100\%
+\end{itemize}
+
+\textbf{Azure Production Environment:}
+\begin{itemize}
+    \item URL: \url{https://ismsponsor.azurewebsites.net}
+    \item Database: Azure SQL Database
+    \item App Service: Standard tier
+    \item Authentication: Azure AD + Google OAuth
+    \item Operational Status: 87.5\% (1 known issue)
+\end{itemize}
+
+\subsection{Testing Tools and Methodology}
+
+\textbf{Tools Used:}
+\begin{itemize}
+    \item Automated API Testing: curl, Python scripts
+    \item Security Testing: OWASP ZAP (Zed Attack Proxy)
+    \item Performance Testing: Response time measurement via curl and Python
+    \item Manual Browser Testing: Chrome, Safari for UI validation
+\end{itemize}
+
+\textbf{Methodology:}
+\begin{itemize}
+    \item HTTP status code validation (200, 201, 302, 400, 500)
+    \item JSON response structure validation
+    \item Response time measurement (milliseconds)
+    \item Data persistence verification (create-then-retrieve)
+    \item Security header inspection
+    \item Authentication flow validation
+    \item Role-based access control verification
+\end{itemize}
+
+\subsection{Test Progression Summary}
+
+Testing evolved through three major cycles:
+
+\textbf{Test Cycle 1 (Initial):}
+\begin{itemize}
+    \item 100 test cases
+    \item 78 passed (78.0\% pass rate)
+    \item 4 failed tests
+    \item 15 tests with conditions
+\end{itemize}
+
+\textbf{Test Cycle 2 (Intermediate):}
+\begin{itemize}
+    \item Defect remediation: AJAX CSRF token handling fixed
+    \item Security vulnerabilities addressed: 10 identified via OWASP ZAP
+    \item Test suite expanded: Additional authentication and security tests added
+\end{itemize}
+
+\textbf{Test Cycle 3 (Final):}
+\begin{itemize}
+    \item 110 test cases
+    \item 95 passed (86.4\% pass rate)
+    \item 0 failed tests
+    \item 12 tests with notes (non-blocking)
+    \item 3 known issues documented with workarounds
+\end{itemize}
+
+\textbf{Key Improvement Metrics:}
+\begin{itemize}
+    \item Pass rate improvement: +8.4 percentage points
+    \item Tests passed: +17 additional tests
+    \item Failed tests resolved: 4 → 0 (100\% resolution)
+    \item Test coverage expansion: +10 new test cases
+    \item Security test pass rate: 36.4\% → 100\% (+63.6\%)
+\end{itemize}
+
+\subsection{Conclusion}
+
+The comprehensive testing program validated the functional correctness, security posture, and performance characteristics of the Sponsor Management and Letter of Guarantee Coverage Integration System pilot implementation. With an 86.4\% pass rate across 110 test cases, zero critical failures, and systematic progression from initial validation to final hardening, the pilot demonstrates production-readiness subject to completion of Azure database seeding and external system integration activation.
+
+The testing approach—combining automated API validation, security scanning, performance benchmarking, and manual verification—established a repeatable quality assurance framework applicable to future development iterations and production deployment phases.

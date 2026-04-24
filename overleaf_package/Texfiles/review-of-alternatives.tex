@@ -1,0 +1,81 @@
+% review of existing alternatives
+\section{REVIEW OF EXISTING ALTERNATIVES}
+
+International School Manila currently mitigates sponsorship billing complexity through manual interpretation at charge entry, spreadsheet lookups for caps and effective dates, and file-based transfers between independent platforms. This practice satisfies day-to-day posting needs yet disperses authority, introduces variability in Bill-To decisions, and weakens the audit trail needed by downstream stakeholders. The practical effect is slower processing, periodic reversals or reclassifications, and additional reconciliation work during closing.
+
+Across the sector, three solution paths are common. First, institutions implement monolithic enterprise resource planning modules that consolidate receivables, third-party billing, and statements under a single suite; these modules perform well once a charge reaches the receivables layer but generally assume coverage is decided upstream rather than computed in the charging interface \citep{EllucianBannerARGuide2025,PeopleSoftSFThirdParty,BannerARWorkbook}. Second, schools deploy sponsor/third-party portals that provide statements, payments, and sponsor self-service; these tools improve downstream experience but inherit whatever classification was made earlier at entry \citep{TouchNetSponsorPoint,NelnetSponsorBilling,UTKSponsorPoint,SponsorPaymentsPortal}. Third, organizations harden current processes with templates, scheduled integrations, or payments gateways; timeliness improves, yet Letter of Guarantee interpretation remains distributed across spreadsheets and scripts \citep{PayMyTuitionSponsored,PayMyTuitionNewswire}. Suites for sponsor receipting and invoicing show similar limits because they emphasize billing rather than line-level coverage logic at entry \citep{TribalEbsSponsor,TribalEbsManagePayments}. NetSuite remains a capable ERP destination for receivables and Bill-To controls, but it is not designed to evaluate LoG rules within the charging portal \citep{NetSuiteThirdParty}. In the Philippine context, the Ease of Paying Taxes framework further elevates the need for correct Bill-To and auditable documentation \citep{BIR_EOPT}.
+
+The proposed system differs by relocating coverage determination to the precise point of charge entry and by establishing a canonical Sponsor Master synchronized with existing systems of record. A deterministic rules engine evaluates each line in the Student Charging Portal and returns an explainable outcome (Covered, Split, or Not Covered), which then propagates as the correct Bill-To and allocation to the ERP and onward to the statement layer. This design preserves current platforms while replacing ad hoc interpretation with consistent, auditable logic.
+
+\begin{center}
+\captionsetup{type=table}
+\caption{Summary of Existing Alternatives}
+\label{table:existing-alternatives-summary}
+\smalltable
+\scriptsize
+\begin{tabular}{|>{\raggedright\arraybackslash}p{2.6cm}|
+                >{\raggedright\arraybackslash}p{1.8cm}|
+                >{\raggedright\arraybackslash}p{2.6cm}|
+                >{\raggedright\arraybackslash}p{2.6cm}|
+                >{\raggedright\arraybackslash}p{2.6cm}|}
+\hline
+\textbf{System (License/Type)} &
+\textbf{Platform} &
+\textbf{Brief Description} &
+\textbf{Basic Functionalities} &
+\textbf{Relation to the Proposed System} \\
+\hline\hline
+
+\textbf{Proposed System (ISM)} &
+.NET PWA; MSSQL; APIs &
+Coverage at entry plus canonical Sponsor Master &
+LoG rules in SCP; instant Covered/Split/Not Covered with reason; correct Bill-To and sponsor–parent allocations to ERP; clear statements; full audit trail &
+-- \\
+\hline
+
+\textbf{TouchNet SponsorPoint}\tnote{d} &
+Hosted portal &
+Sponsor/third-party billing portal for statements, payments, reconciliation &
+Sponsor dashboards; electronic statements; online payments; ERP sync &
+Downstream billing/sponsor access; assumes coverage decided upstream; no LoG rules at SCP entry \\
+\hline
+
+\textbf{Nelnet Sponsor Billing \& Payments}\tnote{e} &
+Hosted portal &
+Sponsor portal with configurable billing cycles and ERP sync &
+Billing cycles; statements; payments; account management &
+Improves billing/payments; inherits upstream classification; not a coverage engine at entry \\
+\hline
+
+PayMyTuition Sponsored Payments\tnote{f} &
+Payments gateway/module &
+Sponsored payments with automated billing and reconciliation &
+Automated sponsor billing; reconciliation; “real-time” integrations &
+Payments/reconciliation focus; does not compute coverage at charge entry \\
+\hline
+
+Ellucian Banner A/R (Third-Party)\tnote{a,c} &
+ERP module &
+Receivables module supporting third-party contracts and billing runs &
+Detail codes; contracts; invoice runs; collections; audit controls &
+Centralizes receivables; expects eligibility/coverage decisions pre-posting \\
+\hline
+
+%Tribal ebs Sponsor Payments\tnote{g} &
+%Student management suite &
+%Sponsor fee management and receipting &
+%Group/manage sponsor fees; invoicing; crediting; receipting &
+%Billing/receipts focus; not a rules engine at charge entry \\
+%\hline
+
+\end{tabular}
+\end{center}
+% --- END ---
+
+
+\subsection{Summary of Existing Alternative}
+Existing alternatives strengthen posting, invoicing, payments, and collections, yet they do not resolve the principal source of inconsistency: manual, context-dependent interpretation of Letters of Guarantee inside the charging interface. Across ERP modules, sponsor portals, payment gateways, and student-suite extensions, coverage is assumed to be settled upstream or inherited from manual entry, which leaves Bill-To decisions variable and audit trails fragmented. As a result, adopting any one of these systems “as is” would continue the present pattern of reversals, reclassifications, and delayed reconciliation, because none computes deterministic, explainable coverage at the moment of charge entry nor propagates a single authoritative Bill-To through NetSuite and the Online Billing System.
+
+The proposed system addresses this gap by relocating the decision locus to charge entry and by introducing a canonical Sponsor Master synchronized with PowerSchool, the Student Charging Portal, NetSuite, and the Online Billing System. A deterministic rules engine evaluates each line against codified provisions—items and categories, caps, effective dates, and per-student overrides—and returns an immediate outcome with a reason code before the charge is saved. That first decision becomes the authoritative Bill-To and the sponsor–student allocation in NetSuite, then flows to statements without later reclassification. Each evaluation is recorded with rule, actor, timestamp, and context, producing a complete line-level audit chain that supports Ease of Paying Taxes requirements.
+
+By combining a single source of truth for sponsors with real-time, explainable coverage logic, the design delivers three distinguishing advantages: a single decision recorded at line level, authoritative propagation of Bill-To and allocations across ledgers and statements, and improved audit readiness without replatforming. This alignment of decision locus, data governance, and integration yields a practical path to higher reliability, faster processing, and sustained compliance in the International School Manila context.
