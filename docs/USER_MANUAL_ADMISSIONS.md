@@ -67,7 +67,7 @@ As an **Admissions Staff** member, you play a crucial
 
 ### Initial Login
 
-![Login Page](screenshots/admissions/admissions_01_login_page.png)  
+![Login Page](screenshots/admissions/logs/admissions_01_login_page.png)  
 *Figure 1.1: System login page for Admissions staff*
 
 1. **Navigate to System URL:**
@@ -429,7 +429,10 @@ City: pasig
 
 ### Workflow 3: Edit Sponsor (Direct Edit)
 
-**What You Can Edit Directly:**
+![Sponsor Details](screenshots/admissions/sponsors/admissions_08_sponsor_details.png)  
+*Figure 3.3: Sponsor details view with edit capability*
+
+**What You Can Edit Directly:****
 - ✅ Contact Person
 - ✅ Contact Email
 - ✅ Contact Phone
@@ -698,6 +701,9 @@ Student:   [All ▼] [Search students...]
 
 ### Workflow 6: Create New LoG
 
+![Create LoG Form](screenshots/admissions/logs/admissions_13_create_log_step1.png)  
+*Figure 4.2: Create new Letter of Guarantee form with sponsor and student selection*
+
 **When:** New student needs coverage or new school year begins
 
 **Prerequisites:**
@@ -816,6 +822,9 @@ Student:   [All ▼] [Search students...]
    - Mix of covered/split/not covered items
 
 7. **Coverage Rules (Define What's Covered):**
+   
+   ![Coverage Rules Configuration](screenshots/admissions/logs/admissions_15_create_log_coverage_rules.png)  
+   *Figure 4.3: Adding and configuring coverage rules for the Letter of Guarantee*
    
    Click **"Add Coverage Rule"** to define rules:
    
@@ -1090,6 +1099,9 @@ You previously learned about submitting change requests for sponsors. Here's a d
 
 ### Workflow 9: View All Your Change Requests
 
+![Change Request Submission](screenshots/admissions/requests/admissions_19_submit_change_request.png)  
+*Figure 5.1: Submit and track change requests for sponsor updates*
+
 **URL:** `/ReviewRequest/MyRequests`
 
 **Access:**
@@ -1283,7 +1295,10 @@ As Admissions staff, you have access to reports relevant to your work.
 
 ### Workflow 11: Generate Report
 
-**Step-by-Step:**
+![Reports for Admissions](screenshots/admissions/reports/admissions_23_reports_menu.png)  
+*Figure 6.1: Available report types for Admissions staff*
+
+**Step-by-Step:****
 
 1. **Navigate to Reports:**
    - Main Menu → Reports

@@ -61,7 +61,7 @@ As a **Cashier**, your role focuses on verifying sponsor coverage for billing pu
 
 ### Initial Login
 
-![Cashier Login](screenshots/cashier/cashier_01_login_page.png)  
+![Cashier Login](screenshots/cashier/logs/cashier_01_login_page.png)  
 *Figure 1.1: System login page for Cashier role*
 
 1. **Navigate to System URL:****
@@ -133,6 +133,9 @@ As a **Cashier**, your role focuses on verifying sponsor coverage for billing pu
 ### Cashier Dashboard
 
 **URL:** `/Dashboard/CashierDashboard` or `/Dashboard`
+
+![Cashier Dashboard](screenshots/cashier/dashboard/cashier_02_dashboard_overview.png)  
+*Figure 2.1: Cashier dashboard with quick statistics and search access*
 
 Your dashboard provides quick access to search and statistics.
 
@@ -304,6 +307,9 @@ Your dashboard provides quick access to search and statistics.
 
 ### Workflow 3: Search for a LoG
 
+![LoG Search](screenshots/cashier/logs/cashier_04_portal_logs_list.png)  
+*Figure 5.1: Letters of Guarantee list with search and filter options*
+
 **Why:** Find coverage information for specific student or verify what's covered
 
 **Step-by-Step:**
@@ -357,6 +363,9 @@ Your dashboard provides quick access to search and statistics.
    - Review special instructions
 
 ### Workflow 4: View LoG Details (Coverage Rules)
+
+![LoG Details with Coverage](screenshots/cashier/logs/cashier_05_log_details_coverage.png)  
+*Figure 5.2: Complete LoG details showing coverage rules and amounts*
 
 **URL:** `/Portal/Details/{id}` (Read-only view for Cashiers)
 
@@ -649,6 +658,9 @@ As Cashier, you have access to reconciliation and coverage reports.
 ---
 
 ### Workflow 7: Generate Reconciliation Report
+
+![Cashier Reports Menu](screenshots/cashier/reports/cashier_11_reports_menu.png)  
+*Figure 7.1: Available reports for Cashier role*
 
 **Scenario:** Month-end reconciliation of sponsor billings
 

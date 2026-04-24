@@ -67,7 +67,7 @@ As a **System Administrator**, you have the highest level of access and responsi
 
 ### Initial Login
 
-![Login Page](screenshots/admin/admin_01_login_page.png)  
+![Login Page](screenshots/admin/logs/admin_01_login_page.png)  
 *Figure 1.1: System login page with email and password fields*
 
 1. **Navigate to System URL:**
@@ -2258,7 +2258,7 @@ The Operations Dashboard provides real-time system health monitoring and integra
 
 ### Workflow 25: Monitor System Health
 
-![Operations Dashboard](screenshots/admin/operations/admin_41_operations_dashboard.png)  
+![Operations Dashboard](screenshots/admin/dashboard/admin_41_operations_dashboard.png)  
 *Figure 8.1: Operations dashboard showing system health and monitoring metrics*
 
 **Dashboard Sections:**
