@@ -66,6 +66,19 @@ SCREENSHOTS = {
         {"file": "cashier_05_log_details_coverage.png", "url": "/Portal/Details/1", "wait": 2, "login": "cashier"},
         {"file": "cashier_11_reports_menu.png", "url": "/CashierReports/Index", "wait": 2, "login": "cashier"},
     ],
+    
+    # SPONSOR SCREENSHOTS
+    "sponsor": [
+        {"file": "sponsor_01_login_page.png", "url": "/Account/Login", "wait": 1},
+        {"file": "sponsor_02_portal_dashboard.png", "url": "/Portal/Index", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_03_my_profile.png", "url": "/Portal/MyProfile", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_04_my_students.png", "url": "/Portal/MyStudents", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_05_my_logs.png", "url": "/SponsorReports/MyLoGs", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_06_log_details.png", "url": "/Portal/Details/1", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_07_change_requests.png", "url": "/SponsorRequest/Index", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_08_submit_request.png", "url": "/SponsorRequest/Create", "wait": 2, "login": "sponsor"},
+        {"file": "sponsor_09_reports_menu.png", "url": "/SponsorReports/Index", "wait": 2, "login": "sponsor"},
+    ],
 }
 
 # User credentials (use demo accounts with strong passwords)
@@ -73,6 +86,7 @@ CREDENTIALS = {
     "admin": {"username": "admin", "password": "Admin@123"},
     "admissions": {"username": "admissions", "password": "Admissions@123"},
     "cashier": {"username": "cashier", "password": "Cashier@123"},
+    "sponsor": {"username": "acme_sponsor", "password": "Sponsor@123"},
 }
 
 
