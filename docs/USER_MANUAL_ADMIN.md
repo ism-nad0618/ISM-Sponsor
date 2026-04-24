@@ -68,7 +68,13 @@ As a **System Administrator**, you have the highest level of access and responsi
 ### Initial Login
 
 ![Login Page](screenshots/admin/logs/admin_01_login_page.png)  
-*Figure 1.1: System login page with email and password fields*
+*Figure 1.1: Login page - Enter your username (top field) and password (bottom field), then click the blue "Login" button*
+
+**📸 What you'll see in the screenshot:**
+- **Username field** (top text box): Enter `admin`
+- **Password field** (second text box with masked characters): Enter `Admin@123`
+- **Blue "Login" button** (bottom of form): Click this to access the system
+- **"Forgot Password?" link** (below login button, if visible): Contact IT support if needed
 
 1. **Navigate to System URL:**
    ```
@@ -148,7 +154,18 @@ As a **System Administrator**, you have the highest level of access and responsi
 **URL:** `/Dashboard/AdminDashboard` or `/Dashboard`
 
 ![Admin Dashboard Overview](screenshots/admin/dashboard/admin_02_dashboard_overview.png)  
-*Figure 2.1: Admin Dashboard showing system overview and key metrics*
+*Figure 2.1: Admin Dashboard - Your control center showing 4 key statistics cards, recent activity list, and navigation menu*
+
+**📸 What you'll see in the screenshot:**
+- **Top Row: 4 Statistics Cards** (colored rectangles with numbers)
+  - Card 1 (left): "Active Sponsors" with total count
+  - Card 2: "Pending Requests" with number needing review
+  - Card 3: "Active LoGs" with current school year total
+  - Card 4 (right): "System Health" with status percentage
+- **Left Side: Navigation Menu** (vertical list of links)
+  - Dashboard, Sponsors, Portal, Requests, Users, Reports, Operations
+- **Center: Recent Activity Section** (list of recent actions)
+- **Top Right: User Menu** (your name with dropdown arrow)
 
 The Admin Dashboard provides a comprehensive view of system status, pending work, and key metrics.
 
@@ -157,7 +174,13 @@ The Admin Dashboard provides a comprehensive view of system status, pending work
 #### 1. Key Statistics (Top Row)
 
 ![Dashboard Statistics Cards](screenshots/admin/dashboard/admin_03_dashboard_stats.png)  
-*Figure 2.2: Dashboard statistics showing key metrics at a glance*
+*Figure 2.2: Four statistics cards displaying real-time metrics - Look for the large numbers in each colored card*
+
+**📸 What you'll see in the screenshot:**
+- **Each card shows:** Large number (main metric), small trend indicator (↗ +12 this month), descriptive text
+- **Card colors help identification:** Different background colors for each metric card
+- **Click anywhere on a card** to drill down into detailed view
+- **Hover over cards** to see tooltips with additional context
 
 **Statistics Card Layout:**
 ```
@@ -302,7 +325,17 @@ As Administrator, you have complete control over sponsor records including creat
 **URL:** `/Settings/Sponsors` → "Create New Sponsor"
 
 ![Sponsors List](screenshots/admin/sponsors/admin_06_sponsors_list.png)  
-*Figure 3.1: Sponsors list view with search and filter options*
+*Figure 3.1: Sponsors list page - Look for the blue "Create New Sponsor" button in the top-right corner*
+
+**📸 What you'll see in the screenshot:**
+- **Top Right: Blue "Create New Sponsor" button** (primary action button)
+- **Top Left: Search box** (text input with magnifying glass icon) - Type to search sponsors
+- **Below Search: Filter dropdowns** (Status, Approval Status filters)
+- **Main Area: Data table** with columns:
+  - Sponsor ID | Sponsor Name | Legal Name | Contact Person | Status | Actions
+- **Each row is clickable** - Click sponsor name to view details
+- **Action icons on right** (Edit, View, Delete buttons)
+- **Bottom: Pagination** (if more than 10 sponsors)
 
 **Step-by-Step:**
 
@@ -313,7 +346,20 @@ As Administrator, you have complete control over sponsor records including creat
 2. **Click "Create New Sponsor"**
 
 ![Create Sponsor Form](screenshots/admin/sponsors/admin_09_create_sponsor_empty.png)  
-*Figure 3.2: Create sponsor form with required fields marked*
+*Figure 3.2: Blank sponsor creation form - All fields with red asterisk (*) are required*
+
+**📸 What you'll see in the screenshot:**
+- **Form Title:** "Create New Sponsor" at the top
+- **Required fields have RED ASTERISK (*)** next to label
+- **Form sections from top to bottom:**
+  1. **Basic Information:** Sponsor ID*, Sponsor Name*, Legal Name*
+  2. **Contact Information:** Contact Person*, Contact Email*, Contact Phone*
+  3. **Address:** Address Line 1*, City*, State/Province*, Postal Code*, Country*
+  4. **Additional:** Alternative Email, Alternative Phone, TIN
+- **Bottom buttons:** Gray "Cancel" (left), Blue "Save" (right)
+- **Validation:** Required fields show error if left blank
+
+**💡 TIP:** Fill from top to bottom in order. Blue "Save" button becomes clickable when all required fields are complete.
 
 3. **Fill Required Fields (marked with *):**
 
