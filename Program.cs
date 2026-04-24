@@ -257,8 +257,9 @@ builder.Services.AddScoped<MonitoringService>();
 builder.Services.AddScoped<SmokeTestService>();
 builder.Services.AddScoped<FeedbackService>();
 
-// Step 9: Demo data seeder
+// Step 9: Demo data seeders
 builder.Services.AddScoped<DemoDataSeeder>();
+builder.Services.AddScoped<MediumDemoDataSeeder>();
 
 // Step 7: Health checks
 builder.Services.AddHealthChecks()
@@ -429,6 +430,29 @@ if (!app.Environment.IsEnvironment("Testing"))
                 
                 logger.LogInformation("[OK] Database initialization complete");
                 Console.WriteLine("[OK] Database initialization complete");
+                
+                // Seed demo data if configured
+                var seedDemoData = builder.Configuration.GetValue<bool>("Database:SeedDemoData", false);
+                if (seedDemoData)
+                {
+                    logger.LogInformation("SeedDemoData flag is enabled - seeding medium demo data...");
+                    Console.WriteLine("SeedDemoData flag is enabled - seeding medium demo data...");
+                    
+                    try
+                    {
+                        var mediumSeeder = scope.ServiceProvider.GetRequiredService<MediumDemoDataSeeder>();
+                        await mediumSeeder.SeedMediumDemoDataAsync();
+                        
+                        logger.LogInformation("[OK] Medium demo data seed complete");
+                        Console.WriteLine("[OK] Medium demo data seed complete");
+                    }
+                    catch (Exception seedEx)
+                    {
+                        logger.LogError(seedEx, "[FAIL] Demo data seed failed");
+                        Console.WriteLine($"[FAIL] Demo data seed failed: {seedEx.Message}");
+                        // Don't throw - allow app to start even if demo seed fails
+                    }
+                }
             }
             catch (Exception ex)
             {
