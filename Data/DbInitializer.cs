@@ -120,11 +120,11 @@ namespace ISMSponsor.Data
                 }
             }
 
-            await ensureUser("admin", "admin", "admin");
-            await ensureUser("admissions", "admissions", "admissions");
-            await ensureUser("cashier", "cashier", "cashier");
-            await ensureUser("acme_sponsor", "sponsor", "sponsor", "ACME");
-            await ensureUser("xyz_sponsor", "sponsor", "sponsor", "XYZBANK");
+            await ensureUser("admin", "Admin@123", "admin");
+            await ensureUser("admissions", "Admissions@123", "admissions");
+            await ensureUser("cashier", "Cashier@123", "cashier");
+            await ensureUser("acme_sponsor", "Sponsor@123", "sponsor", "ACME");
+            await ensureUser("xyz_sponsor", "Sponsor@123", "sponsor", "XYZBANK");
         }
 
         private void SeedDomainData()
