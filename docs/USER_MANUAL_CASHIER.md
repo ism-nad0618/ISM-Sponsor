@@ -61,7 +61,10 @@ As a **Cashier**, your role focuses on verifying sponsor coverage for billing pu
 
 ### Initial Login
 
-1. **Navigate to System URL:**
+![Cashier Login](screenshots/cashier/cashier_01_login_page.png)  
+*Figure 1.1: System login page for Cashier role*
+
+1. **Navigate to System URL:****
    ```
    Production: https://ismsponsor.azurewebsites.net
    ```
@@ -241,6 +244,9 @@ Your dashboard provides quick access to search and statistics.
 ### Workflow 2: View Sponsor Details
 
 **URL:** `/Settings/Sponsors/Details/{id}` (Read-only view for Cashiers)
+
+![Sponsor Details Read-Only](screenshots/cashier/sponsors/cashier_03_sponsor_details.png)  
+*Figure 4.1: Sponsor details view showing complete information (read-only for Cashier)*
 
 **Sponsor Details Page:**
 

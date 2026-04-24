@@ -67,6 +67,9 @@ As an **Admissions Staff** member, you play a crucial
 
 ### Initial Login
 
+![Login Page](screenshots/admissions/admissions_01_login_page.png)  
+*Figure 1.1: System login page for Admissions staff*
+
 1. **Navigate to System URL:**
    ```
    Production: https://ismsponsor.azurewebsites.net
@@ -202,6 +205,9 @@ Shows your last 10 actions:
 
 **Why:** Always search before creating to avoid duplicates
 
+![Sponsors List with Search](screenshots/admissions/sponsors/admissions_04_sponsors_list.png)  
+*Figure 3.1: Sponsors list view with search functionality*
+
 **Steps:**
 
 1. **Navigate to Sponsors:**
@@ -261,6 +267,9 @@ Action: Proceed to create new sponsor
 ### Workflow 2: Create New Sponsor
 
 **When:** New organization wants to sponsor students
+
+![Create Sponsor Form](screenshots/admissions/sponsors/admissions_06_create_sponsor_empty.png)  
+*Figure 3.2: Create new sponsor form showing required fields*
 
 **Prerequisites:**
 - Sponsor doesn't exist in system (checked via search)
@@ -646,7 +655,13 @@ Letters of Guarantee (LoGs) define coverage agreements between sponsors and stud
 
 ### Workflow 5: View LoGs
 
+![LoG List View](screenshots/admissions/logs/admissions_11_portal_logs_list.png)  
+*Figure 4.1: Letters of Guarantee list for current school year*
+
 **URL:** `/Portal/Index`
+
+![LoG List](screenshots/admissions/logs/admissions_11_portal_logs_list.png)  
+*Figure 4.1: Letters of Guarantee list with current school year*
 
 **Access:**
 - Main Menu → Portal

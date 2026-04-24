@@ -67,6 +67,9 @@ As a **System Administrator**, you have the highest level of access and responsi
 
 ### Initial Login
 
+![Login Page](screenshots/admin/admin_01_login_page.png)  
+*Figure 1.1: System login page with email and password fields*
+
 1. **Navigate to System URL:**
    ```
    Production: https://ismsponsor.azurewebsites.net
@@ -144,11 +147,17 @@ As a **System Administrator**, you have the highest level of access and responsi
 
 **URL:** `/Dashboard/AdminDashboard` or `/Dashboard`
 
+![Admin Dashboard Overview](screenshots/admin/dashboard/admin_02_dashboard_overview.png)  
+*Figure 2.1: Admin Dashboard showing system overview and key metrics*
+
 The Admin Dashboard provides a comprehensive view of system status, pending work, and key metrics.
 
 ### Dashboard Sections
 
 #### 1. Key Statistics (Top Row)
+
+![Dashboard Statistics Cards](screenshots/admin/dashboard/admin_03_dashboard_stats.png)  
+*Figure 2.2: Dashboard statistics showing key metrics at a glance*
 
 **Statistics Card Layout:**
 ```
@@ -292,6 +301,9 @@ As Administrator, you have complete control over sponsor records including creat
 
 **URL:** `/Settings/Sponsors` → "Create New Sponsor"
 
+![Sponsors List](screenshots/admin/sponsors/admin_06_sponsors_list.png)  
+*Figure 3.1: Sponsors list view with search and filter options*
+
 **Step-by-Step:**
 
 1. **Navigate to Sponsors:**
@@ -299,6 +311,9 @@ As Administrator, you have complete control over sponsor records including creat
    - Or: Main Menu → Settings → Sponsors
 
 2. **Click "Create New Sponsor"**
+
+![Create Sponsor Form](screenshots/admin/sponsors/admin_09_create_sponsor_empty.png)  
+*Figure 3.2: Create sponsor form with required fields marked*
 
 3. **Fill Required Fields (marked with *):**
 
@@ -446,6 +461,9 @@ As Administrator, you have complete control over sponsor records including creat
 ### Workflow 3: View Sponsor Details
 
 **URL:** `/Settings/Sponsors/Details/{id}`
+
+![Sponsor Details View](screenshots/admin/sponsors/admin_11_sponsor_details.png)  
+*Figure 3.3: Complete sponsor details page with all information and actions*
 
 **Access Methods:**
 1. Click sponsor name from list
@@ -844,6 +862,9 @@ As Administrator, you can create, edit, activate, deactivate, and delete Letters
 
 **URL:** `/Portal/Index`
 
+![LoG List View](screenshots/admin/logs/admin_14_portal_logs_list.png)  
+*Figure 4.1: Letters of Guarantee list with school year selector and filters*
+
 **Access:**
 - Main Menu → Portal
 - Dashboard → Active LoGs card
@@ -884,6 +905,9 @@ Coverage:  [All ▼] [Full] [Partial] [None]
 ### Workflow 8: Create New LoG
 
 **URL:** `/Portal/Create`
+
+![Create LoG Form](screenshots/admin/logs/admin_16_create_log_step1.png)  
+*Figure 4.2: Create LoG form - School year and sponsor selection*
 
 **Prerequisites:**
 - Sponsor must exist (create sponsor first if needed)
@@ -939,6 +963,9 @@ Coverage:  [All ▼] [Full] [Partial] [None]
    ```
 
 6. **Coverage Rules:**
+
+![Coverage Rules Configuration](screenshots/admin/logs/admin_19_create_log_coverage_rules.png)  
+*Figure 4.3: Adding coverage rules to define what expenses are covered*
 
    **Add Coverage Rules (Optional but Recommended):**
    
@@ -1245,6 +1272,9 @@ Admissions staff cannot directly edit certain sensitive sponsor fields. Instead,
 
 **URL:** `/ReviewRequest/Index`
 
+![Change Requests List](screenshots/admin/requests/admin_24_requests_list.png)  
+*Figure 5.1: List of pending change requests requiring review*
+
 **Access:**
 - Dashboard → Pending Requests card
 - Main Menu → Review Requests
@@ -1529,6 +1559,9 @@ Status Filter: [All ▼] [Pending] [Approved] [Rejected]
 As Administrator, you manage all system users including creation, role assignment, activation/deactivation, and password resets.
 
 ### Workflow 16: View Users
+
+![Users List](screenshots/admin/users/admin_30_users_list.png)  
+*Figure 6.1: User management list showing all users, roles, and status*
 
 **Users List:**
 
@@ -2144,6 +2177,9 @@ As Administrator, you have access to comprehensive reports across all areas of t
 
 ### Workflow 24: Generate Report
 
+![Admin Reports Menu](screenshots/admin/reports/admin_36_reports_menu.png)  
+*Figure 7.1: Admin reports menu showing available report types*
+
 **Step-by-Step:**
 
 1. **Navigate to Admin Reports:**
@@ -2221,6 +2257,9 @@ As Administrator, you have access to comprehensive reports across all areas of t
 The Operations Dashboard provides real-time system health monitoring and integration status.
 
 ### Workflow 25: Monitor System Health
+
+![Operations Dashboard](screenshots/admin/operations/admin_41_operations_dashboard.png)  
+*Figure 8.1: Operations dashboard showing system health and monitoring metrics*
 
 **Dashboard Sections:**
 
