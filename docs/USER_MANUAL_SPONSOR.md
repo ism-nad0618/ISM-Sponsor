@@ -48,7 +48,7 @@ As a **Sponsor**, you have access to a self-service portal where you can manage 
 - ❌ Access system administration functions
 
 **Your Typical Workflow:**
-1. Log into your sponsor portal
+1. Log into your sponsor management
 2. Review dashboard for updates
 3. Check active LoGs for your students
 4. Verify coverage information
@@ -80,7 +80,7 @@ As a **Sponsor**, you have access to a self-service portal where you can manage 
    - Never share your login with others
 
 4. **Portal Landing:**
-   - Upon login, you'll see your **Sponsor Portal Dashboard**
+   - Upon login, you'll see your **Sponsor Management Dashboard**
    - Shows your sponsorship overview and key metrics
 
 ### Navigation Overview
@@ -897,7 +897,7 @@ If your contact information changes (address, phone, email), you must submit a c
 
 **Steps:**
 
-1. Log into Sponsor Portal
+1. Log into Sponsor Management
 2. Check Dashboard statistics
    - "Active LoGs" should match "Active Students"
    - If numbers don't match, investigation needed
@@ -928,7 +928,7 @@ If your contact information changes (address, phone, email), you must submit a c
    - Company memo announcing relocation
    - Utility bill with new address (if available)
 
-2. Log into Sponsor Portal
+2. Log into Sponsor Management
 3. Navigate to: Change Requests → Submit New Request
 4. Select "Update Address"
 5. Enter new address details carefully
@@ -957,7 +957,7 @@ If your contact information changes (address, phone, email), you must submit a c
 
 **Steps:**
 
-1. Log into Sponsor Portal
+1. Log into Sponsor Management
 2. Navigate to "My Students"
 3. Search for student by name or ID
 4. Click student name to view details
@@ -1373,7 +1373,7 @@ A: The portal interface is in English. Support staff can assist in Filipino/Taga
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | April 24, 2026 | Initial release - Complete sponsor portal manual |
+| 1.0 | April 24, 2026 | Initial release - Complete sponsor management manual |
 
 ---
 

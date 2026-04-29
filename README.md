@@ -1,4 +1,4 @@
-# ISM Sponsor Portal
+# ISM Sponsor Management
 
 ASP.NET Core 8.0 web application for managing sponsor relationships and Letters of Guarantee (LoGs).
 

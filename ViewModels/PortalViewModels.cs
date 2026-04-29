@@ -3,7 +3,7 @@ using ISMSponsor.Models.Domain;
 namespace ISMSponsor.ViewModels
 {
     /// <summary>
-    /// ViewModel for Sponsor Portal Home page
+    /// ViewModel for Sponsor Management Home page
     /// </summary>
     public class PortalHomeViewModel
     {

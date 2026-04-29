@@ -1,7 +1,7 @@
 {
-  "name": "ISM Sponsor Portal",
+  "name": "ISM Sponsor Management",
   "short_name": "ISM Sponsor",
-  "description": "International School Manila - Sponsor Portal for managing Letters of Guarantee and student sponsorships",
+  "description": "International School Manila - Sponsor Management for managing Letters of Guarantee and student sponsorships",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

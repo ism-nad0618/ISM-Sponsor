@@ -42,7 +42,7 @@ Downstream billing/sponsor access; assumes coverage decided upstream; no LoG rul
 
 \textbf{Nelnet Sponsor Billing \& Payments}\tnote{e} &
 Hosted portal &
-Sponsor portal with configurable billing cycles and ERP sync &
+Sponsor management with configurable billing cycles and ERP sync &
 Billing cycles; statements; payments; account management &
 Improves billing/payments; inherits upstream classification; not a coverage engine at entry \\
 \hline
@@ -74,7 +74,7 @@ Centralizes receivables; expects eligibility/coverage decisions pre-posting \\
 
 
 \subsection{Summary of Existing Alternative}
-Existing alternatives strengthen posting, invoicing, payments, and collections, yet they do not resolve the principal source of inconsistency: manual, context-dependent interpretation of Letters of Guarantee inside the charging interface. Across ERP modules, sponsor portals, payment gateways, and student-suite extensions, coverage is assumed to be settled upstream or inherited from manual entry, which leaves Bill-To decisions variable and audit trails fragmented. As a result, adopting any one of these systems “as is” would continue the present pattern of reversals, reclassifications, and delayed reconciliation, because none computes deterministic, explainable coverage at the moment of charge entry nor propagates a single authoritative Bill-To through NetSuite and the Online Billing System.
+Existing alternatives strengthen posting, invoicing, payments, and collections, yet they do not resolve the principal source of inconsistency: manual, context-dependent interpretation of Letters of Guarantee inside the charging interface. Across ERP modules, sponsor management systems, payment gateways, and student-suite extensions, coverage is assumed to be settled upstream or inherited from manual entry, which leaves Bill-To decisions variable and audit trails fragmented. As a result, adopting any one of these systems "as is" would continue the present pattern of reversals, reclassifications, and delayed reconciliation, because none computes deterministic, explainable coverage at the moment of charge entry nor propagates a single authoritative Bill-To through NetSuite and the Online Billing System.
 
 The proposed system addresses this gap by relocating the decision locus to charge entry and by introducing a canonical Sponsor Master synchronized with PowerSchool, the Student Charging Portal, NetSuite, and the Online Billing System. A deterministic rules engine evaluates each line against codified provisions—items and categories, caps, effective dates, and per-student overrides—and returns an immediate outcome with a reason code before the charge is saved. That first decision becomes the authoritative Bill-To and the sponsor–student allocation in NetSuite, then flows to statements without later reclassification. Each evaluation is recorded with rule, actor, timestamp, and context, producing a complete line-level audit chain that supports Ease of Paying Taxes requirements.
 

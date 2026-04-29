@@ -1,6 +1,6 @@
 # Responsive Design Quick Reference
 
-Quick guide for implementing responsive patterns in the ISM Sponsor Portal.
+Quick guide for implementing responsive patterns in the ISM Sponsor Management.
 
 ---
 
@@ -353,4 +353,4 @@ input, select, textarea {
 ---
 
 **Last Updated**: Phase 6 Completion
-**Maintained By**: ISM Sponsor Portal Development Team
+**Maintained By**: ISM Sponsor Management Development Team

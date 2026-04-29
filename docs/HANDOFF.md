@@ -677,7 +677,7 @@ Password for all: `Demo@2026!`
      - `admin/Admin@123` - Full system access
      - `cashier/Cashier@123` - Read-only access
      - `admission/Cashier@123` - Create/edit sponsors
-     - `TEST2/Test@123` - Sponsor portal access
+     - `TEST2/Test@123` - Sponsor management access
    - Invalid login attempts properly rejected
    - Protected routes redirecting correctly (HTTP 302)
 

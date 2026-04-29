@@ -24,7 +24,7 @@ Quick guide for enabling Google Sign-In on the ISM Sponsor Management System log
 
 2. **Create or Select Project**
    - Click project dropdown → "New Project"
-   - Name: "ISM Sponsor Portal"
+   - Name: "ISM Sponsor Management"
    - Click "Create"
 
 3. **Enable Google+ API**
@@ -39,7 +39,7 @@ Quick guide for enabling Google Sign-In on the ISM Sponsor Management System log
 
 5. **Configure OAuth Consent Screen** (if first time)
    - User Type: "Internal" (for ISM only) or "External"
-   - App name: "ISM Sponsor Portal"
+   - App name: "ISM Sponsor Management"
    - User support email: your@ismanila.org
    - Developer contact: your@ismanila.org
    - Scopes: email, profile (pre-selected)
@@ -47,7 +47,7 @@ Quick guide for enabling Google Sign-In on the ISM Sponsor Management System log
 
 6. **Create Web Application Credentials**
    - Application type: "Web application"
-   - Name: "ISM Sponsor Portal"
+   - Name: "ISM Sponsor Management"
    - Authorized redirect URIs:
      - Development: `https://localhost:7xxx/Account/GoogleCallback`
      - Production: `https://sponsor.ismanila.org/Account/GoogleCallback`

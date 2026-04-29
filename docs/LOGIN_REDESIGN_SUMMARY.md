@@ -307,7 +307,7 @@ builder.Services.AddAuthentication()
    - Go to "APIs & Services" > "Credentials"
    - Click "Create Credentials" > "OAuth 2.0 Client ID"
    - Application type: "Web Application"
-   - Name: "ISM Sponsor Portal"
+   - Name: "ISM Sponsor Management"
 
 4. **Configure Redirect URIs**
    - Add authorized redirect URI:

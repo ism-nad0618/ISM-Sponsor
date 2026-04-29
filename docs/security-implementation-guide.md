@@ -438,7 +438,7 @@ await _securityAudit.LogAdminActionAsync(userId, email, "Merge", "Sponsor", spon
 ```
 
 **Flow**:
-1. Sponsor navigates to sponsor portal
+1. Sponsor navigates to sponsor management
 2. Uses email/password credentials
 3. ASP.NET Core Identity validates
 4. Role = "sponsor" assigned

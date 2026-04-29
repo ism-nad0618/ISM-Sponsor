@@ -331,7 +331,7 @@ excellence.
 
 - **Enhanced Sponsor Self-Service**
   - Real-time LoG status notifications
-  - Mobile-optimized sponsor portal
+  - Mobile-optimized sponsor management
   - Document management and e-signature workflows
   - Multi-language support for international sponsors
 
@@ -381,7 +381,7 @@ Future versions could incorporate sponsor portfolio analytics...
 [Details on analytics, forecasting, dashboards]
 
 \subsubsection{Enhanced Sponsor Self-Service}
-Expanding the sponsor portal to include real-time notifications...
+Expanding the sponsor management to include real-time notifications...
 [Details on mobile app, document management, multi-language]
 
 \subsubsection{Coverage Rule Engine Evolution}
