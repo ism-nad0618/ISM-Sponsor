@@ -18,7 +18,7 @@ namespace ISMSponsor.Models.API
 
         public string GradeLevel { get; set; } = string.Empty;
 
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "US Dollar";
 
         public bool IsActive { get; set; }
     }

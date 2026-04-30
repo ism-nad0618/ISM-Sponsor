@@ -26,9 +26,9 @@ public class ItemViewModel
     public string GradeLevel { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Currency is required")]
-    [StringLength(10, ErrorMessage = "Currency cannot exceed 10 characters")]
+    [StringLength(20, ErrorMessage = "Currency cannot exceed 20 characters")]
     [Display(Name = "Currency")]
-    public string Currency { get; set; } = "USD";
+    public string Currency { get; set; } = "US Dollar";
 
     [Required(ErrorMessage = "Status is required")]
     [StringLength(20, ErrorMessage = "Status cannot exceed 20 characters")]

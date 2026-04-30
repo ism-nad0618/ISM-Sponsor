@@ -6,7 +6,7 @@ namespace ISMSponsor.Models.Domain
         public string ItemName { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string GradeLevel { get; set; } = string.Empty;
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "US Dollar";
         public string Status { get; set; } = "Active";
         public string? CategoryId { get; set; }
         

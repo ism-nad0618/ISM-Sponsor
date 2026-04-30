@@ -274,7 +274,12 @@ namespace ISMSponsor.Controllers.Settings
 
                 foreach (var student in students)
                 {
+                    // Clear navigation properties to prevent tracking conflicts
+                    student.SchoolYear = null;
+                    student.Sponsor = null;
+                    
                     var existing = await _context.Students
+                        .AsNoTracking()
                         .FirstOrDefaultAsync(s => s.SchoolYearId == student.SchoolYearId && s.StudentId == student.StudentId);
                     
                     if (existing == null)
@@ -284,11 +289,14 @@ namespace ISMSponsor.Controllers.Settings
                     }
                     else
                     {
+                        // Attach and update the existing entity
                         existing.FirstName = student.FirstName;
                         existing.LastName = student.LastName;
                         existing.GradeLevel = student.GradeLevel;
                         existing.SponsorId = student.SponsorId;
                         existing.StudentStatus = student.StudentStatus;
+                        
+                        _context.Students.Update(existing);
                         updated++;
                     }
                 }

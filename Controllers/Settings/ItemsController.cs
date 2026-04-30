@@ -467,7 +467,7 @@ namespace ISMSponsor.Controllers.Settings
                 csv.WriteField("Textbook - Math");
                 csv.WriteField("Mathematics textbook for grade 9");
                 csv.WriteField("9");
-                csv.WriteField("USD");
+                csv.WriteField("US Dollar");
                 csv.WriteField("Active");
                 csv.WriteField("CAT001");
                 csv.WriteField("true");

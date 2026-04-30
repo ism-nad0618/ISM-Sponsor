@@ -99,7 +99,10 @@
                         </td>
                         <td>
                             <span class="view-mode">@item.Currency</span>
-                            <input type="text" class="edit-mode" value="@item.Currency" data-field="Currency" style="display:none; width: 100%;" />
+                            <select class="edit-mode" data-field="Currency" style="display:none; width: 100%;">
+                                <option value="US Dollar" selected="@(item.Currency == "US Dollar")">US Dollar</option>
+                                <option value="Philippine Peso" selected="@(item.Currency == "Philippine Peso")">Philippine Peso</option>
+                            </select>
                         </td>
                         <td>
                             <span class="view-mode">
@@ -163,7 +166,10 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
                     <label for="createCurrency" class="field-label">Currency <span class="required">*</span></label>
-                    <input type="text" id="createCurrency" name="Currency" value="USD" required />
+                    <select id="createCurrency" name="Currency" required>
+                        <option value="US Dollar" selected>US Dollar</option>
+                        <option value="Philippine Peso">Philippine Peso</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
