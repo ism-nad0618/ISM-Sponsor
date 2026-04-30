@@ -298,24 +298,24 @@ namespace ISMSponsor.Controllers.Settings
                         continue; // Skip if school year doesn't exist
                     }
                     
-                    // Validate SponsorId (required FK, cannot be empty)
-                    if (string.IsNullOrWhiteSpace(student.SponsorId))
+                    // Validate SponsorId exists if provided (optional field)
+                    if (!string.IsNullOrWhiteSpace(student.SponsorId))
                     {
-                        errors.Add($"Student {student.StudentId}: Missing SponsorId (required)");
-                        skipped++;
-                        continue;
+                        var sponsorExists = await _context.Sponsors
+                            .AsNoTracking()
+                            .AnyAsync(s => s.SponsorId == student.SponsorId);
+                        
+                        if (!sponsorExists)
+                        {
+                            errors.Add($"Student {student.StudentId}: Sponsor '{student.SponsorId}' not found");
+                            skipped++;
+                            continue; // Skip this student if sponsor doesn't exist
+                        }
                     }
-                    
-                    // Validate SponsorId exists
-                    var sponsorExists = await _context.Sponsors
-                        .AsNoTracking()
-                        .AnyAsync(s => s.SponsorId == student.SponsorId);
-                    
-                    if (!sponsorExists)
+                    else
                     {
-                        errors.Add($"Student {student.StudentId}: Sponsor '{student.SponsorId}' not found");
-                        skipped++;
-                        continue; // Skip this student if sponsor doesn't exist
+                        // Set to null if empty for proper database handling
+                        student.SponsorId = null;
                     }
                     
                     var existing = await _context.Students

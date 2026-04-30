@@ -67,7 +67,8 @@ namespace ISMSponsor.Data
             builder.Entity<Student>()
                 .HasOne(s => s.Sponsor)
                 .WithMany(sp => sp.Students)
-                .HasForeignKey(s => s.SponsorId);
+                .HasForeignKey(s => s.SponsorId)
+                .IsRequired(false);
 
             builder.Entity<LogCoverage>()
                 .HasKey(l => l.LogId);

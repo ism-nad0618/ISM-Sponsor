@@ -7,7 +7,7 @@ namespace ISMSponsor.Models.Domain
         public string LastName { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string GradeLevel { get; set; } = string.Empty;
-        public string SponsorId { get; set; } = string.Empty;
+        public string? SponsorId { get; set; }
         public string StudentStatus { get; set; } = string.Empty;
 
         public SchoolYear? SchoolYear { get; set; }

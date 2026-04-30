@@ -1,0 +1,21 @@
+SchoolYearId,StudentId,FirstName,LastName,GradeLevel,SponsorId,StudentStatus
+25-26,STU101,Amelia,Santos,STUD-01,,Active
+25-26,STU102,Liam,Reyes,STUD-02,,Active
+25-26,STU103,Sophia,Cruz,STUD-03,,Active
+25-26,STU104,Noah,Garcia,STUD-04,,Active
+25-26,STU105,Isabella,Mendoza,STUD-05,,Active
+25-26,STU106,Ethan,Ramos,STUD-06,,Active
+25-26,STU107,Mia,Torres,STUD-07,,Active
+25-26,STU108,Lucas,Villanueva,STUD-08,,Active
+25-26,STU109,Charlotte,Navarro,STUD-09,,Active
+25-26,STU110,Mason,Castillo,STUD-10,,Active
+25-26,STU111,Ava,Aquino,STUD-11,,Active
+25-26,STU112,Logan,Fernandez,STUD-12,,Active
+25-26,STU113,Harper,Del Rosario,STUD-KINDER,,Active
+25-26,STU114,James,Lim,STUD-P3,,Active
+25-26,STU115,Evelyn,Tan,STUD-P4,,Active
+25-26,STU116,Benjamin,Yu,STUD-01,,Active
+25-26,STU117,Abigail,Chua,STUD-02,,Active
+25-26,STU118,Henry,Ong,STUD-03,,Active
+25-26,STU119,Emily,Sy,STUD-04,,Active
+25-26,STU120,Alexander,Go,STUD-05,,Active
