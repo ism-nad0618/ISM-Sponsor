@@ -271,12 +271,52 @@ namespace ISMSponsor.Controllers.Settings
                 }
 
                 int added = 0, updated = 0, skipped = 0;
+                var errors = new List<string>();
 
                 foreach (var student in students)
                 {
                     // Clear navigation properties to prevent tracking conflicts
                     student.SchoolYear = null;
                     student.Sponsor = null;
+                    
+                    // Validate SchoolYearId exists (required FK)
+                    if (string.IsNullOrWhiteSpace(student.SchoolYearId))
+                    {
+                        errors.Add($"Student {student.StudentId}: Missing SchoolYearId");
+                        skipped++;
+                        continue;
+                    }
+                    
+                    var schoolYearExists = await _context.SchoolYears
+                        .AsNoTracking()
+                        .AnyAsync(sy => sy.SchoolYearId == student.SchoolYearId);
+                    
+                    if (!schoolYearExists)
+                    {
+                        errors.Add($"Student {student.StudentId}: SchoolYear '{student.SchoolYearId}' not found");
+                        skipped++;
+                        continue; // Skip if school year doesn't exist
+                    }
+                    
+                    // Validate SponsorId (required FK, cannot be empty)
+                    if (string.IsNullOrWhiteSpace(student.SponsorId))
+                    {
+                        errors.Add($"Student {student.StudentId}: Missing SponsorId (required)");
+                        skipped++;
+                        continue;
+                    }
+                    
+                    // Validate SponsorId exists
+                    var sponsorExists = await _context.Sponsors
+                        .AsNoTracking()
+                        .AnyAsync(s => s.SponsorId == student.SponsorId);
+                    
+                    if (!sponsorExists)
+                    {
+                        errors.Add($"Student {student.StudentId}: Sponsor '{student.SponsorId}' not found");
+                        skipped++;
+                        continue; // Skip this student if sponsor doesn't exist
+                    }
                     
                     var existing = await _context.Students
                         .AsNoTracking()
@@ -303,17 +343,29 @@ namespace ISMSponsor.Controllers.Settings
 
                 await _context.SaveChangesAsync();
 
+                var message = $"Import completed: {added} added, {updated} updated, {skipped} skipped";
+                if (errors.Any())
+                {
+                    message += $". Errors: {string.Join("; ", errors.Take(5))}";
+                    if (errors.Count > 5)
+                    {
+                        message += $" (and {errors.Count - 5} more)";
+                    }
+                }
+
                 return Json(new { 
                     success = true, 
-                    message = $"Import completed: {added} added, {updated} updated, {skipped} skipped",
+                    message,
                     added,
                     updated,
-                    skipped
+                    skipped,
+                    errors = errors.Take(10).ToList()
                 });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Import failed: {ex.Message}" });
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Json(new { success = false, message = $"Import failed: {errorMessage}" });
             }
         }
 
