@@ -1781,12 +1781,15 @@ function previousCreateStep() {
     }
 }
 
-// Close modals when clicking outside
+// Close modals when clicking outside - DISABLED
+// Users must use the Close/Cancel button to exit modals
+/*
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
     }
 }
+*/
 
 // Load form data for create modal
 async function loadCreateFormData() {
