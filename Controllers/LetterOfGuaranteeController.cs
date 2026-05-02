@@ -584,11 +584,15 @@ namespace ISMSponsor.Controllers
                 // Add coverage rules
                 if (!string.IsNullOrEmpty(model.CoverageRulesJson))
                 {
-                    System.Diagnostics.Debug.WriteLine($"CreateModalFull - CoverageRulesJson (first 200 chars): {model.CoverageRulesJson.Substring(0, Math.Min(200, model.CoverageRulesJson.Length))}");
+                    _logger.LogWarning($"CreateModalFull - CoverageRulesJson (first 200 chars): {model.CoverageRulesJson.Substring(0, Math.Min(200, model.CoverageRulesJson.Length))}");
                     
-                    var rulesData = System.Text.Json.JsonSerializer.Deserialize<List<CoverageRuleEditModel>>(model.CoverageRulesJson);
+                    var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+                    var rulesData = System.Text.Json.JsonSerializer.Deserialize<List<CoverageRuleEditModel>>(model.CoverageRulesJson, jsonOptions);
 
-                    System.Diagnostics.Debug.WriteLine($"CreateModalFull - Deserialized rules count: {rulesData?.Count ?? 0}");
+                    _logger.LogWarning($"CreateModalFull - Deserialized rules count: {rulesData?.Count ?? 0}");
 
                     if (rulesData != null && rulesData.Any())
                     {
@@ -599,12 +603,12 @@ namespace ISMSponsor.Controllers
                         }
 
                         await _context.SaveChangesAsync();
-                        System.Diagnostics.Debug.WriteLine($"CreateModalFull - Successfully saved {rulesToSave.Count} coverage rules");
+                        _logger.LogWarning($"CreateModalFull - Successfully saved {rulesToSave.Count} coverage rules");
                     }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("CreateModalFull - CoverageRulesJson is null or empty");
+                    _logger.LogWarning("CreateModalFull - CoverageRulesJson is null or empty");
                 }
 
                 // Log the activity
@@ -1101,7 +1105,7 @@ namespace ISMSponsor.Controllers
             try
             {
                 // Debug logging
-                System.Diagnostics.Debug.WriteLine($"EditModal called - LogId: {model.LogId}, SponsorId: {model.SponsorId}");
+                _logger.LogInformation($"EditModal called - LogId: {model.LogId}, SponsorId: {model.SponsorId}");
                 
                 var user = await _userManager.GetUserAsync(User);
                 var userId = user?.Id ?? "";
@@ -1147,12 +1151,21 @@ namespace ISMSponsor.Controllers
                 // Update coverage rules
                 if (!string.IsNullOrEmpty(model.CoverageRulesJson))
                 {
-                    System.Diagnostics.Debug.WriteLine($"CoverageRulesJson: {model.CoverageRulesJson}");
-                    var rulesData = System.Text.Json.JsonSerializer.Deserialize<List<CoverageRuleEditModel>>(model.CoverageRulesJson);
+                    _logger.LogWarning($"CoverageRulesJson received: {model.CoverageRulesJson}");
+                    
+                    var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+                    var rulesData = System.Text.Json.JsonSerializer.Deserialize<List<CoverageRuleEditModel>>(model.CoverageRulesJson, jsonOptions);
 
                     if (rulesData != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Deserialized {rulesData.Count} rules");
+                        _logger.LogWarning($"Deserialized {rulesData.Count} rules from JSON");
+                        foreach (var r in rulesData)
+                        {
+                            _logger.LogWarning($"  Deserialized rule: ItemId=[{r.ItemId}], CategoryId=[{r.CategoryId}], CoverageType=[{r.CoverageType}]");
+                        }
                         
                         // Remove old rules
                         var existingRules = log.CoverageRules?.ToList() ?? new List<LoGCoverageRule>();
@@ -1171,7 +1184,7 @@ namespace ISMSponsor.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                System.Diagnostics.Debug.WriteLine($"EditModal saved successfully - LogId: {log.LogId}");
+                _logger.LogInformation($"EditModal saved successfully - LogId: {log.LogId}");
 
                 // Log the activity
                 await _logsService.LogActivityAsync(
