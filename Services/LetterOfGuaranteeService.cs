@@ -16,7 +16,7 @@ namespace ISMSponsor.Services
             _logsService = logsService;
         }
 
-        public async Task<List<LogCoverage>> GetAllAsync(string? schoolYear = null, string? sponsorId = null, string? search = null)
+        public async Task<List<LogCoverage>> GetAllAsync(string? schoolYear = null, string? sponsorId = null, string? search = null, string? status = null)
         {
             var query = _context.LogCoverages
                 .Include(l => l.Student)
@@ -40,6 +40,11 @@ namespace ISMSponsor.Services
                     (l.Student != null && (l.Student.FirstName.Contains(search) || l.Student.LastName.Contains(search))) ||
                     (l.Sponsor != null && l.Sponsor.SponsorName.Contains(search))
                 );
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(l => l.LogStatus == status);
             }
 
             return await query

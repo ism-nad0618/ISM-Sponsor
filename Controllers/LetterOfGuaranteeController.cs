@@ -42,14 +42,15 @@ namespace ISMSponsor.Controllers
         }
 
         [Authorize(Roles = "admin,admissions,cashier")]
-        public async Task<IActionResult> Index(string? schoolYear = null, string? search = null)
+        public async Task<IActionResult> Index(string? schoolYear = null, string? search = null, string? status = null)
         {
             var years = await _schoolYearService.GetAllAsync();
             ViewBag.SchoolYears = years;
             ViewBag.SelectedYear = schoolYear;
             ViewBag.Search = search;
+            ViewBag.Status = status;
 
-            var logs = await _logService.GetAllAsync(schoolYear, null, search);
+            var logs = await _logService.GetAllAsync(schoolYear, null, search, status);
             return View(logs);
         }
 
