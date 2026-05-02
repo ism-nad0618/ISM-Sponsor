@@ -203,6 +203,13 @@ namespace ISMSponsor.Controllers
                 return NotFound();
             }
 
+            // Prevent editing of approved LoGs
+            if (log.LogStatus == "Approved")
+            {
+                TempData["Error"] = "Approved Letters of Guarantee cannot be edited. Please use View Details to manage activation status.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var model = new EditLogViewModel
             {
                 LogId = log.LogId,
@@ -266,6 +273,13 @@ namespace ISMSponsor.Controllers
             if (log == null)
             {
                 return NotFound();
+            }
+
+            // Prevent editing of approved LoGs
+            if (log.LogStatus == "Approved")
+            {
+                TempData["Error"] = "Approved Letters of Guarantee cannot be edited.";
+                return RedirectToAction(nameof(Index));
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -1342,6 +1356,12 @@ namespace ISMSponsor.Controllers
                 if (log == null)
                 {
                     return Json(new { success = false, message = "LoG not found" });
+                }
+
+                // Prevent editing of approved LoGs
+                if (log.LogStatus == "Approved")
+                {
+                    return Json(new { success = false, message = "Approved Letters of Guarantee cannot be edited. Please use View Details to manage activation status." });
                 }
 
                 // Update basic fields

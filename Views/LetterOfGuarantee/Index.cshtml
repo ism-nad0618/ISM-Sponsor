@@ -125,7 +125,7 @@
                             </td>
                             <td class="action-cell">
                                 <a href="javascript:void(0)" onclick="openDetailsModal(@log.LogId)" class="btn-link">View Details</a>
-                                @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+                                @if ((User.IsInRole("admin") || User.IsInRole("admissions")) && log.LogStatus != "Approved")
                                 {
                                     <span style="color: var(--gray-300);"> | </span>
                                     <a href="javascript:void(0)" onclick="openEditLogModal(@log.LogId)" class="btn-link">Edit</a>
