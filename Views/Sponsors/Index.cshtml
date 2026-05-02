@@ -787,6 +787,14 @@
 
     function nextStep(step) {
         console.log('nextStep called, moving from step', currentStep, 'to step', step);
+        
+        // Auto-populate Username and DisplayName from SponsorId when moving to step 2
+        if (step === 2 && currentStep === 1) {
+            const sponsorId = document.getElementById('SponsorId').value.trim();
+            document.getElementById('Username').value = sponsorId;
+            document.getElementById('DisplayName').value = sponsorId;
+        }
+        
         if (validateStep(currentStep)) {
             goToStep(step);
         } else {

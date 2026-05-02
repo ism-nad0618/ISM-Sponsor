@@ -27,6 +27,7 @@ namespace ISMSponsor.ViewModels
         public string Tin { get; set; } = string.Empty;
 
         // User Account Information
+        // Note: Username is automatically set to match SponsorId in the controller
         [Required(ErrorMessage = "Username is required")]
         [Display(Name = "Username")]
         public string Username { get; set; } = string.Empty;

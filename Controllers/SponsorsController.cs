@@ -206,6 +206,15 @@ namespace ISMSponsor.Controllers
 
         private async Task<SponsorCreationResult> ValidateAndCreateSponsorAsync(CreateSponsorViewModel model)
         {
+            // Force Username to equal SponsorId for consistency
+            model.Username = model.SponsorId;
+            
+            // Auto-populate DisplayName from SponsorId if not provided
+            if (string.IsNullOrWhiteSpace(model.DisplayName))
+            {
+                model.DisplayName = model.SponsorId;
+            }
+            
             // Validate model state
             if (!ModelState.IsValid)
             {
@@ -231,7 +240,7 @@ namespace ISMSponsor.Controllers
                 };
             }
 
-            // Check if username already exists
+            // Check if username already exists (username = sponsorId, so this also validates sponsor ID uniqueness for users)
             var existingUser = await _userManager.FindByNameAsync(model.Username);
             if (existingUser != null)
             {
@@ -240,7 +249,7 @@ namespace ISMSponsor.Controllers
                     Success = false, 
                     ValidationErrors = new Dictionary<string, string[]> 
                     { 
-                        { "Username", new[] { "This username is already taken." } } 
+                        { "SponsorId", new[] { "A user account with this Sponsor ID already exists." } } 
                     } 
                 };
             }

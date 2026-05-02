@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
+using ISMSponsor.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using ISMSponsor.Models;
 
 namespace ISMSponsor.Controllers;
 
@@ -15,11 +19,19 @@ public class HealthController : ControllerBase
 {
     private readonly HealthCheckService _healthCheckService;
     private readonly IConfiguration _configuration;
+    private readonly AppDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public HealthController(HealthCheckService healthCheckService, IConfiguration configuration)
+    public HealthController(
+        HealthCheckService healthCheckService, 
+        IConfiguration configuration,
+        AppDbContext context,
+        UserManager<ApplicationUser> userManager)
     {
         _healthCheckService = healthCheckService;
         _configuration = configuration;
+        _context = context;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -105,5 +117,60 @@ public class HealthController : ControllerBase
     {
         // Simple liveness check - process is running
         return Ok(new { status = "Alive", timestamp = DateTime.UtcNow });
+    }
+
+    /// <summary>
+    /// Check sponsor and user information by sponsor ID (temporary debug endpoint).
+    /// GET /api/health/check-sponsor/{sponsorId}
+    /// </summary>
+    [HttpGet("check-sponsor/{sponsorId}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [AllowAnonymous]
+    public async Task<IActionResult> CheckSponsor(string sponsorId)
+    {
+        var sponsor = await _context.Sponsors
+            .Where(s => s.SponsorId == sponsorId)
+            .Select(s => new
+            {
+                s.SponsorId,
+                s.SponsorName,
+                s.LegalName,
+                s.IsActive,
+                s.ApprovalStatus,
+                s.CreatedOn
+            })
+            .FirstOrDefaultAsync();
+
+        var users = await _context.Users
+            .Where(u => u.SponsorId == sponsorId)
+            .Select(u => new
+            {
+                u.UserName,
+                u.DisplayName,
+                u.Email,
+                u.SponsorId,
+                u.IsActive
+            })
+            .ToListAsync();
+
+        var allSponsorUsers = await _context.Users
+            .Where(u => u.SponsorId != null)
+            .Select(u => new
+            {
+                u.UserName,
+                u.DisplayName,
+                u.SponsorId,
+                u.IsActive
+            })
+            .OrderBy(u => u.UserName)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            sponsorId,
+            sponsor,
+            usersForThisSponsor = users,
+            allSponsorUsers
+        });
     }
 }
