@@ -242,14 +242,32 @@
         <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1;">
             Next →
         </button>
-        @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
+        @if (User.IsInRole("admin"))
         {
-            <button type="button" class="btn-danger" id="detailsRejectBtn" onclick="rejectLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
-                ✕ Reject
-            </button>
-            <button type="button" class="btn-primary" id="detailsApproveBtn" onclick="approveLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
-                ✓ Approve & Activate
-            </button>
+            @if (Model.LogStatus == "Submitted")
+            {
+                <button type="button" class="btn-danger" id="detailsRejectBtn" onclick="rejectLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                    ✕ Reject
+                </button>
+                <button type="button" class="btn-primary" id="detailsApproveBtn" onclick="approveLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                    ✓ Approve & Activate
+                </button>
+            }
+            else if (Model.LogStatus == "Approved" || Model.LogStatus == "Draft")
+            {
+                @if (!Model.IsActive)
+                {
+                    <button type="button" class="btn-primary" id="detailsApproveBtn" onclick="activateLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                        ✓ Activate
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn-danger" id="detailsRejectBtn" onclick="deactivateLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                        ✕ Deactivate
+                    </button>
+                }
+            }
         }
         <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
             <span id="closeButtonTextDetails">
