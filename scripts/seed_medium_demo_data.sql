@@ -251,8 +251,7 @@ BEGIN
             @StudentId,
             @FirstName,
             @LastName,
-            CASE WHEN @GradeLevel <= 6 THEN 'Grade ' + CAST(@GradeLevel AS VARCHAR)
-                 ELSE 'Grade ' + CAST(@GradeLevel AS VARCHAR) END,
+            'STUD-' + RIGHT('00' + CAST(@GradeLevel AS VARCHAR), 2),  -- Format: STUD-01, STUD-02, etc.
             @CurrentSponsorId,
             'Active'
         );

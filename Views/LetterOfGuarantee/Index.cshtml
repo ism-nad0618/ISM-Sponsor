@@ -1186,12 +1186,62 @@ function normalizeGradeLevel(value) {
         .replace(/\s+/g, '');
 }
 
+// Convert STUD-XX format to school division (ES/MS/HS/PS)
+function getSchoolDivision(gradeLevel) {
+    const normalized = normalizeGradeLevel(gradeLevel);
+    
+    // Preschool/Kindergarten
+    if (normalized.includes('KINDER') || normalized === 'STUD-KINDER' || 
+        normalized === 'STUD-P3' || normalized === 'STUD-P4' || 
+        normalized === 'P3' || normalized === 'P4' || normalized === 'K') {
+        return 'PS';
+    }
+    
+    // Extract numeric grade from STUD-XX format
+    const studMatch = normalized.match(/STUD-(\d+)/);
+    if (studMatch) {
+        const grade = parseInt(studMatch[1], 10);
+        if (grade >= 1 && grade <= 6) return 'ES';  // Elementary: 1-6
+        if (grade >= 7 && grade <= 8) return 'MS';  // Middle School: 7-8
+        if (grade >= 9 && grade <= 12) return 'HS'; // High School: 9-12
+    }
+    
+    // Handle plain numbers
+    const numericGrade = parseInt(normalized, 10);
+    if (!isNaN(numericGrade)) {
+        if (numericGrade >= 1 && numericGrade <= 6) return 'ES';
+        if (numericGrade >= 7 && numericGrade <= 8) return 'MS';
+        if (numericGrade >= 9 && numericGrade <= 12) return 'HS';
+    }
+    
+    // Return as-is for ES, MS, HS, ALL
+    return normalized;
+}
+
 function isGradeLevelMatch(itemGradeLevel, studentGradeLevel) {
-    const studentGrade = normalizeGradeLevel(studentGradeLevel);
-    if (!studentGrade) {
+    const normalizedItem = normalizeGradeLevel(itemGradeLevel);
+    const normalizedStudent = normalizeGradeLevel(studentGradeLevel);
+    
+    // If no student grade, allow all
+    if (!normalizedStudent) {
         return true;
     }
-    return normalizeGradeLevel(itemGradeLevel) === studentGrade;
+    
+    // "ALL" items match any student grade
+    if (normalizedItem === 'ALL') {
+        return true;
+    }
+    
+    // Exact match (for specific STUD-XX items)
+    if (normalizedItem === normalizedStudent) {
+        return true;
+    }
+    
+    // Division-based matching (ES/MS/HS/PS)
+    const itemDivision = getSchoolDivision(itemGradeLevel);
+    const studentDivision = getSchoolDivision(studentGradeLevel);
+    
+    return itemDivision === studentDivision;
 }
 
 function formatCurrencyValue(value) {

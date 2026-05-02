@@ -316,7 +316,7 @@ public class MediumDemoDataSeeder
                     FirstName = firstName,
                     LastName = lastName,
                     SchoolYearId = "25-26",
-                    GradeLevel = gradeLevel <= 6 ? $"Grade {gradeLevel}" : $"Grade {gradeLevel}",
+                    GradeLevel = $"STUD-{gradeLevel:D2}",  // Format: STUD-01, STUD-02, etc.
                     SponsorId = sponsorId,
                     StudentStatus = "Active"
                 };

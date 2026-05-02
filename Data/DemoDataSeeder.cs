@@ -427,14 +427,14 @@ public class DemoDataSeeder
     {
         var students = new[]
         {
-            new Student { StudentId = "DEMO-ST001", FirstName = "Emma", LastName = "Wilson", GradeLevel = "Grade 5", SponsorId = "DEMO-SP001", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST002", FirstName = "Liam", LastName = "Anderson", GradeLevel = "Grade 8", SponsorId = "DEMO-SP001", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST003", FirstName = "Sophia", LastName = "Lee", GradeLevel = "Grade 3", SponsorId = "DEMO-SP002", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST004", FirstName = "Noah", LastName = "Kim", GradeLevel = "Grade 11", SponsorId = "DEMO-SP002", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST005", FirstName = "Olivia", LastName = "Johnson", GradeLevel = "Grade 6", SponsorId = "DEMO-SP003", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST006", FirstName = "Ethan", LastName = "Martinez", GradeLevel = "Grade 9", SponsorId = "DEMO-SP004", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST007", FirstName = "Ava", LastName = "Garcia", GradeLevel = "Grade 4", SponsorId = "DEMO-SP004", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST008", FirstName = "Mason", LastName = "Chen", GradeLevel = "Grade 10", SponsorId = "DEMO-SP005", SchoolYearId = "25-26", StudentStatus = "Withdrawn" }
+            new Student { StudentId = "DEMO-ST001", FirstName = "Emma", LastName = "Wilson", GradeLevel = "STUD-05", SponsorId = "DEMO-SP001", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST002", FirstName = "Liam", LastName = "Anderson", GradeLevel = "STUD-08", SponsorId = "DEMO-SP001", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST003", FirstName = "Sophia", LastName = "Lee", GradeLevel = "STUD-03", SponsorId = "DEMO-SP002", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST004", FirstName = "Noah", LastName = "Kim", GradeLevel = "STUD-11", SponsorId = "DEMO-SP002", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST005", FirstName = "Olivia", LastName = "Johnson", GradeLevel = "STUD-06", SponsorId = "DEMO-SP003", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST006", FirstName = "Ethan", LastName = "Martinez", GradeLevel = "STUD-09", SponsorId = "DEMO-SP004", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST007", FirstName = "Ava", LastName = "Garcia", GradeLevel = "STUD-04", SponsorId = "DEMO-SP004", SchoolYearId = "25-26", StudentStatus = "Active" },
+            new Student { StudentId = "DEMO-ST008", FirstName = "Mason", LastName = "Chen", GradeLevel = "STUD-10", SponsorId = "DEMO-SP005", SchoolYearId = "25-26", StudentStatus = "Withdrawn" }
         };
 
         foreach (var student in students)

@@ -202,8 +202,8 @@ namespace ISMSponsor.Data
             if (!_context.Students.Any())
             {
                 _context.Students.AddRange(
-                    new Student { SchoolYearId = "25-26", StudentId = "S001", FirstName = "John", LastName = "Doe", GradeLevel = "1", SponsorId = "ACME", StudentStatus = "active" },
-                    new Student { SchoolYearId = "25-26", StudentId = "S002", FirstName = "Jane", LastName = "Smith", GradeLevel = "2", SponsorId = "XYZBANK", StudentStatus = "active" }
+                    new Student { SchoolYearId = "25-26", StudentId = "S001", FirstName = "John", LastName = "Doe", GradeLevel = "STUD-01", SponsorId = "ACME", StudentStatus = "active" },
+                    new Student { SchoolYearId = "25-26", StudentId = "S002", FirstName = "Jane", LastName = "Smith", GradeLevel = "STUD-02", SponsorId = "XYZBANK", StudentStatus = "active" }
                 );
                 _context.SaveChanges();
             }
