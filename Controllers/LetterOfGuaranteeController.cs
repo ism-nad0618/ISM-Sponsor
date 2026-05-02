@@ -1186,6 +1186,106 @@ namespace ISMSponsor.Controllers
             }
         }
 
+        /// <summary>
+        /// Diagnostic endpoint to test ItemId matching without affecting data
+        /// POST: /Settings/LetterOfGuarantee/TestItemIdMatch
+        /// Body: { "itemId": "MAJOR-TUITION-PHP-G10 TUITION FULL" }
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> TestItemIdMatch([FromBody] TestItemIdRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.ItemId))
+                {
+                    return Json(new { success = false, message = "ItemId is required" });
+                }
+
+                var testItemId = request.ItemId.Trim();
+                
+                // Fetch all active items
+                var allItems = await _context.Items
+                    .Where(i => i.IsActive)
+                    .Select(i => new { 
+                        ItemId = i.ItemId.Trim(), 
+                        i.ItemName,
+                        i.CategoryId, 
+                        i.GradeLevel 
+                    })
+                    .ToListAsync();
+
+                // Test exact match (case-insensitive)
+                var exactMatch = allItems.FirstOrDefault(i => 
+                    i.ItemId.Equals(testItemId, StringComparison.OrdinalIgnoreCase));
+
+                // Find similar items
+                var similarItems = allItems
+                    .Where(i => i.ItemId.Contains(testItemId.Substring(0, Math.Min(10, testItemId.Length)), 
+                                StringComparison.OrdinalIgnoreCase))
+                    .Take(10)
+                    .Select(i => new {
+                        i.ItemId,
+                        i.ItemName,
+                        i.CategoryId,
+                        i.GradeLevel,
+                        Length = i.ItemId.Length,
+                        FirstChar = i.ItemId.Length > 0 ? i.ItemId[0].ToString() : "",
+                        LastChar = i.ItemId.Length > 0 ? i.ItemId[i.ItemId.Length - 1].ToString() : ""
+                    })
+                    .ToList();
+
+                // Get items for same grade level (if request includes grade)
+                var gradeItems = new List<object>();
+                if (!string.IsNullOrWhiteSpace(request.GradeLevel))
+                {
+                    gradeItems = allItems
+                        .Where(i => i.GradeLevel == request.GradeLevel)
+                        .Take(20)
+                        .Select(i => new {
+                            i.ItemId,
+                            i.ItemName,
+                            i.CategoryId
+                        })
+                        .ToList<object>();
+                }
+
+                var result = new
+                {
+                    success = true,
+                    testItemId = testItemId,
+                    testItemIdLength = testItemId.Length,
+                    testItemIdFirstChar = testItemId.Length > 0 ? testItemId[0].ToString() : "",
+                    testItemIdLastChar = testItemId.Length > 0 ? testItemId[testItemId.Length - 1].ToString() : "",
+                    exactMatchFound = exactMatch != null,
+                    exactMatch = exactMatch != null ? new {
+                        exactMatch.ItemId,
+                        exactMatch.ItemName,
+                        exactMatch.CategoryId,
+                        exactMatch.GradeLevel,
+                        Length = exactMatch.ItemId.Length
+                    } : null,
+                    similarItemsCount = similarItems.Count,
+                    similarItems = similarItems,
+                    gradeItemsCount = gradeItems.Count,
+                    gradeItems = gradeItems,
+                    totalActiveItemsInDb = allItems.Count
+                };
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+
+        public class TestItemIdRequest
+        {
+            public string ItemId { get; set; } = string.Empty;
+            public string? GradeLevel { get; set; }
+        }
+
         private async Task<List<LoGCoverageRule>> BuildCoverageRulesForSaveAsync(int logId, List<CoverageRuleEditModel> rulesData, string userId)
         {
             var cleanedRules = rulesData
@@ -1203,16 +1303,47 @@ namespace ISMSponsor.Controllers
             .Select(i => new { ItemId = i.ItemId.Trim(), i.CategoryId })
             .ToListAsync();
 
-        var itemCategoryMap = allItems
-            .Where(i => selectedItemIds.Any(sid => sid.Equals(i.ItemId, StringComparison.OrdinalIgnoreCase)))
-            .ToDictionary(i => selectedItemIds.First(sid => sid.Equals(i.ItemId, StringComparison.OrdinalIgnoreCase)), i => i.CategoryId);
-
-        System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Requested ItemIds: {string.Join(", ", selectedItemIds)}");
-        System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Found {itemCategoryMap.Count} matching items in DB");
-        if (itemCategoryMap.Count == 0 && selectedItemIds.Any())
+        System.Diagnostics.Debug.WriteLine($"=== BuildCoverageRulesForSaveAsync DIAGNOSTIC START ===");
+        System.Diagnostics.Debug.WriteLine($"Requested {selectedItemIds.Count} ItemIds:");
+        foreach (var reqId in selectedItemIds)
         {
-            System.Diagnostics.Debug.WriteLine($"WARNING: No items found! First 5 items in DB: {string.Join(", ", allItems.Take(5).Select(i => i.ItemId))}");
+            System.Diagnostics.Debug.WriteLine($"  REQ: [{reqId}] Length={reqId.Length}, First='{(reqId.Length > 0 ? reqId[0] : ' ')}', Last='{(reqId.Length > 0 ? reqId[reqId.Length - 1] : ' ')}'");
         }
+
+        System.Diagnostics.Debug.WriteLine($"Database has {allItems.Count} active Items");
+        
+        // Enhanced matching with detailed logging
+        var itemCategoryMap = new Dictionary<string, string?>();
+        foreach (var reqId in selectedItemIds)
+        {
+            var matchingItem = allItems.FirstOrDefault(i => i.ItemId.Equals(reqId, StringComparison.OrdinalIgnoreCase));
+            if (matchingItem != null)
+            {
+                itemCategoryMap[reqId] = matchingItem.CategoryId;
+                System.Diagnostics.Debug.WriteLine($"  MATCH FOUND: [{reqId}] -> CategoryId=[{matchingItem.CategoryId}]");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"  NO MATCH for: [{reqId}]");
+                // Show closest matches from database
+                var similarItems = allItems
+                    .Where(i => i.ItemId.Contains("TUITION", StringComparison.OrdinalIgnoreCase) || 
+                                i.ItemId.Contains("MAJOR", StringComparison.OrdinalIgnoreCase))
+                    .Take(5)
+                    .ToList();
+                if (similarItems.Any())
+                {
+                    System.Diagnostics.Debug.WriteLine($"    Similar items in DB:");
+                    foreach (var similar in similarItems)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"      DB: [{similar.ItemId}] Length={similar.ItemId.Length}");
+                    }
+                }
+            }
+        }
+
+        System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Found {itemCategoryMap.Count} matching items");
+        System.Diagnostics.Debug.WriteLine($"=== BuildCoverageRulesForSaveAsync DIAGNOSTIC END ===");
 
         var rulesToSave = new List<LoGCoverageRule>();
 
