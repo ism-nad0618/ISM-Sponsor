@@ -150,6 +150,18 @@ namespace ISMSponsor.Controllers
             return View(log);
         }
 
+        [Authorize(Roles = "admin,admissions,cashier")]
+        public async Task<IActionResult> DetailsModal(int id)
+        {
+            var log = await _logService.GetByIdAsync(id);
+            if (log == null)
+            {
+                return NotFound();
+            }
+
+            return PartialView("_DetailsModal", log);
+        }
+
         [Authorize(Roles = "admin,admissions")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)

@@ -124,7 +124,12 @@
                                 }
                             </td>
                             <td class="action-cell">
-                                <a href="javascript:void(0)" onclick="openEditLogModal(@log.LogId)" class="btn-link">View / Edit</a>
+                                <a href="javascript:void(0)" onclick="openDetailsModal(@log.LogId)" class="btn-link">View Details</a>
+                                @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+                                {
+                                    <span style="color: var(--gray-300);"> | </span>
+                                    <a href="javascript:void(0)" onclick="openEditLogModal(@log.LogId)" class="btn-link">Edit</a>
+                                }
                             </td>
                         </tr>
                     }
@@ -2162,4 +2167,44 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
         createBtn.innerHTML = originalText;
     }
 });
+
+// Details Modal Functions
+async function openDetailsModal(logId) {
+    const modal = document.getElementById('detailsModal');
+    const modalBody = document.getElementById('detailsModalBody');
+    
+    // Show loading state
+    modalBody.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>Loading details...</p></div>';
+    modal.style.display = 'flex';
+    
+    try {
+        const response = await fetch(`/Settings/LetterOfGuarantee/DetailsModal/${logId}`);
+        if (!response.ok) {
+            throw new Error('Failed to load details');
+        }
+        
+        const html = await response.text();
+        modalBody.innerHTML = html;
+    } catch (error) {
+        console.error('Error:', error);
+        modalBody.innerHTML = '<div class="alert alert-error">Failed to load details. Please try again.</div>';
+    }
+}
+
+function closeDetailsModal() {
+    document.getElementById('detailsModal').style.display = 'none';
+}
 </script>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h2>Letter of Guarantee Details</h2>
+            <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="detailsModalBody">
+            <!-- Content will be loaded here via AJAX -->
+        </div>
+    </div>
+</div>

@@ -1,0 +1,233 @@
+@model ISMSponsor.Models.Domain.LogCoverage
+
+<style>
+    #detailsModalContent .field-label { font-size: 0.8rem; margin-bottom: 0.25rem; }
+    #detailsModalContent .data-grid > div p { font-size: 0.875rem; margin: 0; }
+    #detailsModalContent .data-grid { gap: 0.75rem; }
+    #detailsModalContent .card { padding: 0.75rem; margin-bottom: 0.75rem; border: 1px solid var(--gray-200); border-radius: 8px; background: white; }
+    #detailsModalContent .table-title { font-size: 1rem; margin-bottom: 0.5rem; font-weight: 600; }
+    #detailsModalContent .alert { padding: 0.5rem; font-size: 0.875rem; }
+</style>
+
+<div id="detailsModalContent">
+    <div class="card">
+        <h2 class="table-title">Status and Activation</h2>
+        
+        <div class="data-grid" style="margin-bottom: 0.75rem;">
+            <div>
+                <p class="field-label">Current Status</p>
+                <p><span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span></p>
+            </div>
+            <div>
+                <p class="field-label">Activation State</p>
+                <p>
+                    @if (Model.IsActive)
+                    {
+                        <span class="status-badge status-active">Active</span>
+                    }
+                    else
+                    {
+                        <span class="status-badge status-inactive">Inactive</span>
+                    }
+                </p>
+            </div>
+        </div>
+
+        @if (Model.IsActive && Model.ActivatedOn.HasValue)
+        {
+            <div class="alert alert-success">
+                <strong>Active Coverage</strong> - Activated @Model.ActivatedOn?.ToString("MMM dd, yyyy")
+                @if (Model.ActivatedByUser != null)
+                {
+                    <text> by @Model.ActivatedByUser.DisplayName</text>
+                }
+            </div>
+        }
+        else if (Model.DeactivatedOn.HasValue)
+        {
+            <div class="alert alert-error">
+                <strong>Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
+                @if (Model.DeactivatedByUser != null)
+                {
+                    <text> by @Model.DeactivatedByUser.DisplayName</text>
+                }
+                @if (!string.IsNullOrEmpty(Model.DeactivationReason))
+                {
+                    <text> | Reason: @Model.DeactivationReason</text>
+                }
+            </div>
+        }
+        else if (@Model.LogStatus == "Approved")
+        {
+            <div class="alert alert-success">
+                <strong>✓ Approved & Active</strong> - This LoG has been approved and is currently active.
+            </div>
+        }
+        else if (@Model.LogStatus == "Rejected")
+        {
+            <div class="alert alert-error">
+                <strong>✕ Rejected</strong> - This LoG has been rejected. Review comments below.
+            </div>
+        }
+        else if (@Model.LogStatus == "Submitted")
+        {
+            <div class="alert" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
+                <strong>⏳ Awaiting Admin Review</strong> - This LoG is waiting for administrator approval.
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <h2 class="table-title">Student and Sponsor Information</h2>
+        <div class="data-grid">
+            <div>
+                <p class="field-label">School Year</p>
+                <p><strong>@Model.SchoolYearId</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Student ID</p>
+                <p><strong>@Model.StudentId</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Student Name</p>
+                <p><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Grade Level</p>
+                <p><strong>@(Model.Student?.GradeLevel ?? "N/A")</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Sponsor ID</p>
+                <p><strong>@Model.SponsorId</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Sponsor Name</p>
+                <p><strong>@(Model.Sponsor?.SponsorName ?? "N/A")</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="table-title">Coverage Dates</h2>
+        <div class="data-grid">
+            <div>
+                <p class="field-label">Effective From</p>
+                <p><strong>@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Effective To</p>
+                <p><strong>@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></p>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Notes) || !string.IsNullOrEmpty(Model.ReviewComments))
+    {
+        <div class="card">
+            <h2 class="table-title">Notes and Comments</h2>
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div style="margin-bottom: 0.5rem;">
+                    <p class="field-label">Notes</p>
+                    <p style="white-space: pre-wrap; font-size: 0.875rem;">@Model.Notes</p>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ReviewComments))
+            {
+                <div>
+                    <p class="field-label">Review Comments</p>
+                    <p style="white-space: pre-wrap; font-size: 0.875rem;">@Model.ReviewComments</p>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="card">
+        <h2 class="table-title">Attachment</h2>
+        @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
+        {
+            <div class="data-grid">
+                <div>
+                    <p class="field-label">File Name</p>
+                    <p><strong>@Model.AttachmentFileName</strong></p>
+                </div>
+                <div>
+                    <p class="field-label">Uploaded On</p>
+                    <p><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</strong></p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p class="help-text" style="color: var(--gray-500); font-size: 0.875rem;">No attachment</p>
+        }
+    </div>
+
+    <div class="card">
+        <h2 class="table-title">Audit Trail</h2>
+        <div class="data-grid">
+            <div>
+                <p class="field-label">Created On</p>
+                <p><strong>@Model.CreatedOn.ToString("MMM dd, yyyy")</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Created By</p>
+                <p><strong>@(Model.CreatedByUser?.DisplayName ?? "System")</strong></p>
+            </div>
+            @if (Model.ModifiedOn.HasValue)
+            {
+                <div>
+                    <p class="field-label">Modified On</p>
+                    <p><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy")</strong></p>
+                </div>
+                <div>
+                    <p class="field-label">Modified By</p>
+                    <p><strong>@(Model.ModifiedByUser?.DisplayName ?? "System")</strong></p>
+                </div>
+            }
+        </div>
+        
+        @* Approval Workflow History *@
+        @if (Model.SubmittedOn.HasValue || Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
+        {
+            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--gray-200);">
+                <h3 style="margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600;">Approval History</h3>
+                <div class="data-grid">
+                    @if (Model.SubmittedOn.HasValue)
+                    {
+                        <div>
+                            <p class="field-label">📤 Submitted On</p>
+                            <p><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy")</strong></p>
+                        </div>
+                        <div>
+                            <p class="field-label">Submitted By</p>
+                            <p><strong>@(Model.SubmittedByUser?.DisplayName ?? "Unknown")</strong></p>
+                        </div>
+                    }
+                    @if (Model.ApprovedOn.HasValue)
+                    {
+                        <div>
+                            <p class="field-label">✓ Approved On</p>
+                            <p><strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy")</strong></p>
+                        </div>
+                        <div>
+                            <p class="field-label">Approved By</p>
+                            <p><strong style="color: var(--success-color);">@(Model.ApprovedByUser?.DisplayName ?? "Unknown")</strong></p>
+                        </div>
+                    }
+                    @if (Model.RejectedOn.HasValue)
+                    {
+                        <div>
+                            <p class="field-label">✕ Rejected On</p>
+                            <p><strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy")</strong></p>
+                        </div>
+                        <div>
+                            <p class="field-label">Rejected By</p>
+                            <p><strong style="color: var(--error-color);">@(Model.RejectedByUser?.DisplayName ?? "Unknown")</strong></p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
