@@ -1137,64 +1137,60 @@ function deleteCoverageRule(index) {
 }
 
 function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId, currentItemId = null) {
-    // Populate item dropdown for both edit and create modes
+    // Populate item dropdown - ONLY show items matching student's exact grade level
     const selectElement = document.getElementById(selectElementId);
     selectElement.innerHTML = '<option value="">-- Select Item --</option>';
-    const categories = itemsData === createItemsData ? createCategoriesData : editCategoriesData;
     
-    console.log('Populating items dropdown:', {
-        totalItems: itemsData.length,
-        studentGradeLevel: studentGradeLevel,
-        currentItemId: currentItemId
-    });
+    console.log('Populating items dropdown for student grade:', studentGradeLevel);
     
-    // Filter by grade level - NO deduplication since each ItemID is unique
+    if (!itemsData || itemsData.length === 0) {
+        console.warn('No items data available');
+        return;
+    }
+    
     let itemsToDisplay = [];
     
-    // First, if there's a currentItemId, ensure it's in the list even if it doesn't match grade level
+    // First, if there's a currentItemId, ensure it's in the list (always include current selection)
     if (currentItemId) {
         const currentItem = itemsData.find(item => item.value === currentItemId);
         if (currentItem) {
             itemsToDisplay.push(currentItem);
-            console.log('Added current item:', currentItem.text, 'ID:', currentItem.value, 'Grade:', currentItem.gradeLevel);
+            console.log('Added current item:', currentItem.text, 'ID:', currentItem.value);
         }
     }
     
-    // Then add all items that match grade level (no deduplication - keep all unique ItemIDs)
-    let matchedCount = 0;
+    // Add all items that match the student's EXACT grade level
     itemsData
         .filter(item => {
             // Skip if already added as current item
             if (currentItemId && item.value === currentItemId) {
                 return false;
             }
-            const matches = isGradeLevelMatch(item.gradeLevel, studentGradeLevel);
-            if (matches) matchedCount++;
-            return matches;
+            return isGradeLevelMatch(item.gradeLevel, studentGradeLevel);
         })
         .forEach(item => {
-            itemsToDisplay.push(item);
+            // Avoid duplicates
+            if (!itemsToDisplay.find(i => i.value === item.value)) {
+                itemsToDisplay.push(item);
+            }
         });
     
-    console.log(`Matched ${matchedCount} items by grade level, ${itemsToDisplay.length} total items to display`);
+    console.log(`Filtered to ${itemsToDisplay.length} items for student grade ${studentGradeLevel}`);
     
-    // Sort items alphabetically by display text
+    // Sort items alphabetically by ItemName
     itemsToDisplay.sort((a, b) => {
         const textA = a.text || a.value || '';
         const textB = b.text || b.value || '';
         return textA.localeCompare(textB);
     });
     
+    // Add options to dropdown
     itemsToDisplay.forEach(item => {
         const option = document.createElement('option');
         option.value = item.value;  // ItemID (e.g., "MAJOR-FEF-G10 FEF") for saving
         
-        // Display format: ItemName if unique ItemID contains more info
-        // If ItemID contains grade info, show ItemName only
-        // Otherwise show "ItemName (ItemID)" for clarity
+        // Display format: show ItemName or ItemName (ItemID) if different
         let displayText = item.text || item.value;
-        
-        // If ItemID is significantly different from ItemName, show both for clarity
         if (item.value && item.text && item.value !== item.text && !item.value.startsWith(item.text)) {
             displayText = `${item.text} (${item.value})`;
         }
@@ -1202,10 +1198,10 @@ function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId
         option.textContent = displayText;
         selectElement.appendChild(option);
         
-        console.log('Added option:', displayText, '| ItemID:', item.value, '| Grade:', item.gradeLevel);
+        console.log('Added to dropdown:', displayText, '| ItemID:', item.value);
     });
     
-    console.log('Dropdown populated with', itemsToDisplay.length, 'items');
+    console.log('Dropdown now contains', itemsToDisplay.length, 'items');
 }
 
 
@@ -1265,14 +1261,23 @@ function isGradeLevelMatch(itemGradeLevel, studentGradeLevel) {
         return true;
     }
     
-    // Exact match (for specific STUD-XX items)
+    // Exact STUD-XX match (strict matching for grade-specific items)
     if (normalizedItem === normalizedStudent) {
         return true;
     }
     
-    // Division-based matching (ES/MS/HS/PS)
+    // Division-based matching (ES/MS/HS/PS) as fallback for generic items
     const itemDivision = getSchoolDivision(itemGradeLevel);
     const studentDivision = getSchoolDivision(studentGradeLevel);
+    
+    // ONLY match if they're not in STUD-XX format (to avoid showing wrong specific grades)
+    const isItemStudFormat = normalizedItem.startsWith('STUD-');
+    const isStudentStudFormat = normalizedStudent.startsWith('STUD-');
+    
+    // If student is STUD-XX format, only show items that are exact match, ALL, or generic divisions
+    if (isStudentStudFormat && isItemStudFormat) {
+        return false;  // Don't do division-based matching for specific grades
+    }
     
     return itemDivision === studentDivision;
 }
