@@ -2189,6 +2189,10 @@ async function openDetailsModal(logId) {
         
         const html = await response.text();
         modalBody.innerHTML = tokenHtml + html;
+        
+        // Initialize navigation buttons after content is loaded
+        currentDetailsStep = 1;
+        updateDetailsNavigationButtons();
     } catch (error) {
         console.error('Error:', error);
         modalBody.innerHTML = tokenHtml + '<div class="alert alert-error">Failed to load details. Please try again.</div>';
@@ -2197,6 +2201,135 @@ async function openDetailsModal(logId) {
 
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
+}
+
+// Details Modal Navigation Functions
+let currentDetailsStep = 1;
+const totalDetailsSteps = 4;
+
+function goToDetailsStep(step) {
+    currentDetailsStep = step;
+    
+    // Hide all steps
+    document.querySelectorAll('.step-content[data-modal="details"]').forEach(content => {
+        content.style.display = 'none';
+    });
+    document.querySelectorAll('.step-tab[data-modal="details"]').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show selected step
+    const selectedContent = document.querySelector(`.step-content[data-modal="details"][data-step="${step}"]`);
+    const selectedTab = document.querySelector(`.step-tab[data-modal="details"][data-step="${step}"]`);
+    
+    if (selectedContent) selectedContent.style.display = 'block';
+    if (selectedTab) selectedTab.classList.add('active');
+    
+    // Update navigation buttons
+    updateDetailsNavigationButtons();
+}
+
+function nextDetailsStep() {
+    if (currentDetailsStep < totalDetailsSteps) {
+        goToDetailsStep(currentDetailsStep + 1);
+    }
+}
+
+function previousDetailsStep() {
+    if (currentDetailsStep > 1) {
+        goToDetailsStep(currentDetailsStep - 1);
+    }
+}
+
+function updateDetailsNavigationButtons() {
+    const prevBtn = document.getElementById('detailsPrevStepBtn');
+    const nextBtn = document.getElementById('detailsNextStepBtn');
+    const rejectBtn = document.getElementById('detailsRejectBtn');
+    const approveBtn = document.getElementById('detailsApproveBtn');
+    
+    if (prevBtn) {
+        prevBtn.style.display = currentDetailsStep === 1 ? 'none' : 'block';
+    }
+    
+    if (nextBtn) {
+        if (currentDetailsStep === totalDetailsSteps) {
+            nextBtn.style.display = 'none';
+            // Show approval buttons on last step if they exist
+            if (rejectBtn) rejectBtn.style.display = 'flex';
+            if (approveBtn) approveBtn.style.display = 'flex';
+        } else {
+            nextBtn.style.display = 'flex';
+            nextBtn.style.flex = '1';
+            if (rejectBtn) rejectBtn.style.display = 'none';
+            if (approveBtn) approveBtn.style.display = 'none';
+        }
+    }
+}
+
+async function approveLogFromModal(logId) {
+    if (!confirm('Approve this Letter of Guarantee? It will be automatically activated.')) {
+        return;
+    }
+    
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    
+    try {
+        const formData = new FormData();
+        formData.append('reviewComments', '');
+        
+        const response = await fetch(`/Settings/LetterOfGuarantee/Approve/${logId}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('Letter of Guarantee approved successfully!');
+            closeDetailsModal();
+            window.location.reload();
+        } else {
+            alert('Failed to approve. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+async function rejectLogFromModal(logId) {
+    const reason = prompt('Please enter the reason for rejection:');
+    if (!reason || reason.trim() === '') {
+        alert('Rejection reason is required.');
+        return;
+    }
+    
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    
+    try {
+        const formData = new FormData();
+        formData.append('rejectionReason', reason);
+        
+        const response = await fetch(`/Settings/LetterOfGuarantee/Reject/${logId}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('Letter of Guarantee rejected successfully!');
+            closeDetailsModal();
+            window.location.reload();
+        } else {
+            alert('Failed to reject. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
 }
 </script>
 
