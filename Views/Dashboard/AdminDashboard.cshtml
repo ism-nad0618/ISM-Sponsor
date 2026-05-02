@@ -106,6 +106,7 @@
             <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
         </div>
         <div class="modal-body" id="detailsModalBody">
+            @Html.AntiForgeryToken()
             <!-- Content will be loaded here via AJAX -->
         </div>
     </div>
@@ -117,8 +118,12 @@ async function openDetailsModal(logId) {
     const modal = document.getElementById('detailsModal');
     const modalBody = document.getElementById('detailsModalBody');
     
+    // Preserve the antiforgery token
+    const tokenInput = modalBody.querySelector('input[name="__RequestVerificationToken"]');
+    const tokenHtml = tokenInput ? tokenInput.outerHTML : '';
+    
     // Show loading state
-    modalBody.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>Loading details...</p></div>';
+    modalBody.innerHTML = tokenHtml + '<div style="text-align: center; padding: 2rem;"><p>Loading details...</p></div>';
     modal.style.display = 'flex';
     
     try {
@@ -128,10 +133,10 @@ async function openDetailsModal(logId) {
         }
         
         const html = await response.text();
-        modalBody.innerHTML = html;
+        modalBody.innerHTML = tokenHtml + html;
     } catch (error) {
         console.error('Error:', error);
-        modalBody.innerHTML = '<div class="alert alert-error">Failed to load details. Please try again.</div>';
+        modalBody.innerHTML = tokenHtml + '<div class="alert alert-error">Failed to load details. Please try again.</div>';
     }
 }
 
