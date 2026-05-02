@@ -1367,9 +1367,6 @@ function saveRuleEdit() {
     console.log('Student grade level:', studentGrade);
     console.log('Source items count:', sourceItems.length);
     
-    const selectedItem = sourceItems.find(i => i.value === rule.itemId);
-    console.log('Selected item:', selectedItem);
-    
     // Validate
     if (!rule.itemId) {
         alert('Please select an item');
