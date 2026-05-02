@@ -1293,6 +1293,11 @@ function formatItemDisplay(item, categories) {
 }
 
 function getItemDisplayById(itemId, items, categories) {
+    // Handle null or undefined itemId
+    if (itemId === null || itemId === undefined || itemId === '') {
+        return '(No Item Selected)';
+    }
+    
     if (!items || items.length === 0) {
         console.warn('No items data available for lookup');
         return itemId || 'Unknown';
