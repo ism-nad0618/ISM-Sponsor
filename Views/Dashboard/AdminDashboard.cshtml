@@ -39,7 +39,7 @@
 </div>
 
 <div class="card">
-    <h2 class="table-title">Recent Letters of Guarantee (@Model.RecentLoGs.Count())</h2>
+    <h2 class="table-title">Letters of Guarantee for Approval (@Model.RecentLoGs.Count())</h2>
     <div class="table-wrap">
         <table>
             <thead>
@@ -56,12 +56,12 @@
                 @if (!Model.RecentLoGs.Any())
                 {
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">No recent LoGs available.</td>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">No LoGs awaiting approval.</td>
                     </tr>
                 }
                 else
                 {
-                    foreach (var log in Model.RecentLoGs.Take(8))
+                    foreach (var log in Model.RecentLoGs)
                     {
                         var avgCoverage = log.CoverageRules?.Any() == true 
                             ? log.CoverageRules.Where(r => r.CoveragePercentage.HasValue).Average(r => r.CoveragePercentage) ?? 0
@@ -77,7 +77,7 @@
                             <td data-label="Coverage">@avgCoverage.ToString("F0")%</td>
                             <td data-label="Created">@log.CreatedOn.ToString("MMM d, yyyy")</td>
                             <td data-label="Actions" class="action-cell">
-                                <a href="/LetterOfGuarantee/Details/@log.LogId" class="btn-link">View</a>
+                                <a href="javascript:void(0)" onclick="openDetailsModal(@log.LogId)" class="btn-link">View</a>
                             </td>
                         </tr>
                     }
@@ -85,12 +85,6 @@
             </tbody>
         </table>
     </div>
-    @if (Model.RecentLoGs.Count() > 8)
-    {
-        <div style="padding: 1rem; text-align: center; border-top: 1px solid var(--gray-200);">
-            <a href="/LetterOfGuarantee" class="btn-secondary">View All LoGs</a>
-        </div>
-    }
 </div>
 
 <style>
@@ -103,3 +97,57 @@
     transition: all 0.2s ease;
 }
 </style>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h2>Letter of Guarantee Details</h2>
+            <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="detailsModalBody">
+            <!-- Content will be loaded here via AJAX -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Details Modal Functions
+async function openDetailsModal(logId) {
+    const modal = document.getElementById('detailsModal');
+    const modalBody = document.getElementById('detailsModalBody');
+    
+    // Show loading state
+    modalBody.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>Loading details...</p></div>';
+    modal.style.display = 'flex';
+    
+    try {
+        const response = await fetch(`/Settings/LetterOfGuarantee/DetailsModal/${logId}`);
+        if (!response.ok) {
+            throw new Error('Failed to load details');
+        }
+        
+        const html = await response.text();
+        modalBody.innerHTML = html;
+    } catch (error) {
+        console.error('Error:', error);
+        modalBody.innerHTML = '<div class="alert alert-error">Failed to load details. Please try again.</div>';
+    }
+}
+
+function closeDetailsModal() {
+    document.getElementById('detailsModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('detailsModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeDetailsModal();
+            }
+        });
+    }
+});
+</script>

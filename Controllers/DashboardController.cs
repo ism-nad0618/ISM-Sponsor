@@ -96,13 +96,13 @@ namespace ISMSponsor.Controllers
                 .Where(cr => cr.Status == "Pending")
                 .CountAsync();
 
-            // Recent Records
+            // LoGs for Approval (Submitted status only)
             viewModel.RecentLoGs = await _context.LogCoverages
-                .Where(l => l.SchoolYearId == schoolYearId)
-                .OrderByDescending(l => l.CreatedOn)
-                .Take(5)
+                .Where(l => l.SchoolYearId == schoolYearId && l.LogStatus == "Submitted")
+                .OrderByDescending(l => l.SubmittedOn ?? l.CreatedOn)
                 .Include(l => l.Student)
                 .Include(l => l.Sponsor)
+                .Include(l => l.SubmittedByUser)
                 .ToListAsync();
 
             viewModel.RecentSponsors = await _context.Sponsors
