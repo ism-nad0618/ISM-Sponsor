@@ -1407,6 +1407,7 @@ document.getElementById('editLogForm').addEventListener('submit', async function
     
     // Prevent submission if user doesn't have edit permissions
     if (!canEdit) {
+        alert('You do not have permission to edit this LoG');
         return;
     }
     
@@ -1420,16 +1421,38 @@ document.getElementById('editLogForm').addEventListener('submit', async function
     
     const formData = new FormData(this);
     
+    // Debug: Log what's in the form
+    console.log('=== EDIT FORM SUBMISSION DEBUG ===');
+    console.log('LogId:', document.getElementById('editLogIdInput').value);
+    console.log('CoverageRulesJson:', JSON.stringify(editCoverageRules));
+    
     // Add coverage rules as JSON
     formData.append('CoverageRulesJson', JSON.stringify(editCoverageRules));
     
+    // Debug: Check form data contents
+    for (let pair of formData.entries()) {
+        if (pair[0] !== 'CoverageRulesJson') {
+            console.log(`FormData: ${pair[0]} = ${pair[1]}`);
+        }
+    }
+    
     try {
+        console.log('Sending POST to /Settings/LetterOfGuarantee/EditModal');
         const response = await fetch('/Settings/LetterOfGuarantee/EditModal', {
             method: 'POST',
             body: formData
         });
         
+        console.log('Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Response error:', text);
+            throw new Error(`HTTP ${response.status}: ${text}`);
+        }
+        
         const result = await response.json();
+        console.log('Response result:', result);
         
         if (result.success) {
             const successDiv = document.getElementById('editSuccess');
@@ -1452,7 +1475,7 @@ document.getElementById('editLogForm').addEventListener('submit', async function
     } catch (error) {
         console.error('Error:', error);
         const errorDiv = document.getElementById('editError');
-        errorDiv.textContent = 'An error occurred while updating the LoG';
+        errorDiv.textContent = error?.message || 'An error occurred while updating the LoG';
         errorDiv.style.display = 'block';
         document.getElementById('editSuccess').style.display = 'none';
         goToStep(1);
@@ -1968,7 +1991,7 @@ function deleteCreateCoverageRule(index) {
 document.getElementById('createLogForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    console.log('=== FORM SUBMISSION DEBUG ===');
+    console.log('=== CREATE LOG FORM SUBMISSION DEBUG ===');
     console.log('createCoverageRules array before submit:', createCoverageRules);
     console.log('Number of rules:', createCoverageRules.length);
     
@@ -1986,18 +2009,34 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
     
     const formData = new FormData(this);
     
+    // Debug: Log form fields
+    console.log('Form fields:');
+    for (let pair of formData.entries()) {
+        console.log(`  ${pair[0]} = ${pair[1]}`);
+    }
+    
     // Add coverage rules as JSON
     const rulesJson = JSON.stringify(createCoverageRules);
     console.log('CoverageRulesJson string:', rulesJson);
     formData.append('CoverageRulesJson', rulesJson);
     
     try {
+        console.log('Sending POST to /Settings/LetterOfGuarantee/CreateModalFull');
         const response = await fetch('/Settings/LetterOfGuarantee/CreateModalFull', {
             method: 'POST',
             body: formData
         });
         
+        console.log('Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Response error:', text);
+            throw new Error(`HTTP ${response.status}: ${text}`);
+        }
+        
         const result = await response.json();
+        console.log('Response result:', result);
         
         if (result.success) {
             alert('Letter of Guarantee created successfully!');
@@ -2021,7 +2060,7 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
     } catch (error) {
         console.error('Error:', error);
         const errorDiv = document.getElementById('createError');
-        errorDiv.textContent = 'An error occurred while creating the LoG';
+        errorDiv.textContent = error?.message || 'An error occurred while creating the LoG';
         errorDiv.style.display = 'block';
     } finally {
         createBtn.disabled = false;
