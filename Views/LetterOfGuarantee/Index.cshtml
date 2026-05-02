@@ -1102,9 +1102,14 @@ function editCoverageRule(index) {
     document.getElementById('ruleDisplayOrder').value = rule.displayOrder || normalizedIndex + 1;
     document.getElementById('ruleExceptionNote').value = rule.exceptionNote || '';
     
-    populateRuleItemsDropdown(editItemsData, editStudentGradeLevel, 'ruleItemId');
-    document.getElementById('ruleItemId').value = rule.itemId || '';
-    toggleRuleCoverageFields();
+    // Populate items dropdown - pass the current itemId so it's always included
+    populateRuleItemsDropdown(editItemsData, editStudentGradeLevel, 'ruleItemId', rule.itemId);
+    
+    // Use setTimeout to ensure dropdown is fully populated before setting value
+    setTimeout(() => {
+        document.getElementById('ruleItemId').value = rule.itemId || '';
+        toggleRuleCoverageFields();
+    }, 0);
     
     document.getElementById('editRuleModal').style.display = 'flex';
 }
@@ -1122,7 +1127,7 @@ function deleteCoverageRule(index) {
     }
 }
 
-function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId) {
+function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId, currentItemId = null) {
     // Populate item dropdown for both edit and create modes
     const selectElement = document.getElementById(selectElementId);
     selectElement.innerHTML = '<option value="">-- Select Item --</option>';
@@ -1132,6 +1137,17 @@ function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId
     const seenItemKeys = new Set();
     const distinctItems = [];
     
+    // First, if there's a currentItemId, ensure it's in the list even if it doesn't match grade level
+    if (currentItemId) {
+        const currentItem = itemsData.find(item => item.value === currentItemId);
+        if (currentItem) {
+            const itemKey = `${currentItem.text}|${normalizeGradeLevel(currentItem.gradeLevel)}`;
+            seenItemKeys.add(itemKey);
+            distinctItems.push(currentItem);
+        }
+    }
+    
+    // Then add all other items that match grade level (if not already added)
     itemsData
         .filter(item => isGradeLevelMatch(item.gradeLevel, studentGradeLevel))
         .forEach(item => {
@@ -1796,9 +1812,14 @@ function editCreateCoverageRule(index) {
     document.getElementById('ruleDisplayOrder').value = rule.displayOrder || normalizedIndex + 1;
     document.getElementById('ruleExceptionNote').value = rule.exceptionNote || '';
     
-    populateRuleItemsDropdown(createItemsData, createStudentGradeLevel, 'ruleItemId');
-    document.getElementById('ruleItemId').value = rule.itemId || '';
-    toggleRuleCoverageFields();
+    // Populate items dropdown - pass the current itemId so it's always included
+    populateRuleItemsDropdown(createItemsData, createStudentGradeLevel, 'ruleItemId', rule.itemId);
+    
+    // Use setTimeout to ensure dropdown is fully populated before setting value
+    setTimeout(() => {
+        document.getElementById('ruleItemId').value = rule.itemId || '';
+        toggleRuleCoverageFields();
+    }, 0);
     
     document.getElementById('editRuleModal').style.display = 'flex';
 }
