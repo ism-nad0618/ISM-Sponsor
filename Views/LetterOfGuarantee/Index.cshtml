@@ -2287,7 +2287,7 @@ async function approveLogFromModal(logId) {
         const response = await fetch(`/Settings/LetterOfGuarantee/Approve/${logId}`, {
             method: 'POST',
             headers: {
-                'RequestVerificationToken': token
+                'X-CSRF-TOKEN': token
             },
             body: formData
         });
@@ -2321,7 +2321,7 @@ async function rejectLogFromModal(logId) {
         const response = await fetch(`/Settings/LetterOfGuarantee/Reject/${logId}`, {
             method: 'POST',
             headers: {
-                'RequestVerificationToken': token
+                'X-CSRF-TOKEN': token
             },
             body: formData
         });
@@ -2350,7 +2350,7 @@ async function activateLogFromModal(logId) {
         const response = await fetch(`/Settings/LetterOfGuarantee/Activate/${logId}`, {
             method: 'POST',
             headers: {
-                'RequestVerificationToken': token
+                'X-CSRF-TOKEN': token
             }
         });
         
@@ -2383,7 +2383,7 @@ async function deactivateLogFromModal(logId) {
         const response = await fetch(`/Settings/LetterOfGuarantee/Deactivate/${logId}`, {
             method: 'POST',
             headers: {
-                'RequestVerificationToken': token
+                'X-CSRF-TOKEN': token
             },
             body: formData
         });
