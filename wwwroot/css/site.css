@@ -175,6 +175,18 @@ button,
     background: var(--ism-green);
     color: var(--white);
     border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.4;
 }
 
 button:hover,
@@ -217,6 +229,18 @@ a.btn-secondary:hover {
     background: #16a34a;
     color: var(--white);
     border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.4;
 }
 
 .btn-success:hover {
@@ -228,6 +252,18 @@ a.btn-secondary:hover {
     background: #eab308;
     color: var(--gray-900);
     border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.4;
 }
 
 .btn-warning:hover {
@@ -239,6 +275,18 @@ a.btn-secondary:hover {
     background: #f59e0b;
     color: var(--white);
     border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.4;
 }
 
 .btn-danger:hover {
@@ -250,6 +298,18 @@ a.btn-secondary:hover {
     background: #22c55e;
     color: var(--white);
     border-radius: 25px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.4;
 }
 
 .btn-info:hover {
