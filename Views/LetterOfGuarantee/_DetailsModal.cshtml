@@ -1,23 +1,5 @@
 @model ISMSponsor.Models.Domain.LogCoverage
 
-<style>
-    .readonly-field {
-        background-color: #f9fafb;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        padding: 0.75rem;
-        font-size: 0.875rem;
-        color: #111827;
-        min-height: 42px;
-        display: flex;
-        align-items: center;
-    }
-    .readonly-field strong {
-        color: #111827;
-        font-weight: 500;
-    }
-</style>
-
 <!-- Step Progress Bar -->
 <div style="display: flex; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb;">
     <div class="step-tab active" data-step="1" data-modal="details" onclick="goToDetailsStep(1)">
@@ -26,178 +8,161 @@
     </div>
     <div class="step-tab" data-step="2" data-modal="details" onclick="goToDetailsStep(2)">
         <span class="step-number">2</span>
-        <span class="step-label">Coverage & Dates</span>
+        <span class="step-label">Coverage Details</span>
     </div>
     <div class="step-tab" data-step="3" data-modal="details" onclick="goToDetailsStep(3)">
         <span class="step-number">3</span>
-        <span class="step-label">Attachment</span>
+        <span class="step-label">Notes & Status</span>
     </div>
     <div class="step-tab" data-step="4" data-modal="details" onclick="goToDetailsStep(4)">
         <span class="step-number">4</span>
-        <span class="step-label">Audit & Approval</span>
+        <span class="step-label">Attachment</span>
     </div>
 </div>
 
-<div id="detailsModalContent">
+<div>
+    @Html.AntiForgeryToken()
+    
     <!-- Step 1: Basic Info -->
     <div class="step-content active" data-step="1" data-modal="details">
-        <h3 class="form-section-title">Status and Activation</h3>
-        
-        <div class="form-group">
-            <label class="field-label">Current Status</label>
-            <div class="readonly-field">
-                <span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label class="field-label">Activation State</label>
-            <div class="readonly-field">
-                @if (Model.IsActive)
-                {
-                    <span class="status-badge status-active">Active</span>
-                }
-                else
-                {
-                    <span class="status-badge status-inactive">Inactive</span>
-                }
-            </div>
-        </div>
-
-        @if (Model.IsActive && Model.ActivatedOn.HasValue)
-        {
-            <div class="alert alert-success" style="margin-bottom: 16px;">
-                <strong>Active Coverage</strong> - Activated @Model.ActivatedOn?.ToString("MMM dd, yyyy")
-                @if (Model.ActivatedByUser != null)
-                {
-                    <text> by @Model.ActivatedByUser.DisplayName</text>
-                }
-            </div>
-        }
-        else if (Model.DeactivatedOn.HasValue)
-        {
-            <div class="alert alert-error" style="margin-bottom: 16px;">
-                <strong>Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
-                @if (Model.DeactivatedByUser != null)
-                {
-                    <text> by @Model.DeactivatedByUser.DisplayName</text>
-                }
-                @if (!string.IsNullOrEmpty(Model.DeactivationReason))
-                {
-                    <text> | Reason: @Model.DeactivationReason</text>
-                }
-            </div>
-        }
-        else if (@Model.LogStatus == "Approved")
-        {
-            <div class="alert alert-success" style="margin-bottom: 16px;">
-                <strong>✓ Approved & Active</strong> - This LoG has been approved and is currently active.
-            </div>
-        }
-        else if (@Model.LogStatus == "Rejected")
-        {
-            <div class="alert alert-error" style="margin-bottom: 16px;">
-                <strong>✕ Rejected</strong> - This LoG has been rejected. Review comments below.
-            </div>
-        }
-        else if (@Model.LogStatus == "Submitted")
-        {
-            <div class="alert" style="margin-bottom: 16px; background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
-                <strong>⏳ Awaiting Admin Review</strong> - This LoG is waiting for administrator approval.
-            </div>
-        }
-
         <h3 class="form-section-title">Student and Sponsor Information</h3>
         
         <div class="form-group">
             <label class="field-label">School Year</label>
-            <div class="readonly-field"><strong>@Model.SchoolYearId</strong></div>
+            <input type="text" value="@Model.SchoolYearId" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
         </div>
         
         <div class="form-group">
-            <label class="field-label">Student ID</label>
-            <div class="readonly-field"><strong>@Model.StudentId</strong></div>
+            <label class="field-label">Sponsor</label>
+            <input type="text" value="@(Model.Sponsor?.SponsorName ?? Model.SponsorId)" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
         </div>
         
         <div class="form-group">
-            <label class="field-label">Student Name</label>
-            <div class="readonly-field"><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></div>
+            <label class="field-label">Student</label>
+            <input type="text" value="@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName} ({Model.StudentId})" : Model.StudentId)" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            <p class="help-text">Student ID: @Model.StudentId | Grade: @(Model.Student?.GradeLevel ?? "N/A")</p>
         </div>
         
         <div class="form-group">
-            <label class="field-label">Grade Level</label>
-            <div class="readonly-field"><strong>@(Model.Student?.GradeLevel ?? "N/A")</strong></div>
+            <label class="field-label">Status</label>
+            <input type="text" value="@Model.LogStatus" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
         </div>
         
-        <div class="form-group">
-            <label class="field-label">Sponsor ID</label>
-            <div class="readonly-field"><strong>@Model.SponsorId</strong></div>
-        </div>
-        
-        <div class="form-group">
-            <label class="field-label">Sponsor Name</label>
-            <div class="readonly-field"><strong>@(Model.Sponsor?.SponsorName ?? "N/A")</strong></div>
-        </div>
+        @if (Model.IsActive)
+        {
+            <div class="alert alert-success">
+                <strong>Active Coverage</strong> - This LoG is currently active
+                @if (Model.ActivatedOn.HasValue)
+                {
+                    <text> (Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy"))</text>
+                }
+            </div>
+        }
+        else if (Model.LogStatus == "Submitted")
+        {
+            <div class="alert" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
+                <strong>⏳ Awaiting Admin Review</strong> - This LoG is waiting for administrator approval.
+            </div>
+        }
     </div>
-
-    <!-- Step 2: Coverage & Dates -->
+    
+    <!-- Step 2: Coverage Details -->
     <div class="step-content" data-step="2" data-modal="details" style="display: none;">
         <h3 class="form-section-title">Coverage Period</h3>
         
         <div class="form-group">
             <label class="field-label">Effective From</label>
-            <div class="readonly-field"><strong>@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></div>
+            <input type="text" value="@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
         </div>
         
         <div class="form-group">
             <label class="field-label">Effective To</label>
-            <div class="readonly-field"><strong>@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></div>
+            <input type="text" value="@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
         </div>
-
-        @if (!string.IsNullOrEmpty(Model.Notes) || !string.IsNullOrEmpty(Model.ReviewComments))
+        
+        <h3 class="form-section-title">Audit Information</h3>
+        
+        <div class="form-group">
+            <label class="field-label">Created On</label>
+            <input type="text" value="@Model.CreatedOn.ToString("MMM dd, yyyy")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+        </div>
+        
+        <div class="form-group">
+            <label class="field-label">Created By</label>
+            <input type="text" value="@(Model.CreatedByUser?.DisplayName ?? "System")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+        </div>
+        
+        @if (Model.SubmittedOn.HasValue)
         {
-            <h3 class="form-section-title">Notes and Comments</h3>
+            <div class="form-group">
+                <label class="field-label">Submitted On</label>
+                <input type="text" value="@Model.SubmittedOn?.ToString("MMM dd, yyyy")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            </div>
             
-            @if (!string.IsNullOrEmpty(Model.Notes))
+            <div class="form-group">
+                <label class="field-label">Submitted By</label>
+                <input type="text" value="@(Model.SubmittedByUser?.DisplayName ?? "Unknown")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            </div>
+        }
+    </div>
+    
+    <!-- Step 3: Notes & Status -->
+    <div class="step-content" data-step="3" data-modal="details" style="display: none;">
+        <h3 class="form-section-title">Notes and Comments</h3>
+        
+        <div class="form-group">
+            <label class="field-label">Notes</label>
+            <textarea rows="4" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;">@Model.Notes</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="field-label">Review Comments</label>
+            <textarea rows="3" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;">@Model.ReviewComments</textarea>
+        </div>
+        
+        @if (Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
+        {
+            <h3 class="form-section-title">Approval Decision</h3>
+            
+            @if (Model.ApprovedOn.HasValue)
             {
-                <div class="form-group">
-                    <label class="field-label">Notes</label>
-                    <div class="readonly-field" style="display: block; white-space: pre-wrap; min-height: auto; padding: 0.75rem;">@Model.Notes</div>
+                <div class="alert alert-success">
+                    <strong>✓ Approved</strong> on @Model.ApprovedOn?.ToString("MMM dd, yyyy") by @(Model.ApprovedByUser?.DisplayName ?? "Unknown")
                 </div>
             }
-            @if (!string.IsNullOrEmpty(Model.ReviewComments))
+            
+            @if (Model.RejectedOn.HasValue)
             {
-                <div class="form-group">
-                    <label class="field-label">Review Comments</label>
-                    <div class="readonly-field" style="display: block; white-space: pre-wrap; min-height: auto; padding: 0.75rem;">@Model.ReviewComments</div>
+                <div class="alert alert-error">
+                    <strong>✕ Rejected</strong> on @Model.RejectedOn?.ToString("MMM dd, yyyy") by @(Model.RejectedByUser?.DisplayName ?? "Unknown")
                 </div>
             }
         }
     </div>
-
-    <!-- Step 3: Attachment -->
-    <div class="step-content" data-step="3" data-modal="details" style="display: none;">
+    
+    <!-- Step 4: Attachment -->
+    <div class="step-content" data-step="4" data-modal="details" style="display: none;">
         <h3 class="form-section-title">Document Attachment</h3>
         
         @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
         {
             <div class="form-group">
                 <label class="field-label">File Name</label>
-                <div class="readonly-field"><strong>@Model.AttachmentFileName</strong></div>
+                <input type="text" value="@Model.AttachmentFileName" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
             </div>
             
             <div class="form-group">
                 <label class="field-label">Uploaded On</label>
-                <div class="readonly-field"><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</strong></div>
+                <input type="text" value="@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
             </div>
             
             <div class="form-group">
                 <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
-                   class="btn-primary btn-add"
-                   download>
+                   class="btn-secondary"
+                   download 
+                   style="display: inline-block; text-decoration: none;">
                     📎 Download Attachment
                 </a>
-                <p class="help-text">Click to download and review the attached document</p>
             </div>
         }
         else
@@ -205,123 +170,48 @@
             <p class="help-text">No attachment uploaded</p>
         }
     </div>
-
-    <!-- Step 4: Audit & Approval -->
-    <div class="step-content" data-step="4" data-modal="details" style="display: none;">
-        <h3 class="form-section-title">Audit Trail</h3>
-        
-        <div class="form-group">
-            <label class="field-label">Created On</label>
-            <div class="readonly-field"><strong>@Model.CreatedOn.ToString("MMM dd, yyyy")</strong></div>
-        </div>
-        
-        <div class="form-group">
-            <label class="field-label">Created By</label>
-            <div class="readonly-field"><strong>@(Model.CreatedByUser?.DisplayName ?? "System")</strong></div>
-        </div>
-        
-        @if (Model.ModifiedOn.HasValue)
-        {
-            <div class="form-group">
-                <label class="field-label">Modified On</label>
-                <div class="readonly-field"><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy")</strong></div>
-            </div>
+    
+    <!-- Navigation and Action Buttons -->
+    @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
+    {
+        <!-- Admin Approval Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
+                ← Previous
+            </button>
+            <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1; display: none;">
+                Next →
+            </button>
             
-            <div class="form-group">
-                <label class="field-label">Modified By</label>
-                <div class="readonly-field"><strong>@(Model.ModifiedByUser?.DisplayName ?? "System")</strong></div>
-            </div>
-        }
-        
-        @if (Model.SubmittedOn.HasValue || Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
-        {
-            <h3 class="form-section-title">Approval History</h3>
+            <!-- Approval Buttons (Replace Create LoG) -->
+            <button type="button" class="btn-danger" onclick="rejectLogFromModal(@Model.LogId)" style="flex: 1;" id="detailsRejectBtn">
+                ✕ Reject
+            </button>
+            <button type="button" class="btn-primary" onclick="approveLogFromModal(@Model.LogId)" style="flex: 1;" id="detailsApproveBtn">
+                ✓ Approve & Activate
+            </button>
             
-            @if (Model.SubmittedOn.HasValue)
-            {
-                <div class="form-group">
-                    <label class="field-label">📤 Submitted On</label>
-                    <div class="readonly-field"><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy")</strong></div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="field-label">Submitted By</label>
-                    <div class="readonly-field"><strong>@(Model.SubmittedByUser?.DisplayName ?? "Unknown")</strong></div>
-                </div>
-            }
-            @if (Model.ApprovedOn.HasValue)
-            {
-                <div class="form-group">
-                    <label class="field-label">✓ Approved On</label>
-                    <div class="readonly-field" style="border-color: var(--success-color); background-color: #f0fdf4;">
-                        <strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy")</strong>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="field-label">Approved By</label>
-                    <div class="readonly-field" style="border-color: var(--success-color); background-color: #f0fdf4;">
-                        <strong style="color: var(--success-color);">@(Model.ApprovedByUser?.DisplayName ?? "Unknown")</strong>
-                    </div>
-                </div>
-            }
-            @if (Model.RejectedOn.HasValue)
-            {
-                <div class="form-group">
-                    <label class="field-label">✕ Rejected On</label>
-                    <div class="readonly-field" style="border-color: var(--error-color); background-color: #fef2f2;">
-                        <strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy")</strong>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="field-label">Rejected By</label>
-                    <div class="readonly-field" style="border-color: var(--error-color); background-color: #fef2f2;">
-                        <strong style="color: var(--error-color);">@(Model.RejectedByUser?.DisplayName ?? "Unknown")</strong>
-                    </div>
-                </div>
-            }
-        }
-    </div>
-</div>
-
-@if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
-{
-    <!-- Approval Actions (matching Create modal's button layout) -->
-    <div style="border-top: 1px solid #e5e7eb; padding-top: 24px; margin-top: 24px;">
-        <div class="form-group">
-            <label for="modalApprovalComments" class="field-label">Approval Comments (Optional)</label>
-            <textarea id="modalApprovalComments" name="reviewComments" rows="3" placeholder="Add any notes about this approval or rejection..."></textarea>
-        </div>
-        
-        <div style="display: flex; gap: 12px; margin-top: 24px;">
             <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
                 Cancel
             </button>
-            <button type="button" class="btn-danger" onclick="rejectLogFromModal(@Model.LogId)" style="flex: 1;">
-                ✕ Reject
+        </div>
+    }
+    else
+    {
+        <!-- Regular Navigation -->
+        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
+                ← Previous
             </button>
-            <button type="button" class="btn-primary" onclick="approveLogFromModal(@Model.LogId)" style="flex: 1;">
-                ✓ Approve & Activate
+            <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1;">
+                Next →
+            </button>
+            <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
+                Close
             </button>
         </div>
-    </div>
-}
-else
-{
-    <!-- Navigation Buttons (matching Create modal) -->
-    <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-        <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
-            ← Previous
-        </button>
-        <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1;">
-            Next →
-        </button>
-        <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
-            Close
-        </button>
-    </div>
-}
+    }
+</div>
 
 <script>
 let currentDetailsStep = 1;
@@ -364,18 +254,25 @@ function previousDetailsStep() {
 function updateDetailsNavigationButtons() {
     const prevBtn = document.getElementById('detailsPrevStepBtn');
     const nextBtn = document.getElementById('detailsNextStepBtn');
+    const rejectBtn = document.getElementById('detailsRejectBtn');
+    const approveBtn = document.getElementById('detailsApproveBtn');
     
     if (prevBtn) {
         prevBtn.style.display = currentDetailsStep === 1 ? 'none' : 'block';
     }
     
-    if (nextBtn) {
-        if (currentDetailsStep === totalDetailsSteps) {
-            nextBtn.style.display = 'none';
-        } else {
+    // Show/hide navigation vs approval buttons
+    if (currentDetailsStep === totalDetailsSteps) {
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (rejectBtn) rejectBtn.style.display = 'flex';
+        if (approveBtn) approveBtn.style.display = 'flex';
+    } else {
+        if (nextBtn) {
             nextBtn.style.display = 'flex';
             nextBtn.style.flex = '1';
         }
+        if (rejectBtn) rejectBtn.style.display = 'none';
+        if (approveBtn) approveBtn.style.display = 'none';
     }
 }
 
@@ -384,12 +281,11 @@ async function approveLogFromModal(logId) {
         return;
     }
     
-    const comments = document.getElementById('modalApprovalComments').value;
     const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
     
     try {
         const formData = new FormData();
-        formData.append('reviewComments', comments);
+        formData.append('reviewComments', '');
         
         const response = await fetch(`/Settings/LetterOfGuarantee/Approve/${logId}`, {
             method: 'POST',
@@ -451,5 +347,6 @@ if (document.getElementById('detailsPrevStepBtn')) {
     updateDetailsNavigationButtons();
 }
 </script>
+
 
 
