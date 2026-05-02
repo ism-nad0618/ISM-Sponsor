@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq;
 
 namespace ISMSponsor.Controllers
@@ -20,6 +21,7 @@ namespace ISMSponsor.Controllers
         private readonly LogsService _logsService;
         private readonly UserManager<ISMSponsor.Models.ApplicationUser> _userManager;
         private readonly Data.AppDbContext _context;
+        private readonly ILogger<LetterOfGuaranteeController> _logger;
 
         public LetterOfGuaranteeController(
             LetterOfGuaranteeService logService,
@@ -27,7 +29,8 @@ namespace ISMSponsor.Controllers
             SponsorService sponsorService,
             LogsService logsService,
             UserManager<ISMSponsor.Models.ApplicationUser> userManager,
-            Data.AppDbContext context)
+            Data.AppDbContext context,
+            ILogger<LetterOfGuaranteeController> logger)
         {
             _logService = logService;
             _schoolYearService = schoolYearService;
@@ -35,6 +38,7 @@ namespace ISMSponsor.Controllers
             _logsService = logsService;
             _userManager = userManager;
             _context = context;
+            _logger = logger;
         }
 
         [Authorize(Roles = "admin,admissions,cashier")]
@@ -1303,14 +1307,14 @@ namespace ISMSponsor.Controllers
             .Select(i => new { ItemId = i.ItemId.Trim(), i.CategoryId })
             .ToListAsync();
 
-        System.Diagnostics.Debug.WriteLine($"=== BuildCoverageRulesForSaveAsync DIAGNOSTIC START ===");
-        System.Diagnostics.Debug.WriteLine($"Requested {selectedItemIds.Count} ItemIds:");
+        _logger.LogWarning($"=== BuildCoverageRulesForSaveAsync DIAGNOSTIC START ===");
+        _logger.LogWarning($"Requested {selectedItemIds.Count} ItemIds:");
         foreach (var reqId in selectedItemIds)
         {
-            System.Diagnostics.Debug.WriteLine($"  REQ: [{reqId}] Length={reqId.Length}, First='{(reqId.Length > 0 ? reqId[0] : ' ')}', Last='{(reqId.Length > 0 ? reqId[reqId.Length - 1] : ' ')}'");
+            _logger.LogWarning($"  REQ: [{reqId}] Length={reqId.Length}, First='{(reqId.Length > 0 ? reqId[0] : ' ')}', Last='{(reqId.Length > 0 ? reqId[reqId.Length - 1] : ' ')}'");
         }
 
-        System.Diagnostics.Debug.WriteLine($"Database has {allItems.Count} active Items");
+        _logger.LogWarning($"Database has {allItems.Count} active Items");
         
         // Enhanced matching with detailed logging
         var itemCategoryMap = new Dictionary<string, string?>();
@@ -1320,11 +1324,11 @@ namespace ISMSponsor.Controllers
             if (matchingItem != null)
             {
                 itemCategoryMap[reqId] = matchingItem.CategoryId;
-                System.Diagnostics.Debug.WriteLine($"  MATCH FOUND: [{reqId}] -> CategoryId=[{matchingItem.CategoryId}]");
+                _logger.LogWarning($"  MATCH FOUND: [{reqId}] -> CategoryId=[{matchingItem.CategoryId}]");
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"  NO MATCH for: [{reqId}]");
+                _logger.LogWarning($"  NO MATCH for: [{reqId}]");
                 // Show closest matches from database
                 var similarItems = allItems
                     .Where(i => i.ItemId.Contains("TUITION", StringComparison.OrdinalIgnoreCase) || 
@@ -1333,17 +1337,17 @@ namespace ISMSponsor.Controllers
                     .ToList();
                 if (similarItems.Any())
                 {
-                    System.Diagnostics.Debug.WriteLine($"    Similar items in DB:");
+                    _logger.LogWarning($"    Similar items in DB:");
                     foreach (var similar in similarItems)
                     {
-                        System.Diagnostics.Debug.WriteLine($"      DB: [{similar.ItemId}] Length={similar.ItemId.Length}");
+                        _logger.LogWarning($"      DB: [{similar.ItemId}] Length={similar.ItemId.Length}");
                     }
                 }
             }
         }
 
-        System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Found {itemCategoryMap.Count} matching items");
-        System.Diagnostics.Debug.WriteLine($"=== BuildCoverageRulesForSaveAsync DIAGNOSTIC END ===");
+        _logger.LogWarning($"BuildCoverageRulesForSaveAsync - Found {itemCategoryMap.Count} matching items");
+        _logger.LogWarning($"=== BuildCoverageRulesForSaveAsync DIAGNOSTIC END ===");
 
         var rulesToSave = new List<LoGCoverageRule>();
 
@@ -1354,7 +1358,7 @@ namespace ISMSponsor.Controllers
 
             if (!itemCategoryMap.TryGetValue(normalizedItemId, out var resolvedCategoryId))
             {
-                System.Diagnostics.Debug.WriteLine($"Skipping coverage rule with unknown ItemId: {normalizedItemId}");
+                _logger.LogWarning($"Skipping coverage rule with unknown ItemId: {normalizedItemId}");
                 continue;
             }
 
