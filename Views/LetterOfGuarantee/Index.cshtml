@@ -1148,50 +1148,64 @@ function populateRuleItemsDropdown(itemsData, studentGradeLevel, selectElementId
         currentItemId: currentItemId
     });
     
-    // Filter by grade level and get distinct items by Item Name + Grade Level
-    const seenItemKeys = new Set();
-    const distinctItems = [];
+    // Filter by grade level - NO deduplication since each ItemID is unique
+    let itemsToDisplay = [];
     
     // First, if there's a currentItemId, ensure it's in the list even if it doesn't match grade level
     if (currentItemId) {
         const currentItem = itemsData.find(item => item.value === currentItemId);
         if (currentItem) {
-            const itemKey = `${currentItem.text}|${normalizeGradeLevel(currentItem.gradeLevel)}`;
-            seenItemKeys.add(itemKey);
-            distinctItems.push(currentItem);
-            console.log('Added current item:', currentItem.text, 'ID:', currentItem.value);
+            itemsToDisplay.push(currentItem);
+            console.log('Added current item:', currentItem.text, 'ID:', currentItem.value, 'Grade:', currentItem.gradeLevel);
         }
     }
     
-    // Then add all other items that match grade level (if not already added)
+    // Then add all items that match grade level (no deduplication - keep all unique ItemIDs)
     let matchedCount = 0;
     itemsData
         .filter(item => {
+            // Skip if already added as current item
+            if (currentItemId && item.value === currentItemId) {
+                return false;
+            }
             const matches = isGradeLevelMatch(item.gradeLevel, studentGradeLevel);
             if (matches) matchedCount++;
             return matches;
         })
         .forEach(item => {
-            const itemKey = `${item.text}|${normalizeGradeLevel(item.gradeLevel)}`;
-            if (!seenItemKeys.has(itemKey)) {
-                seenItemKeys.add(itemKey);
-                distinctItems.push(item);
-            }
+            itemsToDisplay.push(item);
         });
     
-    console.log(`Matched ${matchedCount} items by grade level, ${distinctItems.length} distinct items to display`);
+    console.log(`Matched ${matchedCount} items by grade level, ${itemsToDisplay.length} total items to display`);
     
-    // Sort items alphabetically by name for easier selection
-    distinctItems.sort((a, b) => (a.text || '').localeCompare(b.text || ''));
-    
-    distinctItems.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.value;  // ItemID for saving
-        option.textContent = item.text || item.value;  // ItemName for display
-        selectElement.appendChild(option);
+    // Sort items alphabetically by display text
+    itemsToDisplay.sort((a, b) => {
+        const textA = a.text || a.value || '';
+        const textB = b.text || b.value || '';
+        return textA.localeCompare(textB);
     });
     
-    console.log('Dropdown populated with', distinctItems.length, 'items');
+    itemsToDisplay.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;  // ItemID (e.g., "MAJOR-FEF-G10 FEF") for saving
+        
+        // Display format: ItemName if unique ItemID contains more info
+        // If ItemID contains grade info, show ItemName only
+        // Otherwise show "ItemName (ItemID)" for clarity
+        let displayText = item.text || item.value;
+        
+        // If ItemID is significantly different from ItemName, show both for clarity
+        if (item.value && item.text && item.value !== item.text && !item.value.startsWith(item.text)) {
+            displayText = `${item.text} (${item.value})`;
+        }
+        
+        option.textContent = displayText;
+        selectElement.appendChild(option);
+        
+        console.log('Added option:', displayText, '| ItemID:', item.value, '| Grade:', item.gradeLevel);
+    });
+    
+    console.log('Dropdown populated with', itemsToDisplay.length, 'items');
 }
 
 
