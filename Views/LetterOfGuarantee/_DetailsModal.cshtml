@@ -20,8 +20,12 @@
     </div>
 </div>
 
-<form>
-    @Html.AntiForgeryToken()
+<div class="modal-body">
+    <div id="detailsSuccess" class="alert alert-success" style="display: none; margin-bottom: 16px;"></div>
+    <div id="detailsError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+    
+    <form>
+        @Html.AntiForgeryToken()
     
     <!-- Step 1: Basic Info -->
     <div class="step-content active" data-step="1" data-modal="details">
@@ -60,7 +64,7 @@
         
         @if (Model.IsActive)
         {
-            <div style="padding: 12px; border-radius: 6px; background: #d1fae5; color: #065f46; margin-top: 16px;">
+            <div id="detailsActiveStatus" style="padding: 12px; border-radius: 6px; background: #d1fae5; color: #065f46; margin-top: 16px;">
                 <strong>✓ Active Coverage</strong>
                 @if (Model.ActivatedOn.HasValue)
                 {
@@ -74,7 +78,7 @@
         }
         else if (Model.DeactivatedOn.HasValue)
         {
-            <div style="padding: 12px; border-radius: 6px; background: #fee2e2; color: #991b1b; margin-top: 16px;">
+            <div id="detailsActiveStatus" style="padding: 12px; border-radius: 6px; background: #fee2e2; color: #991b1b; margin-top: 16px;">
                 <strong>✕ Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
                 @if (Model.DeactivatedByUser != null)
                 {
@@ -84,6 +88,12 @@
                 {
                     <br /><strong>Reason:</strong> @Model.DeactivationReason
                 }
+            </div>
+        }
+        else
+        {
+            <div id="detailsActiveStatus" style="padding: 12px; border-radius: 6px; margin-top: 16px; display: none;">
+                <!-- Active/Inactive status will be shown here -->
             </div>
         }
     </div>
@@ -196,8 +206,8 @@
         
         @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
         {
-            <div style="display: block; padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px;">
-                <strong>Current Attachment:</strong> <span>@Model.AttachmentFileName</span>
+            <div id="detailsExistingAttachment" style="padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px;">
+                <strong>Current Attachment:</strong> <span id="detailsExistingAttachmentName">@Model.AttachmentFileName</span>
                 @if (Model.AttachmentUploadedOn.HasValue)
                 {
                     <text> (Uploaded: @Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy"))</text>
@@ -207,6 +217,12 @@
                    style="background: white; color: #10b981; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; margin-left: 12px; display: inline-block; font-size: 0.875rem;">
                     📎 Download
                 </a>
+            </div>
+        }
+        else
+        {
+            <div id="detailsExistingAttachment" style="display: none; padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px;">
+                <strong>Current Attachment:</strong> <span id="detailsExistingAttachmentName"></span>
             </div>
         }
         
@@ -248,7 +264,8 @@
             </span>
         </button>
     </div>
-</form>
+    </form>
+</div>
 
 
 
