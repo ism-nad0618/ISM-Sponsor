@@ -1450,7 +1450,17 @@ document.getElementById('editLogForm').addEventListener('submit', async function
             console.log(`FormData: ${pair[0]} = ${pair[1]}`);
         }
     }
-    console.log('FormData: CoverageRulesJson =', formData.get('CoverageRulesJson'));
+    const rulesJsonForLog = formData.get('CoverageRulesJson');
+    console.log('FormData: CoverageRulesJson =', rulesJsonForLog);
+    if (rulesJsonForLog) {
+        try {
+            const parsedRules = JSON.parse(rulesJsonForLog);
+            console.log(`Parsed ${parsedRules.length} rules:`);
+            parsedRules.forEach((r, idx) => console.log(`  Rule ${idx}: itemId="${r.itemId}", categoryId="${r.categoryId}"`));
+        } catch (e) {
+            console.error('Failed to parse CoverageRulesJson:', e);
+        }
+    }
     
     try {
         console.log('Sending POST to /Settings/LetterOfGuarantee/EditModal');
@@ -2037,7 +2047,17 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
     const rulesJson = JSON.stringify(completeCreateRules);
     console.log('CoverageRulesJson string:', rulesJson);
     formData.set('CoverageRulesJson', rulesJson);
-    console.log('FormData: CoverageRulesJson =', formData.get('CoverageRulesJson'));
+    const rulesJsonForLog = formData.get('CoverageRulesJson');
+    console.log('FormData: CoverageRulesJson =', rulesJsonForLog);
+    if (rulesJsonForLog) {
+        try {
+            const parsedRules = JSON.parse(rulesJsonForLog);
+            console.log(`Parsed ${parsedRules.length} rules:`);
+            parsedRules.forEach((r, idx) => console.log(`  Rule ${idx}: itemId="${r.itemId}", categoryId="${r.categoryId}"`));
+        } catch (e) {
+            console.error('Failed to parse CoverageRulesJson:', e);
+        }
+    }
     
     try {
         console.log('Sending POST to /Settings/LetterOfGuarantee/CreateModalFull');

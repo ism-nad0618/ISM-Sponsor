@@ -1202,25 +1202,28 @@ namespace ISMSponsor.Controllers
                 .Select(i => new { i.ItemId, i.CategoryId })
                 .ToDictionaryAsync(i => i.ItemId, i => i.CategoryId);
 
-            var rulesToSave = new List<LoGCoverageRule>();
+        System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Requested ItemIds: {string.Join(", ", selectedItemIds)}");
+        System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Found {itemCategoryMap.Count} matching items in DB");
 
-            for (var index = 0; index < cleanedRules.Count; index++)
+        var rulesToSave = new List<LoGCoverageRule>();
+
+        for (var index = 0; index < cleanedRules.Count; index++)
+        {
+            var ruleData = cleanedRules[index];
+            var normalizedItemId = ruleData.ItemId!.Trim();
+
+            if (!itemCategoryMap.TryGetValue(normalizedItemId, out var resolvedCategoryId))
             {
-                var ruleData = cleanedRules[index];
-                var normalizedItemId = ruleData.ItemId!.Trim();
+                System.Diagnostics.Debug.WriteLine($"Skipping coverage rule with unknown ItemId: {normalizedItemId}");
+                continue;
+            }
 
-                if (!itemCategoryMap.TryGetValue(normalizedItemId, out var resolvedCategoryId))
-                {
-                    System.Diagnostics.Debug.WriteLine($"Skipping coverage rule with unknown ItemId: {normalizedItemId}");
-                    continue;
-                }
-
-                rulesToSave.Add(new LoGCoverageRule
-                {
-                    LogId = logId,
-                    CoverageTarget = string.IsNullOrWhiteSpace(ruleData.CoverageTarget) ? "Item" : ruleData.CoverageTarget,
-                    ItemId = normalizedItemId,
-                    CategoryId = resolvedCategoryId,
+            rulesToSave.Add(new LoGCoverageRule
+            {
+                LogId = logId,
+                CoverageTarget = string.IsNullOrWhiteSpace(ruleData.CoverageTarget) ? "Item" : ruleData.CoverageTarget,
+                ItemId = normalizedItemId,
+                CategoryId = resolvedCategoryId,
                     CoverageType = ruleData.CoverageType,
                     CoveragePercentage = ruleData.CoveragePercentage,
                     CoverageFixedAmount = ruleData.CoverageFixedAmount,
