@@ -104,15 +104,15 @@
                     <form asp-action="Approve" asp-route-id="@Model.LogId" method="post" id="approveForm">
                         <label class="field-label" for="approvalComments" style="margin-bottom: 0.5rem;">Approval Comments (Optional)</label>
                         <textarea id="approvalComments" name="reviewComments" rows="2" class="form-control" placeholder="Add any notes about this approval..." style="margin-bottom: 0.75rem; width: 100%;"></textarea>
-                        <button type="submit" class="btn-primary" onclick="return confirm('Approve this Letter of Guarantee? It will be automatically activated.');">
-                            ✓ Approve & Activate
+                        <button type="submit" class="btn-primary" onclick="return confirm('Approve this Letter of Guarantee? It will be automatically activated.');" style="width: 100%; padding: 0.75rem 1rem;">
+                            Approve & Activate
                         </button>
                     </form>
                 </div>
                 
                 <div style="flex: 1; min-width: 200px;">
-                    <button type="button" class="btn-danger" onclick="document.getElementById('rejectionModal').style.display='block';" style="margin-top: 28px;">
-                        ✕ Reject LoG
+                    <button type="button" class="btn-danger" onclick="document.getElementById('rejectionModal').style.display='block';" style="margin-top: 28px; width: 100%; padding: 0.75rem 1rem;">
+                        Reject LoG
                     </button>
                 </div>
             </div>
