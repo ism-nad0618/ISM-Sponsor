@@ -528,6 +528,9 @@ namespace ISMSponsor.Controllers
         {
             try
             {
+                // Debug logging
+                System.Diagnostics.Debug.WriteLine($"CreateModalFull called - SchoolYear: {model.SchoolYearId}, Student: {model.StudentId}, Sponsor: {model.SponsorId}");
+                
                 var user = await _userManager.GetUserAsync(User);
                 var userId = user?.Id ?? "";
 
@@ -577,12 +580,18 @@ namespace ISMSponsor.Controllers
                 // Add coverage rules
                 if (!string.IsNullOrEmpty(model.CoverageRulesJson))
                 {
+                    System.Diagnostics.Debug.WriteLine($"CreateModalFull - CoverageRulesJson (first 200 chars): {model.CoverageRulesJson.Substring(0, Math.Min(200, model.CoverageRulesJson.Length))}");
+                    
                     var rulesData = System.Text.Json.JsonSerializer.Deserialize<List<CoverageRuleEditModel>>(model.CoverageRulesJson);
+
+                    System.Diagnostics.Debug.WriteLine($"CreateModalFull - Deserialized rules count: {rulesData?.Count ?? 0}");
 
                     if (rulesData != null && rulesData.Any())
                     {
                         foreach (var ruleData in rulesData)
                         {
+                            System.Diagnostics.Debug.WriteLine($"CreateModalFull - Adding rule: ItemId={ruleData.ItemId}, CoverageType={ruleData.CoverageType}");
+                            
                             var rule = new LoGCoverageRule
                             {
                                 LogId = log.LogId,
@@ -606,7 +615,12 @@ namespace ISMSponsor.Controllers
                         }
 
                         await _context.SaveChangesAsync();
+                        System.Diagnostics.Debug.WriteLine($"CreateModalFull - Successfully saved {rulesData.Count} coverage rules");
                     }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("CreateModalFull - CoverageRulesJson is null or empty");
                 }
 
                 // Log the activity
@@ -1102,6 +1116,9 @@ namespace ISMSponsor.Controllers
         {
             try
             {
+                // Debug logging
+                System.Diagnostics.Debug.WriteLine($"EditModal called - LogId: {model.LogId}, SponsorId: {model.SponsorId}");
+                
                 var user = await _userManager.GetUserAsync(User);
                 var userId = user?.Id ?? "";
 
@@ -1146,10 +1163,13 @@ namespace ISMSponsor.Controllers
                 // Update coverage rules
                 if (!string.IsNullOrEmpty(model.CoverageRulesJson))
                 {
+                    System.Diagnostics.Debug.WriteLine($"CoverageRulesJson: {model.CoverageRulesJson}");
                     var rulesData = System.Text.Json.JsonSerializer.Deserialize<List<CoverageRuleEditModel>>(model.CoverageRulesJson);
 
                     if (rulesData != null)
                     {
+                        System.Diagnostics.Debug.WriteLine($"Deserialized {rulesData.Count} rules");
+                        
                         // Remove old rules
                         var existingRules = log.CoverageRules?.ToList() ?? new List<LoGCoverageRule>();
                         foreach (var existingRule in existingRules)
@@ -1184,6 +1204,7 @@ namespace ISMSponsor.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                System.Diagnostics.Debug.WriteLine($"EditModal saved successfully - LogId: {log.LogId}");
 
                 // Log the activity
                 await _logsService.LogActivityAsync(
