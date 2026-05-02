@@ -1336,11 +1336,21 @@ function saveRuleEdit() {
     console.log('Coverage type value:', document.getElementById('ruleCoverageType').value);
     console.log('Display order value:', document.getElementById('ruleDisplayOrder').value);
     
+    const sourceItems = mode === 'create' ? createItemsData : editItemsData;
+    const studentGrade = mode === 'create' ? createStudentGradeLevel : editStudentGradeLevel;
+    
+    // Fetch categoryId from the selected item
+    const selectedItem = sourceItems.find(i => i.value === itemId);
+    const categoryId = selectedItem ? selectedItem.categoryId : null;
+    
+    console.log('Selected item:', selectedItem);
+    console.log('Extracted categoryId:', categoryId);
+    
     const rule = {
         ruleId: (index !== '' && mode === 'edit') ? editCoverageRules[index].ruleId : 0,
         coverageTarget: 'Item',
         itemId: itemId || null,
-        categoryId: null,
+        categoryId: categoryId,  // Now fetched from the selected item
         coverageType: document.getElementById('ruleCoverageType').value,
         coveragePercentage: document.getElementById('rulePercentage').value || null,
         coverageFixedAmount: document.getElementById('ruleFixedAmount').value || null,
@@ -1354,8 +1364,6 @@ function saveRuleEdit() {
     
     console.log('Rule object created:', rule);
 
-    const sourceItems = mode === 'create' ? createItemsData : editItemsData;
-    const studentGrade = mode === 'create' ? createStudentGradeLevel : editStudentGradeLevel;
     console.log('Student grade level:', studentGrade);
     console.log('Source items count:', sourceItems.length);
     
