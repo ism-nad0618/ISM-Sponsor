@@ -442,7 +442,8 @@ namespace ISMSponsor.Controllers
                 students = students.Select(s => new {
                     value = s.StudentId,
                     text = $"{s.StudentId} - {s.FirstName} {s.LastName}",
-                    gradeLevel = s.GradeLevel
+                    gradeLevel = s.GradeLevel,
+                    sponsorId = s.SponsorId
                 }),
                 items,
                 categories

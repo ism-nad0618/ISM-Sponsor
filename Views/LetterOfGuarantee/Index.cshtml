@@ -265,19 +265,20 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="createStudentId" class="field-label">Student <span class="required">*</span></label>
-                        <select id="createStudentId" name="StudentId" required onchange="checkExistingLog()">
-                            <option value="">-- Select Student --</option>
-                        </select>
-                        <span class="form-error" id="createStudentId-error"></span>
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="createSponsorId" class="field-label">Sponsor <span class="required">*</span></label>
-                        <select id="createSponsorId" name="SponsorId" required>
+                        <select id="createSponsorId" name="SponsorId" required onchange="filterStudentsBySponsor()">
                             <option value="">-- Select Sponsor --</option>
                         </select>
                         <span class="form-error" id="createSponsorId-error"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createStudentId" class="field-label">Student <span class="required">*</span></label>
+                        <select id="createStudentId" name="StudentId" required onchange="checkExistingLog()">
+                            <option value="">-- Select Sponsor First --</option>
+                        </select>
+                        <span class="form-error" id="createStudentId-error"></span>
+                        <p class="help-text">Students will be filtered based on selected sponsor</p>
                     </div>
                     
                     <div class="form-group">
@@ -1405,6 +1406,41 @@ function handleSchoolYearChange() {
     checkExistingLog();
 }
 
+// Filter students based on selected sponsor
+function filterStudentsBySponsor() {
+    const sponsorSelect = document.getElementById('createSponsorId');
+    const studentSelect = document.getElementById('createStudentId');
+    const selectedSponsorId = sponsorSelect.value;
+    
+    // Clear current student selection
+    studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
+    
+    if (!selectedSponsorId) {
+        studentSelect.innerHTML = '<option value="">-- Select Sponsor First --</option>';
+        return;
+    }
+    
+    // Filter students by selected sponsor
+    const filteredStudents = window.allCreateStudents.filter(student => 
+        student.sponsorId === selectedSponsorId
+    );
+    
+    if (filteredStudents.length === 0) {
+        studentSelect.innerHTML = '<option value="">-- No students for this sponsor --</option>';
+        return;
+    }
+    
+    // Populate filtered students
+    filteredStudents.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.value;
+        option.textContent = student.text;
+        option.dataset.gradeLevel = student.gradeLevel || '';
+        option.dataset.sponsorId = student.sponsorId || '';
+        studentSelect.appendChild(option);
+    });
+}
+
 // Check if LoG already exists for student/school year
 async function checkExistingLog() {
     const schoolYearId = document.getElementById('createSchoolYearId').value;
@@ -1520,16 +1556,10 @@ async function loadCreateFormData() {
             schoolYearSelect.appendChild(option);
         });
         
-        // Populate students (store grade level as data attribute)
+        // Store all students for filtering (store grade level and sponsorId as data attributes)
+        window.allCreateStudents = data.students || [];
         const studentSelect = document.getElementById('createStudentId');
-        studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
-        data.students.forEach(student => {
-            const option = document.createElement('option');
-            option.value = student.value;
-            option.textContent = student.text;
-            option.dataset.gradeLevel = student.gradeLevel || '';
-            studentSelect.appendChild(option);
-        });
+        studentSelect.innerHTML = '<option value="">-- Select Sponsor First --</option>';
         
         // Populate sponsors
         const sponsorSelect = document.getElementById('createSponsorId');

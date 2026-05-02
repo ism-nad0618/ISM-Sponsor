@@ -795,12 +795,18 @@ namespace ISMSponsor.Controllers
             {
                 _logger.LogError(ex, "Error approving sponsor {SponsorId}", sponsorId);
                 
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                var errorMessage = $"An error occurred while approving the sponsor: {ex.Message}";
+                if (ex.InnerException != null)
                 {
-                    return Json(new { success = false, message = "An error occurred while approving the sponsor" });
+                    errorMessage += $" Inner: {ex.InnerException.Message}";
                 }
                 
-                TempData["Error"] = "An error occurred while approving the sponsor";
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.ContentType?.Contains("multipart/form-data") == true)
+                {
+                    return Json(new { success = false, message = errorMessage });
+                }
+                
+                TempData["Error"] = errorMessage;
                 return RedirectToAction("Index");
             }
         }
