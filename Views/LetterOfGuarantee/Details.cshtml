@@ -239,6 +239,14 @@
                 <p><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</strong></p>
             </div>
         </div>
+        <div style="margin-top: 0.75rem;">
+            <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
+               class="btn-primary" 
+               style="display: inline-block; padding: 0.5rem 1rem; text-decoration: none;"
+               download>
+                📎 Download Attachment
+            </a>
+        </div>
     }
     else
     {

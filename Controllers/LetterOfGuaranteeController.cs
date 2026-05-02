@@ -162,6 +162,37 @@ namespace ISMSponsor.Controllers
             return PartialView("_DetailsModal", log);
         }
 
+        [Authorize(Roles = "admin,admissions,cashier,sponsor")]
+        public async Task<IActionResult> DownloadAttachment(int id)
+        {
+            var log = await _logService.GetByIdAsync(id);
+            if (log == null || string.IsNullOrEmpty(log.AttachmentFileName))
+            {
+                return NotFound();
+            }
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "log_attachments", log.AttachmentFileName);
+            
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("Attachment file not found.");
+            }
+
+            var memory = new MemoryStream();
+            using (var stream = new FileStream(filePath, FileMode.Open))
+            {
+                await stream.CopyToAsync(memory);
+            }
+            memory.Position = 0;
+
+            var contentType = "application/octet-stream";
+            var fileName = log.AttachmentFileName.StartsWith("new_") 
+                ? log.AttachmentFileName.Substring(log.AttachmentFileName.IndexOf('_', 4) + 1) 
+                : log.AttachmentFileName;
+
+            return File(memory, contentType, fileName);
+        }
+
         [Authorize(Roles = "admin,admissions")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
