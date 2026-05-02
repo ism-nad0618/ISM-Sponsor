@@ -1002,7 +1002,7 @@ namespace ISMSponsor.Controllers
         }
 
         // Get LoG data for editing in modal
-        [Authorize(Roles = "admin,admissions")]
+        [Authorize(Roles = "admin,admissions,cashier")]
         [HttpGet]
         public async Task<IActionResult> GetEditData(int id)
         {
