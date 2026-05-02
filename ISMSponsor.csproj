@@ -7,6 +7,7 @@
     <NoWarn>$(NoWarn);CS7022</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish/**;publish/**/*</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
