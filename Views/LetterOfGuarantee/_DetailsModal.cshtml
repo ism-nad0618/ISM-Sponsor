@@ -27,21 +27,27 @@
     <div class="step-content active" data-step="1" data-modal="details">
         <h3 class="form-section-title">Student and Sponsor Information</h3>
         
-        <div class="form-group">
-            <label class="field-label">School Year</label>
-            <input type="text" value="@Model.SchoolYearId" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
+        <div class="data-grid" style="margin-bottom: 1.5rem;">
+            <div>
+                <p class="field-label">School Year</p>
+                <p><strong>@Model.SchoolYearId</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Student ID</p>
+                <p><strong>@Model.StudentId</strong></p>
+            </div>
+            <div>
+                <p class="field-label">Student Name</p>
+                <p><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
+            </div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Sponsor</label>
-            <input type="text" value="@(Model.Sponsor?.SponsorName ?? Model.SponsorId)" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
-        </div>
-        
-        <div class="form-group">
-            <label class="field-label">Student</label>
-            <input type="text" value="@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : Model.StudentId)" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
+            <select disabled style="background-color: #f3f4f6; cursor: not-allowed;">
+                <option selected>@(Model.Sponsor?.SponsorName ?? Model.SponsorId)</option>
+            </select>
             <span class="form-error"></span>
-            <p class="help-text">Student ID: @Model.StudentId@(Model.Student != null ? $" | Grade: {Model.Student.GradeLevel}" : "")</p>
         </div>
         
         <div class="form-group">
@@ -49,7 +55,37 @@
             <select disabled style="background-color: #f3f4f6; cursor: not-allowed;">
                 <option selected>@Model.LogStatus</option>
             </select>
+            <span class="form-error"></span>
         </div>
+        
+        @if (Model.IsActive)
+        {
+            <div style="padding: 12px; border-radius: 6px; background: #d1fae5; color: #065f46; margin-top: 16px;">
+                <strong>✓ Active Coverage</strong>
+                @if (Model.ActivatedOn.HasValue)
+                {
+                    <text> - Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy")</text>
+                }
+                @if (Model.ActivatedByUser != null)
+                {
+                    <text> by @Model.ActivatedByUser.DisplayName</text>
+                }
+            </div>
+        }
+        else if (Model.DeactivatedOn.HasValue)
+        {
+            <div style="padding: 12px; border-radius: 6px; background: #fee2e2; color: #991b1b; margin-top: 16px;">
+                <strong>✕ Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
+                @if (Model.DeactivatedByUser != null)
+                {
+                    <text> by @Model.DeactivatedByUser.DisplayName</text>
+                }
+                @if (!string.IsNullOrEmpty(Model.DeactivationReason))
+                {
+                    <br /><strong>Reason:</strong> @Model.DeactivationReason
+                }
+            </div>
+        }
     </div>
     
     <!-- Step 2: Coverage Details -->
@@ -87,7 +123,7 @@
             <h3 class="form-section-title" style="margin: 0;">Coverage Rules</h3>
         </div>
         
-        <p class="help-text" style="margin-bottom: 16px;">Coverage rules defined for this Letter of Guarantee</p>
+        <p class="help-text" style="margin-bottom: 16px;">Define what items are covered and how much coverage applies</p>
         
         <div class="table-wrap">
             <table>
@@ -145,7 +181,7 @@
                     {
                         <tr>
                             <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">
-                                No coverage rules defined for this Letter of Guarantee.
+                                No coverage rules defined. Click "+ Add Rule" to create one.
                             </td>
                         </tr>
                     }
@@ -160,30 +196,35 @@
         
         @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
         {
-            <div class="form-group">
-                <label class="field-label">Current Attachment</label>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <input type="text" value="@Model.AttachmentFileName" readonly style="background-color: #f3f4f6; flex: 1; cursor: not-allowed;" />
-                    <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
-                       class="btn-secondary" 
-                       download
-                       style="white-space: nowrap;">
-                        📎 Download
-                    </a>
+            <div style="padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>Current Attachment:</strong> @Model.AttachmentFileName
+                    @if (Model.AttachmentUploadedOn.HasValue)
+                    {
+                        <br /><small>Uploaded on @Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</small>
+                    }
                 </div>
-                <span class="form-error"></span>
-                <p class="help-text">Uploaded on @Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</p>
+                <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
+                   class="btn-secondary" 
+                   download
+                   style="background: white; color: #10b981; padding: 0.5rem 1rem; margin-left: 1rem;">
+                    📎 Download
+                </a>
             </div>
         }
         else
         {
-            <div class="form-group">
-                <label class="field-label">Upload Attachment (Optional)</label>
-                <input type="file" disabled style="background-color: #f3f4f6; cursor: not-allowed;" />
-                <span class="form-error"></span>
-                <p class="help-text">No attachment uploaded for this Letter of Guarantee</p>
+            <div style="padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 6px; margin-bottom: 16px;">
+                No attachment uploaded for this Letter of Guarantee
             </div>
         }
+        
+        <div class="form-group">
+            <label class="field-label">Replace Attachment (Optional)</label>
+            <input type="file" disabled style="background-color: #f3f4f6; cursor: not-allowed;" />
+            <span class="form-error"></span>
+            <p class="help-text">Attachment cannot be changed in view mode</p>
+        </div>
     </div>
     
     <!-- Navigation Buttons -->
