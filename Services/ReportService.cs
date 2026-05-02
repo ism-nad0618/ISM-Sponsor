@@ -424,11 +424,10 @@ public class ReportService
 
     public async Task<CoverageRulesReportViewModel> GenerateCoverageRulesReportAsync(ReportFilterViewModel filters)
     {
-        var query = _context.LoGCoverageRules
-            .Include(r => r.LetterOfGuarantee)
-                .ThenInclude(l => l.Sponsor)
-            .Include(r => r.Item)
-            .Include(r => r.Category)
+    var query = _context.LoGCoverageRules!
+            .Include("LetterOfGuarantee.Sponsor")
+            .Include("Item")
+            .Include("Category")
             .AsQueryable();
 
         // Apply filters

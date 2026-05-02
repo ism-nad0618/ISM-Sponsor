@@ -26,7 +26,7 @@ namespace ISMSponsor.Controllers.Settings
                     s.StudentId.Contains(search) ||
                     s.FirstName.Contains(search) ||
                     s.LastName.Contains(search) ||
-                    s.SponsorId.Contains(search));
+                    (s.SponsorId != null && s.SponsorId.Contains(search)));
                 ViewBag.Search = search;
             }
 
