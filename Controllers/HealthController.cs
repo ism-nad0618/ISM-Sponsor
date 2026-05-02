@@ -173,4 +173,71 @@ public class HealthController : ControllerBase
             allSponsorUsers
         });
     }
+
+    /// <summary>
+    /// Emergency password reset endpoint (temporary - remove after use).
+    /// POST /api/health/reset-password
+    /// Body: { "username": "SP001", "newPassword": "YourPassword123!" }
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            var user = await _userManager.FindByNameAsync(request.Username);
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = $"User '{request.Username}' not found" });
+            }
+
+            // Check if account is locked
+            var isLockedOut = await _userManager.IsLockedOutAsync(user);
+            if (isLockedOut)
+            {
+                // Unlock the account
+                await _userManager.SetLockoutEndDateAsync(user, null);
+                await _userManager.ResetAccessFailedCountAsync(user);
+            }
+
+            // Generate password reset token and reset password properly
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
+
+            if (result.Succeeded)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Password reset successfully for user '{request.Username}'",
+                    wasLockedOut = isLockedOut,
+                    unlocked = isLockedOut
+                });
+            }
+
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new
+            {
+                success = false,
+                message = "Password reset failed",
+                errors = result.Errors.Select(e => e.Description).ToArray()
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "An error occurred",
+                error = ex.Message
+            });
+        }
+    }
+}
+
+public class ResetPasswordRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
 }
