@@ -1,5 +1,23 @@
 @model ISMSponsor.Models.Domain.LogCoverage
 
+<style>
+    .readonly-field {
+        background-color: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        color: #111827;
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+    }
+    .readonly-field strong {
+        color: #111827;
+        font-weight: 500;
+    }
+</style>
+
 <!-- Step Progress Bar -->
 <div style="display: flex; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb;">
     <div class="step-tab active" data-step="1" data-modal="details" onclick="goToDetailsStep(1)">
@@ -27,12 +45,14 @@
         
         <div class="form-group">
             <label class="field-label">Current Status</label>
-            <div><span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span></div>
+            <div class="readonly-field">
+                <span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span>
+            </div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Activation State</label>
-            <div>
+            <div class="readonly-field">
                 @if (Model.IsActive)
                 {
                     <span class="status-badge status-active">Active</span>
@@ -46,7 +66,7 @@
 
         @if (Model.IsActive && Model.ActivatedOn.HasValue)
         {
-            <div class="alert alert-success" style="margin-top: 16px;">
+            <div class="alert alert-success" style="margin-bottom: 16px;">
                 <strong>Active Coverage</strong> - Activated @Model.ActivatedOn?.ToString("MMM dd, yyyy")
                 @if (Model.ActivatedByUser != null)
                 {
@@ -56,7 +76,7 @@
         }
         else if (Model.DeactivatedOn.HasValue)
         {
-            <div class="alert alert-error" style="margin-top: 16px;">
+            <div class="alert alert-error" style="margin-bottom: 16px;">
                 <strong>Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
                 @if (Model.DeactivatedByUser != null)
                 {
@@ -70,53 +90,53 @@
         }
         else if (@Model.LogStatus == "Approved")
         {
-            <div class="alert alert-success" style="margin-top: 16px;">
+            <div class="alert alert-success" style="margin-bottom: 16px;">
                 <strong>✓ Approved & Active</strong> - This LoG has been approved and is currently active.
             </div>
         }
         else if (@Model.LogStatus == "Rejected")
         {
-            <div class="alert alert-error" style="margin-top: 16px;">
+            <div class="alert alert-error" style="margin-bottom: 16px;">
                 <strong>✕ Rejected</strong> - This LoG has been rejected. Review comments below.
             </div>
         }
         else if (@Model.LogStatus == "Submitted")
         {
-            <div class="alert" style="margin-top: 16px; background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
+            <div class="alert" style="margin-bottom: 16px; background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
                 <strong>⏳ Awaiting Admin Review</strong> - This LoG is waiting for administrator approval.
             </div>
         }
 
-        <h3 class="form-section-title" style="margin-top: 32px;">Student and Sponsor Information</h3>
+        <h3 class="form-section-title">Student and Sponsor Information</h3>
         
         <div class="form-group">
             <label class="field-label">School Year</label>
-            <div><strong>@Model.SchoolYearId</strong></div>
+            <div class="readonly-field"><strong>@Model.SchoolYearId</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Student ID</label>
-            <div><strong>@Model.StudentId</strong></div>
+            <div class="readonly-field"><strong>@Model.StudentId</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Student Name</label>
-            <div><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></div>
+            <div class="readonly-field"><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Grade Level</label>
-            <div><strong>@(Model.Student?.GradeLevel ?? "N/A")</strong></div>
+            <div class="readonly-field"><strong>@(Model.Student?.GradeLevel ?? "N/A")</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Sponsor ID</label>
-            <div><strong>@Model.SponsorId</strong></div>
+            <div class="readonly-field"><strong>@Model.SponsorId</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Sponsor Name</label>
-            <div><strong>@(Model.Sponsor?.SponsorName ?? "N/A")</strong></div>
+            <div class="readonly-field"><strong>@(Model.Sponsor?.SponsorName ?? "N/A")</strong></div>
         </div>
     </div>
 
@@ -126,30 +146,30 @@
         
         <div class="form-group">
             <label class="field-label">Effective From</label>
-            <div><strong>@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></div>
+            <div class="readonly-field"><strong>@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Effective To</label>
-            <div><strong>@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></div>
+            <div class="readonly-field"><strong>@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></div>
         </div>
 
         @if (!string.IsNullOrEmpty(Model.Notes) || !string.IsNullOrEmpty(Model.ReviewComments))
         {
-            <h3 class="form-section-title" style="margin-top: 32px;">Notes and Comments</h3>
+            <h3 class="form-section-title">Notes and Comments</h3>
             
             @if (!string.IsNullOrEmpty(Model.Notes))
             {
                 <div class="form-group">
                     <label class="field-label">Notes</label>
-                    <div style="white-space: pre-wrap; color: #374151;">@Model.Notes</div>
+                    <div class="readonly-field" style="display: block; white-space: pre-wrap; min-height: auto; padding: 0.75rem;">@Model.Notes</div>
                 </div>
             }
             @if (!string.IsNullOrEmpty(Model.ReviewComments))
             {
                 <div class="form-group">
                     <label class="field-label">Review Comments</label>
-                    <div style="white-space: pre-wrap; color: #374151;">@Model.ReviewComments</div>
+                    <div class="readonly-field" style="display: block; white-space: pre-wrap; min-height: auto; padding: 0.75rem;">@Model.ReviewComments</div>
                 </div>
             }
         }
@@ -163,21 +183,21 @@
         {
             <div class="form-group">
                 <label class="field-label">File Name</label>
-                <div><strong>@Model.AttachmentFileName</strong></div>
+                <div class="readonly-field"><strong>@Model.AttachmentFileName</strong></div>
             </div>
             
             <div class="form-group">
                 <label class="field-label">Uploaded On</label>
-                <div><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</strong></div>
+                <div class="readonly-field"><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</strong></div>
             </div>
             
             <div class="form-group">
                 <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
-                   class="btn-primary" 
-                   style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none;"
+                   class="btn-primary btn-add"
                    download>
                     📎 Download Attachment
                 </a>
+                <p class="help-text">Click to download and review the attached document</p>
             </div>
         }
         else
@@ -192,65 +212,73 @@
         
         <div class="form-group">
             <label class="field-label">Created On</label>
-            <div><strong>@Model.CreatedOn.ToString("MMM dd, yyyy")</strong></div>
+            <div class="readonly-field"><strong>@Model.CreatedOn.ToString("MMM dd, yyyy")</strong></div>
         </div>
         
         <div class="form-group">
             <label class="field-label">Created By</label>
-            <div><strong>@(Model.CreatedByUser?.DisplayName ?? "System")</strong></div>
+            <div class="readonly-field"><strong>@(Model.CreatedByUser?.DisplayName ?? "System")</strong></div>
         </div>
         
         @if (Model.ModifiedOn.HasValue)
         {
             <div class="form-group">
                 <label class="field-label">Modified On</label>
-                <div><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy")</strong></div>
+                <div class="readonly-field"><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy")</strong></div>
             </div>
             
             <div class="form-group">
                 <label class="field-label">Modified By</label>
-                <div><strong>@(Model.ModifiedByUser?.DisplayName ?? "System")</strong></div>
+                <div class="readonly-field"><strong>@(Model.ModifiedByUser?.DisplayName ?? "System")</strong></div>
             </div>
         }
         
         @if (Model.SubmittedOn.HasValue || Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
         {
-            <h3 class="form-section-title" style="margin-top: 32px;">Approval History</h3>
+            <h3 class="form-section-title">Approval History</h3>
             
             @if (Model.SubmittedOn.HasValue)
             {
                 <div class="form-group">
                     <label class="field-label">📤 Submitted On</label>
-                    <div><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy")</strong></div>
+                    <div class="readonly-field"><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy")</strong></div>
                 </div>
                 
                 <div class="form-group">
                     <label class="field-label">Submitted By</label>
-                    <div><strong>@(Model.SubmittedByUser?.DisplayName ?? "Unknown")</strong></div>
+                    <div class="readonly-field"><strong>@(Model.SubmittedByUser?.DisplayName ?? "Unknown")</strong></div>
                 </div>
             }
             @if (Model.ApprovedOn.HasValue)
             {
                 <div class="form-group">
                     <label class="field-label">✓ Approved On</label>
-                    <div><strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy")</strong></div>
+                    <div class="readonly-field" style="border-color: var(--success-color); background-color: #f0fdf4;">
+                        <strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy")</strong>
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label class="field-label">Approved By</label>
-                    <div><strong style="color: var(--success-color);">@(Model.ApprovedByUser?.DisplayName ?? "Unknown")</strong></div>
+                    <div class="readonly-field" style="border-color: var(--success-color); background-color: #f0fdf4;">
+                        <strong style="color: var(--success-color);">@(Model.ApprovedByUser?.DisplayName ?? "Unknown")</strong>
+                    </div>
                 </div>
             }
             @if (Model.RejectedOn.HasValue)
             {
                 <div class="form-group">
                     <label class="field-label">✕ Rejected On</label>
-                    <div><strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy")</strong></div>
+                    <div class="readonly-field" style="border-color: var(--error-color); background-color: #fef2f2;">
+                        <strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy")</strong>
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label class="field-label">Rejected By</label>
-                    <div><strong style="color: var(--error-color);">@(Model.RejectedByUser?.DisplayName ?? "Unknown")</strong></div>
+                    <div class="readonly-field" style="border-color: var(--error-color); background-color: #fef2f2;">
+                        <strong style="color: var(--error-color);">@(Model.RejectedByUser?.DisplayName ?? "Unknown")</strong>
+                    </div>
                 </div>
             }
         }
@@ -260,13 +288,13 @@
 @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
 {
     <!-- Approval Actions (matching Create modal's button layout) -->
-    <div style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px;">
-        <div class="form-group" style="margin-bottom: 16px;">
+    <div style="border-top: 1px solid #e5e7eb; padding-top: 24px; margin-top: 24px;">
+        <div class="form-group">
             <label for="modalApprovalComments" class="field-label">Approval Comments (Optional)</label>
-            <textarea id="modalApprovalComments" name="reviewComments" rows="2" class="form-control" placeholder="Add any notes about this approval or rejection..."></textarea>
+            <textarea id="modalApprovalComments" name="reviewComments" rows="3" placeholder="Add any notes about this approval or rejection..."></textarea>
         </div>
         
-        <div style="display: flex; gap: 12px;">
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
             <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
                 Cancel
             </button>
