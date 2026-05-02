@@ -1441,8 +1441,8 @@ document.getElementById('editLogForm').addEventListener('submit', async function
     console.log(`Filtered out ${editCoverageRules.length - completeRules.length} incomplete rules`);
     console.log('CoverageRulesJson (after filter):', JSON.stringify(completeRules));
     
-    // Add coverage rules as JSON
-    formData.append('CoverageRulesJson', JSON.stringify(completeRules));
+    // Add coverage rules as JSON (use set to avoid duplicate key binding issues)
+    formData.set('CoverageRulesJson', JSON.stringify(completeRules));
     
     // Debug: Check form data contents
     for (let pair of formData.entries()) {
@@ -1450,6 +1450,7 @@ document.getElementById('editLogForm').addEventListener('submit', async function
             console.log(`FormData: ${pair[0]} = ${pair[1]}`);
         }
     }
+    console.log('FormData: CoverageRulesJson =', formData.get('CoverageRulesJson'));
     
     try {
         console.log('Sending POST to /Settings/LetterOfGuarantee/EditModal');
@@ -2035,7 +2036,8 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
     console.log(`Filtered out ${createCoverageRules.length - completeCreateRules.length} incomplete rules from create form`);
     const rulesJson = JSON.stringify(completeCreateRules);
     console.log('CoverageRulesJson string:', rulesJson);
-    formData.append('CoverageRulesJson', rulesJson);
+    formData.set('CoverageRulesJson', rulesJson);
+    console.log('FormData: CoverageRulesJson =', formData.get('CoverageRulesJson'));
     
     try {
         console.log('Sending POST to /Settings/LetterOfGuarantee/CreateModalFull');
