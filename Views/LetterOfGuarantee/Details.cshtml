@@ -4,11 +4,20 @@
     ViewData["Title"] = $"LoG #{Model.LogId} Details";
 }
 
-<div class="page-header">
+<style>
+    .field-label { font-size: 0.8rem; margin-bottom: 0.25rem; }
+    .data-grid > div p { font-size: 0.875rem; margin: 0; }
+    .data-grid { gap: 0.75rem; }
+    .card { padding: 0.75rem; margin-bottom: 0.75rem; }
+    .table-title { font-size: 1rem; margin-bottom: 0.5rem; }
+    .alert { padding: 0.5rem; font-size: 0.875rem; }
+</style>
+
+<div class="page-header" style="padding: 0.75rem 0; margin-bottom: 0.75rem;">
     <div class="page-header-actions">
         <div>
-            <h1>Letter of Guarantee #@Model.LogId</h1>
-            <p class="page-subtitle">Detailed view and activation management</p>
+            <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Letter of Guarantee #@Model.LogId</h1>
+            <p class="page-subtitle" style="font-size: 0.875rem; margin: 0;">Detailed view and activation management</p>
         </div>
         <div style="display: flex; gap: 0.5rem;">
             <a asp-action="Coverage" asp-route-id="@Model.LogId" class="btn-primary btn-add">View Coverage Rules</a>
@@ -30,10 +39,10 @@
     <div class="alert alert-error">@errorMsg</div>
 }
 
-<div class="card">
-    <h2 class="table-title">Status and Activation</h2>
+<div class="card" style="padding: 0.75rem; margin-bottom: 0.75rem;">
+    <h2 class="table-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Status and Activation</h2>
     
-    <div class="data-grid" style="margin-bottom: 1.5rem;">
+    <div class="data-grid" style="margin-bottom: 0.75rem; gap: 0.75rem;">
         <div>
             <p class="field-label">Current Status</p>
             <p><span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span></p>
@@ -55,9 +64,8 @@
 
     @if (Model.IsActive && Model.ActivatedOn.HasValue)
     {
-        <div class="alert alert-success">
-            <strong> Active Coverage</strong><br />
-            Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")
+        <div class="alert alert-success" style="padding: 0.5rem; font-size: 0.875rem; margin-bottom: 0.75rem;">
+            <strong>Active Coverage</strong> - Activated @Model.ActivatedOn?.ToString("MMM dd, yyyy")
             @if (Model.ActivatedByUser != null)
             {
                 <text> by @Model.ActivatedByUser.DisplayName</text>
@@ -66,16 +74,15 @@
     }
     else if (Model.DeactivatedOn.HasValue)
     {
-        <div class="alert alert-error">
-            <strong> Deactivated</strong><br />
-            Deactivated on @Model.DeactivatedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")
+        <div class="alert alert-error" style="padding: 0.5rem; font-size: 0.875rem; margin-bottom: 0.75rem;">
+            <strong>Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
             @if (Model.DeactivatedByUser != null)
             {
                 <text> by @Model.DeactivatedByUser.DisplayName</text>
             }
             @if (!string.IsNullOrEmpty(Model.DeactivationReason))
             {
-                <br /><strong>Reason:</strong> @Model.DeactivationReason
+                <text> | Reason: @Model.DeactivationReason</text>
             }
         </div>
     }
@@ -83,35 +90,32 @@
     @* Approval Workflow Actions *@
     @if (@Model.LogStatus == "Draft" && (User.IsInRole("admin") || User.IsInRole("admissions") || User.IsInRole("sponsor")))
     {
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
-            <p class="field-label" style="margin-bottom: 0.75rem;">📤 Submit for Review</p>
-            <p class="help-text" style="margin-bottom: 1rem;">Submit this LoG to Admin for approval.</p>
+        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--gray-200);">
+            <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.875rem;">📤 Submit for Review</p>
             <form asp-action="Submit" asp-route-id="@Model.LogId" method="post" style="display: inline;">
-                <button type="submit" class="btn-primary" onclick="return confirm('Submit this Letter of Guarantee for review? It will be forwarded to the Administrator.');">
-                    ✓ Submit for Admin Review
+                <button type="submit" class="btn-primary" onclick="return confirm('Submit this Letter of Guarantee for review? It will be forwarded to the Administrator.');" style="padding: 0.5rem 1rem;">
+                    Submit for Admin Review
                 </button>
             </form>
         </div>
     }
     else if (@Model.LogStatus == "Submitted" && User.IsInRole("admin"))
     {
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
-            <p class="field-label" style="margin-bottom: 0.75rem;">👀 Admin Review Actions</p>
-            <p class="help-text" style="margin-bottom: 1rem;">Approve (and activate) or reject this Letter of Guarantee.</p>
+        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--gray-200);">
+            <p class="field-label" style="margin-bottom: 0.5rem; font-size: 0.875rem;">👀 Admin Review Actions</p>
             
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 200px;">
                     <form asp-action="Approve" asp-route-id="@Model.LogId" method="post" id="approveForm">
-                        <label class="field-label" for="approvalComments" style="margin-bottom: 0.5rem;">Approval Comments (Optional)</label>
-                        <textarea id="approvalComments" name="reviewComments" rows="2" class="form-control" placeholder="Add any notes about this approval..." style="margin-bottom: 0.75rem; width: 100%;"></textarea>
-                        <button type="submit" class="btn-primary" onclick="return confirm('Approve this Letter of Guarantee? It will be automatically activated.');" style="width: 100%; padding: 0.75rem 1rem;">
+                        <textarea id="approvalComments" name="reviewComments" rows="1" class="form-control" placeholder="Comments (optional)" style="margin-bottom: 0.5rem; width: 100%; font-size: 0.875rem;"></textarea>
+                        <button type="submit" class="btn-primary" onclick="return confirm('Approve this Letter of Guarantee? It will be automatically activated.');" style="width: 100%; padding: 0.5rem 1rem;">
                             Approve & Activate
                         </button>
                     </form>
                 </div>
                 
                 <div style="flex: 1; min-width: 200px;">
-                    <button type="button" class="btn-danger" onclick="document.getElementById('rejectionModal').style.display='block';" style="width: 100%; padding: 0.75rem 1rem;">
+                    <button type="button" class="btn-danger" onclick="document.getElementById('rejectionModal').style.display='block';" style="width: 100%; padding: 0.5rem 1rem; margin-top: 1.65rem;">
                         Reject LoG
                     </button>
                 </div>
@@ -120,23 +124,20 @@
     }
     else if (@Model.LogStatus == "Approved")
     {
-        <div class="alert alert-success" style="margin-top: 1.5rem;">
-            <strong>✓ Approved & Active</strong><br />
-            This LoG has been approved and is currently active.
+        <div class="alert alert-success" style="margin-top: 0.75rem; padding: 0.5rem; font-size: 0.875rem;">
+            <strong>✓ Approved & Active</strong> - This LoG has been approved and is currently active.
         </div>
     }
     else if (@Model.LogStatus == "Rejected")
     {
-        <div class="alert alert-error" style="margin-top: 1.5rem;">
-            <strong>✕ Rejected</strong><br />
-            This LoG has been rejected. Review comments below.
+        <div class="alert alert-error" style="margin-top: 0.75rem; padding: 0.5rem; font-size: 0.875rem;">
+            <strong>✕ Rejected</strong> - This LoG has been rejected. Review comments below.
         </div>
     }
     else if (@Model.LogStatus == "Submitted")
     {
-        <div class="alert" style="margin-top: 1.5rem; background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
-            <strong>⏳ Awaiting Admin Review</strong><br />
-            This LoG is waiting for administrator approval.
+        <div class="alert" style="margin-top: 0.75rem; padding: 0.5rem; font-size: 0.875rem; background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
+            <strong>⏳ Awaiting Admin Review</strong> - This LoG is waiting for administrator approval.
         </div>
     }
 
@@ -159,9 +160,9 @@
     }
 </div>
 
-<div class="card">
-    <h2 class="table-title">Student and Sponsor Information</h2>
-    <div class="data-grid">
+<div class="card" style="padding: 0.75rem; margin-bottom: 0.75rem;">
+    <h2 class="table-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Student and Sponsor Information</h2>
+    <div class="data-grid" style="gap: 0.75rem;">
         <div>
             <p class="field-label">School Year</p>
             <p><strong>@Model.SchoolYearId</strong></p>
@@ -189,9 +190,9 @@
     </div>
 </div>
 
-<div class="card">
-    <h2 class="table-title">Coverage Dates</h2>
-    <div class="data-grid">
+<div class="card" style="padding: 0.75rem; margin-bottom: 0.75rem;">
+    <h2 class="table-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Coverage Dates</h2>
+    <div class="data-grid" style="gap: 0.75rem;">
         <div>
             <p class="field-label">Effective From</p>
             <p><strong>@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")</strong></p>
@@ -205,37 +206,37 @@
 
 @if (!string.IsNullOrEmpty(Model.Notes) || !string.IsNullOrEmpty(Model.ReviewComments))
 {
-    <div class="card">
-        <h2 class="table-title">Notes and Comments</h2>
+    <div class="card" style="padding: 0.75rem; margin-bottom: 0.75rem;">
+        <h2 class="table-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Notes and Comments</h2>
         @if (!string.IsNullOrEmpty(Model.Notes))
         {
-            <div style="margin-bottom: 1.5rem;">
-                <p class="field-label">Notes</p>
-                <p style="white-space: pre-wrap;">@Model.Notes</p>
+            <div style="margin-bottom: 0.5rem;">
+                <p class="field-label" style="font-size: 0.875rem;">Notes</p>
+                <p style="white-space: pre-wrap; font-size: 0.875rem;">@Model.Notes</p>
             </div>
         }
         @if (!string.IsNullOrEmpty(Model.ReviewComments))
         {
             <div>
-                <p class="field-label">Review Comments</p>
-                <p style="white-space: pre-wrap;">@Model.ReviewComments</p>
+                <p class="field-label" style="font-size: 0.875rem;">Review Comments</p>
+                <p style="white-space: pre-wrap; font-size: 0.875rem;">@Model.ReviewComments</p>
             </div>
         }
     </div>
 }
 
-<div class="card">
-    <h2 class="table-title">Attachment</h2>
+<div class="card" style="padding: 0.75rem; margin-bottom: 0.75rem;">
+    <h2 class="table-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Attachment</h2>
     @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
     {
-        <div class="data-grid">
+        <div class="data-grid" style="gap: 0.75rem;">
             <div>
                 <p class="field-label">File Name</p>
                 <p><strong>@Model.AttachmentFileName</strong></p>
             </div>
             <div>
                 <p class="field-label">Uploaded On</p>
-                <p><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                <p><strong>@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</strong></p>
             </div>
         </div>
     }
@@ -245,12 +246,12 @@
     }
 </div>
 
-<div class="card">
-    <h2 class="table-title">Audit Trail</h2>
-    <div class="data-grid">
+<div class="card" style="padding: 0.75rem; margin-bottom: 0.75rem;">
+    <h2 class="table-title" style="font-size: 1rem; margin-bottom: 0.5rem;">Audit Trail</h2>
+    <div class="data-grid" style="gap: 0.75rem;">
         <div>
             <p class="field-label">Created On</p>
-            <p><strong>@Model.CreatedOn.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+            <p><strong>@Model.CreatedOn.ToString("MMM dd, yyyy")</strong></p>
         </div>
         <div>
             <p class="field-label">Created By</p>
@@ -260,7 +261,7 @@
         {
             <div>
                 <p class="field-label">Modified On</p>
-                <p><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                <p><strong>@Model.ModifiedOn?.ToString("MMM dd, yyyy")</strong></p>
             </div>
             <div>
                 <p class="field-label">Modified By</p>
@@ -272,14 +273,14 @@
     @* Approval Workflow History *@
     @if (Model.SubmittedOn.HasValue || Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
     {
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
-            <h3 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 600;">Approval History</h3>
-            <div class="data-grid">
+        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--gray-200);">
+            <h3 style="margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600;">Approval History</h3>
+            <div class="data-grid" style="gap: 0.75rem;">
                 @if (Model.SubmittedOn.HasValue)
                 {
                     <div>
                         <p class="field-label">📤 Submitted On</p>
-                        <p><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                        <p><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy")</strong></p>
                     </div>
                     <div>
                         <p class="field-label">Submitted By</p>
@@ -290,7 +291,7 @@
                 {
                     <div>
                         <p class="field-label">✓ Approved On</p>
-                        <p><strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                        <p><strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy")</strong></p>
                     </div>
                     <div>
                         <p class="field-label">Approved By</p>
@@ -301,7 +302,7 @@
                 {
                     <div>
                         <p class="field-label">✕ Rejected On</p>
-                        <p><strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                        <p><strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy")</strong></p>
                     </div>
                     <div>
                         <p class="field-label">Rejected By</p>
