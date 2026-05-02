@@ -563,13 +563,13 @@
                     <button type="button" class="btn-primary" id="nextStepBtn" onclick="nextStep()" style="flex: 1;">
                         Next →
                     </button>
-                    @if (User.IsInRole("admin") || User.IsInRole("admissions"))
+                    @if (User.IsInRole("admin") || User.IsInRole("admissions") || User.IsInRole("sponsor"))
                     {
                         <button type="submit" class="btn-primary" id="saveLogBtn" style="display: none; flex: 1;">
                              Save Changes
                         </button>
                         <button type="button" class="btn-primary" id="submitLogBtn" style="display: none; flex: 1; background: var(--primary-color);" onclick="submitLogForReview()">
-                            📤 Submit for Review
+                            📤 Submit for Admin Review
                         </button>
                     }
                     <button type="button" class="btn-secondary" onclick="closeEditLogModal()">
@@ -963,7 +963,7 @@ async function submitLogForReview() {
         return;
     }
     
-    if (!confirm('Submit this Letter of Guarantee for review? It will be forwarded to the Cashier for approval.')) {
+    if (!confirm('Submit this Letter of Guarantee for review? It will be forwarded to the Administrator for approval.')) {
         return;
     }
     

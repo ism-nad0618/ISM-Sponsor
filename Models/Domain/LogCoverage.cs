@@ -10,7 +10,7 @@ namespace ISMSponsor.Models.Domain
         public string StudentId { get; set; } = string.Empty;
         public string SponsorId { get; set; } = string.Empty;
         
-        // Status workflow: Draft → Submitted → UnderReview → Approved/Rejected
+        // Status workflow: Draft → Submitted → Approved/Rejected (Admin reviews, auto-activates on approval)
         public string LogStatus { get; set; } = "Draft";
         
         // Approval workflow tracking

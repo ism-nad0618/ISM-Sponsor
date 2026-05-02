@@ -372,9 +372,9 @@ namespace ISMSponsor.Controllers
         }
 
         /// <summary>
-        /// Submit LoG for review (Draft → Submitted → UnderReview)
+        /// Submit LoG for review (Draft → Submitted, forwarded to Admin)
         /// </summary>
-        [Authorize(Roles = "admin,admissions")]
+        [Authorize(Roles = "admin,admissions,sponsor")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Submit(int id)
@@ -398,11 +398,10 @@ namespace ISMSponsor.Controllers
                 var userId = user?.Id ?? "";
                 var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
 
-                // Update status: Draft → Submitted → UnderReview (auto-forward to Cashier)
-                log.LogStatus = "UnderReview";
+                // Update status: Draft → Submitted (forwarded to Admin for approval)
+                log.LogStatus = "Submitted";
                 log.SubmittedOn = DateTime.Now;
                 log.SubmittedByUserId = userId;
-                log.ReviewedOn = DateTime.Now; // Mark as ready for review
                 log.ModifiedOn = DateTime.Now;
                 log.ModifiedByUserId = userId;
 
@@ -411,13 +410,13 @@ namespace ISMSponsor.Controllers
                 // Log activity
                 await _logsService.LogActivityAsync(
                     item: $"LoG #{log.LogId}",
-                    details: $"Submitted LoG for review - Student: {log.StudentId}, Sponsor: {log.SponsorId}",
+                    details: $"Submitted LoG for admin review - Student: {log.StudentId}, Sponsor: {log.SponsorId}",
                     userDisplay: userDisplay,
-                    roleName: User.IsInRole("admin") ? "admin" : "admissions",
+                    roleName: User.IsInRole("admin") ? "admin" : (User.IsInRole("sponsor") ? "sponsor" : "admissions"),
                     schoolYearId: log.SchoolYearId
                 );
 
-                TempData["Success"] = "Letter of Guarantee submitted for review successfully. Cashier will be notified.";
+                TempData["Success"] = "Letter of Guarantee submitted successfully. Admin will review it.";
                 return RedirectToAction(nameof(Details), new { id });
             }
             catch (Exception ex)
@@ -429,9 +428,9 @@ namespace ISMSponsor.Controllers
         }
 
         /// <summary>
-        /// Approve LoG (Cashier only)
+        /// Approve LoG and auto-activate (Admin only)
         /// </summary>
-        [Authorize(Roles = "admin,cashier")]
+        [Authorize(Roles = "admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(int id, string? reviewComments)
@@ -445,9 +444,9 @@ namespace ISMSponsor.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                if (log.LogStatus != "UnderReview")
+                if (log.LogStatus != "Submitted")
                 {
-                    TempData["Error"] = $"Only LoGs under review can be approved. Current status: {log.LogStatus}";
+                    TempData["Error"] = $"Only Submitted LoGs can be approved. Current status: {log.LogStatus}";
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
@@ -455,11 +454,14 @@ namespace ISMSponsor.Controllers
                 var userId = user?.Id ?? "";
                 var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
 
-                // Update status to Approved
+                // Update status to Approved and auto-activate
                 log.LogStatus = "Approved";
                 log.ApprovedOn = DateTime.Now;
                 log.ApprovedByUserId = userId;
                 log.ReviewComments = reviewComments;
+                log.IsActive = true;  // Auto-activate when approved
+                log.ActivatedOn = DateTime.Now;
+                log.ActivatedByUserId = userId;
                 log.ModifiedOn = DateTime.Now;
                 log.ModifiedByUserId = userId;
 
@@ -468,13 +470,13 @@ namespace ISMSponsor.Controllers
                 // Log activity
                 await _logsService.LogActivityAsync(
                     item: $"LoG #{log.LogId}",
-                    details: $"Approved LoG - Student: {log.StudentId}, Sponsor: {log.SponsorId}",
+                    details: $"Approved and activated LoG - Student: {log.StudentId}, Sponsor: {log.SponsorId}",
                     userDisplay: userDisplay,
-                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    roleName: "admin",
                     schoolYearId: log.SchoolYearId
                 );
 
-                TempData["Success"] = "Letter of Guarantee approved successfully.";
+                TempData["Success"] = "Letter of Guarantee approved and activated successfully.";
                 return RedirectToAction(nameof(Details), new { id });
             }
             catch (Exception ex)
@@ -486,9 +488,9 @@ namespace ISMSponsor.Controllers
         }
 
         /// <summary>
-        /// Reject LoG (Cashier only)
+        /// Reject LoG (Admin only)
         /// </summary>
-        [Authorize(Roles = "admin,cashier")]
+        [Authorize(Roles = "admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reject(int id, string rejectionReason)
@@ -508,9 +510,9 @@ namespace ISMSponsor.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                if (log.LogStatus != "UnderReview")
+                if (log.LogStatus != "Submitted")
                 {
-                    TempData["Error"] = $"Only LoGs under review can be rejected. Current status: {log.LogStatus}";
+                    TempData["Error"] = $"Only Submitted LoGs can be rejected. Current status: {log.LogStatus}";
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
@@ -533,7 +535,7 @@ namespace ISMSponsor.Controllers
                     item: $"LoG #{log.LogId}",
                     details: $"Rejected LoG - Student: {log.StudentId}, Reason: {rejectionReason}",
                     userDisplay: userDisplay,
-                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    roleName: "admin",
                     schoolYearId: log.SchoolYearId
                 );
 
