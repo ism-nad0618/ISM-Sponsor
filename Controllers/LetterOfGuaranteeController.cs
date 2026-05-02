@@ -1197,13 +1197,22 @@ namespace ISMSponsor.Controllers
                 .Distinct()
                 .ToList();
 
-            var itemCategoryMap = await _context.Items
-                .Where(i => selectedItemIds.Contains(i.ItemId))
-                .Select(i => new { i.ItemId, i.CategoryId })
-                .ToDictionaryAsync(i => i.ItemId, i => i.CategoryId);
+        // Fetch all matching items with normalization for case-insensitive comparison
+        var allItems = await _context.Items
+            .Where(i => i.IsActive)
+            .Select(i => new { ItemId = i.ItemId.Trim(), i.CategoryId })
+            .ToListAsync();
+
+        var itemCategoryMap = allItems
+            .Where(i => selectedItemIds.Any(sid => sid.Equals(i.ItemId, StringComparison.OrdinalIgnoreCase)))
+            .ToDictionary(i => selectedItemIds.First(sid => sid.Equals(i.ItemId, StringComparison.OrdinalIgnoreCase)), i => i.CategoryId);
 
         System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Requested ItemIds: {string.Join(", ", selectedItemIds)}");
         System.Diagnostics.Debug.WriteLine($"BuildCoverageRulesForSaveAsync - Found {itemCategoryMap.Count} matching items in DB");
+        if (itemCategoryMap.Count == 0 && selectedItemIds.Any())
+        {
+            System.Diagnostics.Debug.WriteLine($"WARNING: No items found! First 5 items in DB: {string.Join(", ", allItems.Take(5).Select(i => i.ItemId))}");
+        }
 
         var rulesToSave = new List<LoGCoverageRule>();
 
