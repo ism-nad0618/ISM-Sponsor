@@ -12,7 +12,7 @@
     </div>
     <div class="step-tab" data-step="3" data-modal="details" onclick="goToDetailsStep(3)">
         <span class="step-number">3</span>
-        <span class="step-label">Notes & Status</span>
+        <span class="step-label">Coverage Rules</span>
     </div>
     <div class="step-tab" data-step="4" data-modal="details" onclick="goToDetailsStep(4)">
         <span class="step-number">4</span>
@@ -20,7 +20,7 @@
     </div>
 </div>
 
-<div>
+<form>
     @Html.AntiForgeryToken()
     
     <!-- Step 1: Basic Info -->
@@ -29,115 +29,129 @@
         
         <div class="form-group">
             <label class="field-label">School Year</label>
-            <input type="text" value="@Model.SchoolYearId" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            <input type="text" value="@Model.SchoolYearId" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
         </div>
         
         <div class="form-group">
             <label class="field-label">Sponsor</label>
-            <input type="text" value="@(Model.Sponsor?.SponsorName ?? Model.SponsorId)" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            <input type="text" value="@(Model.Sponsor?.SponsorName ?? Model.SponsorId)" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
         </div>
         
         <div class="form-group">
             <label class="field-label">Student</label>
-            <input type="text" value="@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName} ({Model.StudentId})" : Model.StudentId)" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-            <p class="help-text">Student ID: @Model.StudentId | Grade: @(Model.Student?.GradeLevel ?? "N/A")</p>
+            <input type="text" value="@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : Model.StudentId)" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
+            <span class="form-error"></span>
+            <p class="help-text">Student ID: @Model.StudentId@(Model.Student != null ? $" | Grade: {Model.Student.GradeLevel}" : "")</p>
         </div>
         
         <div class="form-group">
             <label class="field-label">Status</label>
-            <input type="text" value="@Model.LogStatus" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            <select disabled style="background-color: #f3f4f6; cursor: not-allowed;">
+                <option selected>@Model.LogStatus</option>
+            </select>
         </div>
-        
-        @if (Model.IsActive)
-        {
-            <div class="alert alert-success">
-                <strong>Active Coverage</strong> - This LoG is currently active
-                @if (Model.ActivatedOn.HasValue)
-                {
-                    <text> (Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy"))</text>
-                }
-            </div>
-        }
-        else if (Model.LogStatus == "Submitted")
-        {
-            <div class="alert" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;">
-                <strong>⏳ Awaiting Admin Review</strong> - This LoG is waiting for administrator approval.
-            </div>
-        }
     </div>
     
     <!-- Step 2: Coverage Details -->
     <div class="step-content" data-step="2" data-modal="details" style="display: none;">
-        <h3 class="form-section-title">Coverage Period</h3>
+        <h3 class="form-section-title">Coverage Period and Notes</h3>
         
         <div class="form-group">
             <label class="field-label">Effective From</label>
-            <input type="text" value="@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not Set")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            <input type="date" value="@(Model.EffectiveFrom?.ToString("yyyy-MM-dd"))" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
+            <span class="form-error"></span>
         </div>
         
         <div class="form-group">
             <label class="field-label">Effective To</label>
-            <input type="text" value="@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not Set")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
+            <input type="date" value="@(Model.EffectiveTo?.ToString("yyyy-MM-dd"))" readonly style="background-color: #f3f4f6; cursor: not-allowed;" />
+            <span class="form-error"></span>
         </div>
-        
-        <h3 class="form-section-title">Audit Information</h3>
-        
-        <div class="form-group">
-            <label class="field-label">Created On</label>
-            <input type="text" value="@Model.CreatedOn.ToString("MMM dd, yyyy")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-        </div>
-        
-        <div class="form-group">
-            <label class="field-label">Created By</label>
-            <input type="text" value="@(Model.CreatedByUser?.DisplayName ?? "System")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-        </div>
-        
-        @if (Model.SubmittedOn.HasValue)
-        {
-            <div class="form-group">
-                <label class="field-label">Submitted On</label>
-                <input type="text" value="@Model.SubmittedOn?.ToString("MMM dd, yyyy")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-            </div>
-            
-            <div class="form-group">
-                <label class="field-label">Submitted By</label>
-                <input type="text" value="@(Model.SubmittedByUser?.DisplayName ?? "Unknown")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-            </div>
-        }
-    </div>
-    
-    <!-- Step 3: Notes & Status -->
-    <div class="step-content" data-step="3" data-modal="details" style="display: none;">
-        <h3 class="form-section-title">Notes and Comments</h3>
         
         <div class="form-group">
             <label class="field-label">Notes</label>
-            <textarea rows="4" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;">@Model.Notes</textarea>
+            <textarea rows="4" readonly style="background-color: #f3f4f6; cursor: not-allowed;">@Model.Notes</textarea>
+            <span class="form-error"></span>
         </div>
         
         <div class="form-group">
             <label class="field-label">Review Comments</label>
-            <textarea rows="3" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;">@Model.ReviewComments</textarea>
+            <textarea rows="3" readonly style="background-color: #f3f4f6; cursor: not-allowed;">@Model.ReviewComments</textarea>
+            <span class="form-error"></span>
+        </div>
+    </div>
+    
+    <!-- Step 3: Coverage Rules -->
+    <div class="step-content" data-step="3" data-modal="details" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="form-section-title" style="margin: 0;">Coverage Rules</h3>
         </div>
         
-        @if (Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
-        {
-            <h3 class="form-section-title">Approval Decision</h3>
-            
-            @if (Model.ApprovedOn.HasValue)
-            {
-                <div class="alert alert-success">
-                    <strong>✓ Approved</strong> on @Model.ApprovedOn?.ToString("MMM dd, yyyy") by @(Model.ApprovedByUser?.DisplayName ?? "Unknown")
-                </div>
-            }
-            
-            @if (Model.RejectedOn.HasValue)
-            {
-                <div class="alert alert-error">
-                    <strong>✕ Rejected</strong> on @Model.RejectedOn?.ToString("MMM dd, yyyy") by @(Model.RejectedByUser?.DisplayName ?? "Unknown")
-                </div>
-            }
-        }
+        <p class="help-text" style="margin-bottom: 16px;">Coverage rules defined for this Letter of Guarantee</p>
+        
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 250px;">Item</th>
+                        <th style="width: 120px;">Coverage Type</th>
+                        <th style="width: 100px;">Value</th>
+                        <th style="width: 120px;">Effective From</th>
+                        <th style="width: 120px;">Effective To</th>
+                        <th style="width: 60px;">Order</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CoverageRules != null && Model.CoverageRules.Any())
+                    {
+                        foreach (var rule in Model.CoverageRules.OrderBy(r => r.DisplayOrder))
+                        {
+                            <tr>
+                                <td style="font-weight: 500;">@(rule.Item?.ItemName ?? rule.ItemId)</td>
+                                <td>
+                                    <span class="status-badge" style="background: #e0e7ff; color: #3730a3; font-size: 0.75rem;">
+                                        @rule.CoverageType
+                                    </span>
+                                </td>
+                                <td style="font-family: monospace; font-weight: 500;">
+                                    @if (rule.CoverageType == "Percentage" && rule.CoveragePercentage.HasValue)
+                                    {
+                                        <text>@rule.CoveragePercentage%</text>
+                                    }
+                                    else if (rule.CoverageType == "FixedAmount" && rule.CoverageFixedAmount.HasValue)
+                                    {
+                                        <text>$@rule.CoverageFixedAmount.Value.ToString("N2")</text>
+                                    }
+                                    else if (rule.CoverageType == "UpToCap" && rule.CapAmount.HasValue)
+                                    {
+                                        <text>Up to $@rule.CapAmount.Value.ToString("N2")</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@rule.CoverageType</text>
+                                    }
+                                </td>
+                                <td style="color: var(--gray-600); font-size: 0.875rem;">
+                                    @(rule.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "-")
+                                </td>
+                                <td style="color: var(--gray-600); font-size: 0.875rem;">
+                                    @(rule.EffectiveTo?.ToString("MMM dd, yyyy") ?? "-")
+                                </td>
+                                <td style="text-align: center; font-weight: 500;">@rule.DisplayOrder</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                No coverage rules defined for this Letter of Guarantee.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
     
     <!-- Step 4: Attachment -->
@@ -147,71 +161,60 @@
         @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
         {
             <div class="form-group">
-                <label class="field-label">File Name</label>
-                <input type="text" value="@Model.AttachmentFileName" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-            </div>
-            
-            <div class="form-group">
-                <label class="field-label">Uploaded On</label>
-                <input type="text" value="@Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")" readonly style="background-color: #f3f4f6; border: 1px solid #d1d5db;" />
-            </div>
-            
-            <div class="form-group">
-                <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
-                   class="btn-secondary"
-                   download 
-                   style="display: inline-block; text-decoration: none;">
-                    📎 Download Attachment
-                </a>
+                <label class="field-label">Current Attachment</label>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <input type="text" value="@Model.AttachmentFileName" readonly style="background-color: #f3f4f6; flex: 1; cursor: not-allowed;" />
+                    <a href="@Url.Action("DownloadAttachment", "LetterOfGuarantee", new { id = Model.LogId })" 
+                       class="btn-secondary" 
+                       download
+                       style="white-space: nowrap;">
+                        📎 Download
+                    </a>
+                </div>
+                <span class="form-error"></span>
+                <p class="help-text">Uploaded on @Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy")</p>
             </div>
         }
         else
         {
-            <p class="help-text">No attachment uploaded</p>
+            <div class="form-group">
+                <label class="field-label">Upload Attachment (Optional)</label>
+                <input type="file" disabled style="background-color: #f3f4f6; cursor: not-allowed;" />
+                <span class="form-error"></span>
+                <p class="help-text">No attachment uploaded for this Letter of Guarantee</p>
+            </div>
         }
     </div>
     
-    <!-- Navigation and Action Buttons -->
-    @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
-    {
-        <!-- Admin Approval Actions -->
-        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-            <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
-                ← Previous
-            </button>
-            <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1; display: none;">
-                Next →
-            </button>
-            
-            <!-- Approval Buttons (Replace Create LoG) -->
-            <button type="button" class="btn-danger" onclick="rejectLogFromModal(@Model.LogId)" style="flex: 1;" id="detailsRejectBtn">
+    <!-- Navigation Buttons -->
+    <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+        <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
+            ← Previous
+        </button>
+        <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1;">
+            Next →
+        </button>
+        @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
+        {
+            <button type="button" class="btn-danger" id="detailsRejectBtn" onclick="rejectLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
                 ✕ Reject
             </button>
-            <button type="button" class="btn-primary" onclick="approveLogFromModal(@Model.LogId)" style="flex: 1;" id="detailsApproveBtn">
+            <button type="button" class="btn-primary" id="detailsApproveBtn" onclick="approveLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
                 ✓ Approve & Activate
             </button>
-            
-            <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
-                Cancel
-            </button>
-        </div>
-    }
-    else
-    {
-        <!-- Regular Navigation -->
-        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-            <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
-                ← Previous
-            </button>
-            <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1;">
-                Next →
-            </button>
-            <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
-                Close
-            </button>
-        </div>
-    }
-</div>
+        }
+        <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
+            @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
+            {
+                <text>Cancel</text>
+            }
+            else
+            {
+                <text>Close</text>
+            }
+        </button>
+    </div>
+</form>
 
 <script>
 let currentDetailsStep = 1;
@@ -250,6 +253,103 @@ function previousDetailsStep() {
         goToDetailsStep(currentDetailsStep - 1);
     }
 }
+
+function updateDetailsNavigationButtons() {
+    const prevBtn = document.getElementById('detailsPrevStepBtn');
+    const nextBtn = document.getElementById('detailsNextStepBtn');
+    const rejectBtn = document.getElementById('detailsRejectBtn');
+    const approveBtn = document.getElementById('detailsApproveBtn');
+    
+    if (prevBtn) {
+        prevBtn.style.display = currentDetailsStep === 1 ? 'none' : 'block';
+    }
+    
+    if (nextBtn) {
+        if (currentDetailsStep === totalDetailsSteps) {
+            nextBtn.style.display = 'none';
+            // Show approval buttons on last step if they exist
+            if (rejectBtn) rejectBtn.style.display = 'flex';
+            if (approveBtn) approveBtn.style.display = 'flex';
+        } else {
+            nextBtn.style.display = 'flex';
+            nextBtn.style.flex = '1';
+            if (rejectBtn) rejectBtn.style.display = 'none';
+            if (approveBtn) approveBtn.style.display = 'none';
+        }
+    }
+}
+
+async function approveLogFromModal(logId) {
+    if (!confirm('Approve this Letter of Guarantee? It will be automatically activated.')) {
+        return;
+    }
+    
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    
+    try {
+        const formData = new FormData();
+        formData.append('reviewComments', '');
+        
+        const response = await fetch(`/Settings/LetterOfGuarantee/Approve/${logId}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('Letter of Guarantee approved successfully!');
+            closeDetailsModal();
+            window.location.reload();
+        } else {
+            alert('Failed to approve. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+async function rejectLogFromModal(logId) {
+    const reason = prompt('Please enter the reason for rejection:');
+    if (!reason || reason.trim() === '') {
+        alert('Rejection reason is required.');
+        return;
+    }
+    
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    
+    try {
+        const formData = new FormData();
+        formData.append('rejectionReason', reason);
+        
+        const response = await fetch(`/Settings/LetterOfGuarantee/Reject/${logId}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('Letter of Guarantee rejected successfully!');
+            closeDetailsModal();
+            window.location.reload();
+        } else {
+            alert('Failed to reject. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+// Initialize navigation buttons on load
+if (document.getElementById('detailsPrevStepBtn')) {
+    updateDetailsNavigationButtons();
+}
+</script>
 
 function updateDetailsNavigationButtons() {
     const prevBtn = document.getElementById('detailsPrevStepBtn');
