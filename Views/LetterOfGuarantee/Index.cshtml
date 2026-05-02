@@ -2400,6 +2400,23 @@ async function deactivateLogFromModal(logId) {
         alert('An error occurred. Please try again.');
     }
 }
+
+// Auto-open Details modal if viewLogId parameter is present (from Dashboard redirect)
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewLogId = urlParams.get('viewLogId');
+    
+    if (viewLogId) {
+        // Remove the query parameter from URL without page reload
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Open the Details modal for the specified LogId
+        setTimeout(() => {
+            openDetailsModal(parseInt(viewLogId));
+        }, 300);
+    }
+});
 </script>
 
 <!-- Details Modal -->
