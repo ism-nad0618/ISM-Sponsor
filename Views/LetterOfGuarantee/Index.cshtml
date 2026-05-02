@@ -1429,10 +1429,15 @@ document.getElementById('editLogForm').addEventListener('submit', async function
     // Debug: Log what's in the form
     console.log('=== EDIT FORM SUBMISSION DEBUG ===');
     console.log('LogId:', document.getElementById('editLogIdInput').value);
-    console.log('CoverageRulesJson:', JSON.stringify(editCoverageRules));
+    console.log('CoverageRulesJson (before filter):', JSON.stringify(editCoverageRules));
+    
+    // Filter out incomplete rules (rules without itemId)
+    const completeRules = editCoverageRules.filter(rule => rule.itemId && rule.itemId.trim() !== '');
+    console.log(`Filtered out ${editCoverageRules.length - completeRules.length} incomplete rules`);
+    console.log('CoverageRulesJson (after filter):', JSON.stringify(completeRules));
     
     // Add coverage rules as JSON
-    formData.append('CoverageRulesJson', JSON.stringify(editCoverageRules));
+    formData.append('CoverageRulesJson', JSON.stringify(completeRules));
     
     // Debug: Check form data contents
     for (let pair of formData.entries()) {
@@ -2021,7 +2026,9 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
     }
     
     // Add coverage rules as JSON
-    const rulesJson = JSON.stringify(createCoverageRules);
+    const completeCreateRules = createCoverageRules.filter(rule => rule.itemId && rule.itemId.trim() !== '');
+    console.log(`Filtered out ${createCoverageRules.length - completeCreateRules.length} incomplete rules from create form`);
+    const rulesJson = JSON.stringify(completeCreateRules);
     console.log('CoverageRulesJson string:', rulesJson);
     formData.append('CoverageRulesJson', rulesJson);
     
