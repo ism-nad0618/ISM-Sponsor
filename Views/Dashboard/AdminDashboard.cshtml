@@ -102,7 +102,7 @@
 <div id="detailsModal" class="modal">
     <div class="modal-content" style="max-width: 900px;">
         <div class="modal-header">
-            <h2>Letter of Guarantee Details</h2>
+            <h2 id="detailsModalTitle">Letter of Guarantee #<span id="detailsLogId"></span></h2>
             <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
         </div>
         <div class="modal-body" id="detailsModalBody">
@@ -117,6 +117,10 @@
 async function openDetailsModal(logId) {
     const modal = document.getElementById('detailsModal');
     const modalBody = document.getElementById('detailsModalBody');
+    const modalTitle = document.getElementById('detailsLogId');
+    
+    // Set the LoG ID in the header
+    if (modalTitle) modalTitle.textContent = logId;
     
     // Preserve the antiforgery token
     const tokenInput = modalBody.querySelector('input[name="__RequestVerificationToken"]');
@@ -277,7 +281,9 @@ async function rejectLogFromModal(logId) {
     }
 }
 
-// Close modal when clicking outside
+// Close modal when clicking outside - DISABLED for Details modal
+// Users must use the Close/Cancel button to exit
+/*
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('detailsModal');
     if (modal) {
@@ -288,4 +294,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+*/
 </script>
