@@ -1234,7 +1234,14 @@ function saveRuleEdit() {
     const index = indexInput.value;
     const mode = indexInput.getAttribute('data-mode') || 'edit';
     
+    console.log('=== saveRuleEdit DEBUG ===');
+    console.log('Mode:', mode);
+    console.log('Index:', index);
+    
     const itemId = document.getElementById('ruleItemId').value;
+    console.log('Item dropdown value:', itemId);
+    console.log('Coverage type value:', document.getElementById('ruleCoverageType').value);
+    console.log('Display order value:', document.getElementById('ruleDisplayOrder').value);
     
     const rule = {
         ruleId: (index !== '' && mode === 'edit') ? editCoverageRules[index].ruleId : 0,
@@ -1251,10 +1258,16 @@ function saveRuleEdit() {
         exceptionNote: document.getElementById('ruleExceptionNote').value || null,
         isActive: true
     };
+    
+    console.log('Rule object created:', rule);
 
     const sourceItems = mode === 'create' ? createItemsData : editItemsData;
     const studentGrade = mode === 'create' ? createStudentGradeLevel : editStudentGradeLevel;
+    console.log('Student grade level:', studentGrade);
+    console.log('Source items count:', sourceItems.length);
+    
     const selectedItem = sourceItems.find(i => i.value === rule.itemId);
+    console.log('Selected item:', selectedItem);
     
     // Validate
     if (!rule.itemId) {
@@ -1271,19 +1284,25 @@ function saveRuleEdit() {
         if (index !== '') {
             // Edit existing rule in create mode
             createCoverageRules[index] = rule;
+            console.log('Updated rule at index', index, 'in create mode');
         } else {
             // Add new rule in create mode
             createCoverageRules.push(rule);
+            console.log('Added new rule to createCoverageRules');
         }
+        console.log('createCoverageRules after save:', createCoverageRules);
         renderCreateCoverageRulesTable();
     } else {
         if (index !== '') {
             // Edit existing rule
             editCoverageRules[index] = rule;
+            console.log('Updated rule at index', index, 'in edit mode');
         } else {
             // Add new rule
             editCoverageRules.push(rule);
+            console.log('Added new rule to editCoverageRules');
         }
+        console.log('editCoverageRules after save:', editCoverageRules);
         renderCoverageRulesTable();
     }
     
@@ -1861,6 +1880,14 @@ function deleteCreateCoverageRule(index) {
 document.getElementById('createLogForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    console.log('createCoverageRules array before submit:', createCoverageRules);
+    console.log('Number of rules:', createCoverageRules.length);
+    
+    if (createCoverageRules.length > 0) {
+        console.log('First rule detail:', createCoverageRules[0]);
+    }
+    
     const createBtn = document.getElementById('createSubmitBtn');
     const originalText = createBtn.innerHTML;
     createBtn.disabled = true;
@@ -1872,7 +1899,9 @@ document.getElementById('createLogForm').addEventListener('submit', async functi
     const formData = new FormData(this);
     
     // Add coverage rules as JSON
-    formData.append('CoverageRulesJson', JSON.stringify(createCoverageRules));
+    const rulesJson = JSON.stringify(createCoverageRules);
+    console.log('CoverageRulesJson string:', rulesJson);
+    formData.append('CoverageRulesJson', rulesJson);
     
     try {
         const response = await fetch('/Settings/LetterOfGuarantee/CreateModalFull', {
