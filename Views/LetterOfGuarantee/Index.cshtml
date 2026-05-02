@@ -1000,6 +1000,13 @@ function renderCoverageRulesTable() {
     const tbody = document.getElementById('coverageRulesTableBody');
     const noRulesRow = document.getElementById('noRulesRow');
     
+    console.log('Rendering coverage rules table:', {
+        rulesCount: editCoverageRules.length,
+        itemsCount: editItemsData.length,
+        categoriesCount: editCategoriesData.length,
+        rules: editCoverageRules
+    });
+    
     if (editCoverageRules.length === 0) {
         noRulesRow.style.display = 'table-row';
         return;
@@ -1017,7 +1024,9 @@ function renderCoverageRulesTable() {
     editCoverageRules.forEach((rule, index) => {
         const row = document.createElement('tr');
         
+        console.log(`Rule ${index}:`, rule);
         const itemDisplay = getItemDisplayById(rule.itemId, editItemsData, editCategoriesData) || 'Unknown';
+        console.log(`Item display for ${rule.itemId}:`, itemDisplay);
         
         let valueDisplay = '';
         switch (rule.coverageType) {
@@ -1044,8 +1053,8 @@ function renderCoverageRulesTable() {
         
         row.innerHTML = `
             <td>${itemDisplay}</td>
-            <td>${rule.coverageType}</td>
-            <td>${valueDisplay}</td>
+            <td>${rule.coverageType || '—'}</td>
+            <td>${valueDisplay || '—'}</td>
             <td>${rule.effectiveFrom ? new Date(rule.effectiveFrom).toLocaleDateString() : '—'}</td>
             <td>${rule.effectiveTo ? new Date(rule.effectiveTo).toLocaleDateString() : '—'}</td>
             <td style="text-align: center;">${rule.displayOrder || index + 1}</td>
@@ -1191,14 +1200,23 @@ function formatCurrencyValue(value) {
 }
 
 function formatItemDisplay(item, categories) {
-    return `${item.value}`;
+    // Return the item name (text) instead of just the ID
+    return item.text || item.value;
 }
 
 function getItemDisplayById(itemId, items, categories) {
-    const matchedItem = items.find(i => i.value === itemId);
-    if (!matchedItem) {
-        return 'Unknown';
+    if (!items || items.length === 0) {
+        console.warn('No items data available for lookup');
+        return itemId || 'Unknown';
     }
+    
+    console.log('Looking for item:', itemId, 'in', items.length, 'items');
+    const matchedItem = items.find(i => i.value === itemId || i.value === String(itemId));
+    if (!matchedItem) {
+        console.warn('Item not found:', itemId);
+        return itemId || 'Unknown';
+    }
+    console.log('Found item:', matchedItem);
     return formatItemDisplay(matchedItem, categories);
 }
 
