@@ -588,34 +588,14 @@ namespace ISMSponsor.Controllers
 
                     if (rulesData != null && rulesData.Any())
                     {
-                        foreach (var ruleData in rulesData)
+                        var rulesToSave = await BuildCoverageRulesForSaveAsync(log.LogId, rulesData, userId);
+                        foreach (var rule in rulesToSave)
                         {
-                            System.Diagnostics.Debug.WriteLine($"CreateModalFull - Adding rule: ItemId={ruleData.ItemId}, CoverageType={ruleData.CoverageType}");
-                            
-                            var rule = new LoGCoverageRule
-                            {
-                                LogId = log.LogId,
-                                CoverageTarget = ruleData.CoverageTarget,
-                                ItemId = ruleData.ItemId,
-                                CategoryId = ruleData.CategoryId,
-                                CoverageType = ruleData.CoverageType,
-                                CoveragePercentage = ruleData.CoveragePercentage,
-                                CoverageFixedAmount = ruleData.CoverageFixedAmount,
-                                CapAmount = ruleData.CapAmount,
-                                EffectiveFrom = ruleData.EffectiveFrom,
-                                EffectiveTo = ruleData.EffectiveTo,
-                                ExceptionNote = ruleData.ExceptionNote,
-                                DisplayOrder = ruleData.DisplayOrder,
-                                IsActive = true,
-                                CreatedOn = DateTime.Now,
-                                CreatedByUserId = userId
-                            };
-
                             _context.LoGCoverageRules.Add(rule);
                         }
 
                         await _context.SaveChangesAsync();
-                        System.Diagnostics.Debug.WriteLine($"CreateModalFull - Successfully saved {rulesData.Count} coverage rules");
+                        System.Diagnostics.Debug.WriteLine($"CreateModalFull - Successfully saved {rulesToSave.Count} coverage rules");
                     }
                 }
                 else
@@ -1178,26 +1158,9 @@ namespace ISMSponsor.Controllers
                         }
 
                         // Add new rules
-                        foreach (var ruleData in rulesData)
+                        var rulesToSave = await BuildCoverageRulesForSaveAsync(log.LogId, rulesData, userId);
+                        foreach (var rule in rulesToSave)
                         {
-                            var rule = new LoGCoverageRule
-                            {
-                                LogId = log.LogId,
-                                CoverageTarget = ruleData.CoverageTarget,
-                                ItemId = ruleData.ItemId,
-                                CategoryId = ruleData.CategoryId,
-                                CoverageType = ruleData.CoverageType,
-                                CoveragePercentage = ruleData.CoveragePercentage,
-                                CoverageFixedAmount = ruleData.CoverageFixedAmount,
-                                CapAmount = ruleData.CapAmount,
-                                EffectiveFrom = ruleData.EffectiveFrom,
-                                EffectiveTo = ruleData.EffectiveTo,
-                                ExceptionNote = ruleData.ExceptionNote,
-                                DisplayOrder = ruleData.DisplayOrder,
-                                IsActive = true,
-                                CreatedOn = DateTime.Now
-                            };
-
                             _context.LoGCoverageRules.Add(rule);
                         }
                     }
@@ -1221,6 +1184,58 @@ namespace ISMSponsor.Controllers
             {
                 return Json(new { success = false, message = $"Error updating LoG: {ex.Message}" });
             }
+        }
+
+        private async Task<List<LoGCoverageRule>> BuildCoverageRulesForSaveAsync(int logId, List<CoverageRuleEditModel> rulesData, string userId)
+        {
+            var cleanedRules = rulesData
+                .Where(r => !string.IsNullOrWhiteSpace(r.ItemId) && !string.IsNullOrWhiteSpace(r.CoverageType))
+                .ToList();
+
+            var selectedItemIds = cleanedRules
+                .Select(r => r.ItemId!.Trim())
+                .Distinct()
+                .ToList();
+
+            var itemCategoryMap = await _context.Items
+                .Where(i => selectedItemIds.Contains(i.ItemId))
+                .Select(i => new { i.ItemId, i.CategoryId })
+                .ToDictionaryAsync(i => i.ItemId, i => i.CategoryId);
+
+            var rulesToSave = new List<LoGCoverageRule>();
+
+            for (var index = 0; index < cleanedRules.Count; index++)
+            {
+                var ruleData = cleanedRules[index];
+                var normalizedItemId = ruleData.ItemId!.Trim();
+
+                if (!itemCategoryMap.TryGetValue(normalizedItemId, out var resolvedCategoryId))
+                {
+                    System.Diagnostics.Debug.WriteLine($"Skipping coverage rule with unknown ItemId: {normalizedItemId}");
+                    continue;
+                }
+
+                rulesToSave.Add(new LoGCoverageRule
+                {
+                    LogId = logId,
+                    CoverageTarget = string.IsNullOrWhiteSpace(ruleData.CoverageTarget) ? "Item" : ruleData.CoverageTarget,
+                    ItemId = normalizedItemId,
+                    CategoryId = resolvedCategoryId,
+                    CoverageType = ruleData.CoverageType,
+                    CoveragePercentage = ruleData.CoveragePercentage,
+                    CoverageFixedAmount = ruleData.CoverageFixedAmount,
+                    CapAmount = ruleData.CapAmount,
+                    EffectiveFrom = ruleData.EffectiveFrom,
+                    EffectiveTo = ruleData.EffectiveTo,
+                    ExceptionNote = ruleData.ExceptionNote,
+                    DisplayOrder = ruleData.DisplayOrder > 0 ? ruleData.DisplayOrder : index + 1,
+                    IsActive = true,
+                    CreatedOn = DateTime.Now,
+                    CreatedByUserId = userId
+                });
+            }
+
+            return rulesToSave;
         }
     }
 
