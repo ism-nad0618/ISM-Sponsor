@@ -371,6 +371,183 @@ namespace ISMSponsor.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        /// <summary>
+        /// Submit LoG for review (Draft → Submitted → UnderReview)
+        /// </summary>
+        [Authorize(Roles = "admin,admissions")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Submit(int id)
+        {
+            try
+            {
+                var log = await _context.LogCoverages.FindAsync(id);
+                if (log == null)
+                {
+                    TempData["Error"] = "Letter of Guarantee not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (log.LogStatus != "Draft")
+                {
+                    TempData["Error"] = $"Only Draft LoGs can be submitted. Current status: {log.LogStatus}";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var user = await _userManager.GetUserAsync(User);
+                var userId = user?.Id ?? "";
+                var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
+
+                // Update status: Draft → Submitted → UnderReview (auto-forward to Cashier)
+                log.LogStatus = "UnderReview";
+                log.SubmittedOn = DateTime.Now;
+                log.SubmittedByUserId = userId;
+                log.ReviewedOn = DateTime.Now; // Mark as ready for review
+                log.ModifiedOn = DateTime.Now;
+                log.ModifiedByUserId = userId;
+
+                await _context.SaveChangesAsync();
+
+                // Log activity
+                await _logsService.LogActivityAsync(
+                    item: $"LoG #{log.LogId}",
+                    details: $"Submitted LoG for review - Student: {log.StudentId}, Sponsor: {log.SponsorId}",
+                    userDisplay: userDisplay,
+                    roleName: User.IsInRole("admin") ? "admin" : "admissions",
+                    schoolYearId: log.SchoolYearId
+                );
+
+                TempData["Success"] = "Letter of Guarantee submitted for review successfully. Cashier will be notified.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting LoG {LogId}", id);
+                TempData["Error"] = $"Error submitting LoG: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
+        /// <summary>
+        /// Approve LoG (Cashier only)
+        /// </summary>
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Approve(int id, string? reviewComments)
+        {
+            try
+            {
+                var log = await _context.LogCoverages.FindAsync(id);
+                if (log == null)
+                {
+                    TempData["Error"] = "Letter of Guarantee not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (log.LogStatus != "UnderReview")
+                {
+                    TempData["Error"] = $"Only LoGs under review can be approved. Current status: {log.LogStatus}";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var user = await _userManager.GetUserAsync(User);
+                var userId = user?.Id ?? "";
+                var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
+
+                // Update status to Approved
+                log.LogStatus = "Approved";
+                log.ApprovedOn = DateTime.Now;
+                log.ApprovedByUserId = userId;
+                log.ReviewComments = reviewComments;
+                log.ModifiedOn = DateTime.Now;
+                log.ModifiedByUserId = userId;
+
+                await _context.SaveChangesAsync();
+
+                // Log activity
+                await _logsService.LogActivityAsync(
+                    item: $"LoG #{log.LogId}",
+                    details: $"Approved LoG - Student: {log.StudentId}, Sponsor: {log.SponsorId}",
+                    userDisplay: userDisplay,
+                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    schoolYearId: log.SchoolYearId
+                );
+
+                TempData["Success"] = "Letter of Guarantee approved successfully.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving LoG {LogId}", id);
+                TempData["Error"] = $"Error approving LoG: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
+        /// <summary>
+        /// Reject LoG (Cashier only)
+        /// </summary>
+        [Authorize(Roles = "admin,cashier")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reject(int id, string rejectionReason)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(rejectionReason))
+                {
+                    TempData["Error"] = "Rejection reason is required.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var log = await _context.LogCoverages.FindAsync(id);
+                if (log == null)
+                {
+                    TempData["Error"] = "Letter of Guarantee not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (log.LogStatus != "UnderReview")
+                {
+                    TempData["Error"] = $"Only LoGs under review can be rejected. Current status: {log.LogStatus}";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var user = await _userManager.GetUserAsync(User);
+                var userId = user?.Id ?? "";
+                var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
+
+                // Update status to Rejected
+                log.LogStatus = "Rejected";
+                log.RejectedOn = DateTime.Now;
+                log.RejectedByUserId = userId;
+                log.ReviewComments = rejectionReason;
+                log.ModifiedOn = DateTime.Now;
+                log.ModifiedByUserId = userId;
+
+                await _context.SaveChangesAsync();
+
+                // Log activity
+                await _logsService.LogActivityAsync(
+                    item: $"LoG #{log.LogId}",
+                    details: $"Rejected LoG - Student: {log.StudentId}, Reason: {rejectionReason}",
+                    userDisplay: userDisplay,
+                    roleName: User.IsInRole("admin") ? "admin" : "cashier",
+                    schoolYearId: log.SchoolYearId
+                );
+
+                TempData["Success"] = "Letter of Guarantee rejected.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting LoG {LogId}", id);
+                TempData["Error"] = $"Error rejecting LoG: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
         private async Task PopulateDropdownsAsync()
         {
             var schoolYears = await _schoolYearService.GetAllAsync();

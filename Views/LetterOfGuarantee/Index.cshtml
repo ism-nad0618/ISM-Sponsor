@@ -568,6 +568,9 @@
                         <button type="submit" class="btn-primary" id="saveLogBtn" style="display: none; flex: 1;">
                              Save Changes
                         </button>
+                        <button type="button" class="btn-primary" id="submitLogBtn" style="display: none; flex: 1; background: var(--primary-color);" onclick="submitLogForReview()">
+                            📤 Submit for Review
+                        </button>
                     }
                     <button type="button" class="btn-secondary" onclick="closeEditLogModal()">
                         <span id="closeButtonText">Cancel</span>
@@ -855,6 +858,16 @@ async function openEditLogModal(logId) {
         const editLogStatus = document.getElementById('editLogStatus');
         if (editLogStatus) editLogStatus.value = data.logStatus;
         
+        // Show/hide Submit button based on status (only for Draft status)
+        const submitLogBtn = document.getElementById('submitLogBtn');
+        if (submitLogBtn) {
+            if (data.logStatus === 'Draft') {
+                submitLogBtn.style.display = 'block';
+            } else {
+                submitLogBtn.style.display = 'none';
+            }
+        }
+        
         // Show active status
         const activeStatusDiv = document.getElementById('editActiveStatus');
         if (activeStatusDiv) {
@@ -939,6 +952,49 @@ async function openEditLogModal(logId) {
             errorDiv.style.display = 'block';
         }
         goToStep(1);
+    }
+}
+
+async function submitLogForReview() {
+    const logId = document.getElementById('editLogIdInput').value;
+    
+    if (!logId) {
+        alert('Error: LoG ID not found');
+        return;
+    }
+    
+    if (!confirm('Submit this Letter of Guarantee for review? It will be forwarded to the Cashier for approval.')) {
+        return;
+    }
+    
+    const submitBtn = document.getElementById('submitLogBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Submitting...';
+    
+    try {
+        // Create form data with anti-forgery token
+        const formData = new FormData();
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        formData.append('__RequestVerificationToken', token);
+        
+        const response = await fetch(`/Settings/LetterOfGuarantee/Submit/${logId}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        // Close modal and reload page to show updated status
+        document.getElementById('editLogModal').style.display = 'none';
+        location.reload();
+    } catch (error) {
+        console.error('Error submitting LoG:', error);
+        alert('Error submitting LoG for review. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     }
 }
 

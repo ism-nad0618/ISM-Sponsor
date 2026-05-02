@@ -80,6 +80,59 @@
         </div>
     }
 
+    @* Approval Workflow Actions *@
+    @if (@Model.LogStatus == "Draft" && (User.IsInRole("admin") || User.IsInRole("admissions")))
+    {
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
+            <p class="field-label" style="margin-bottom: 0.75rem;">📤 Submit for Review</p>
+            <p class="help-text" style="margin-bottom: 1rem;">Submit this LoG to Cashier for approval.</p>
+            <form asp-action="Submit" asp-route-id="@Model.LogId" method="post" style="display: inline;">
+                <button type="submit" class="btn-primary" onclick="return confirm('Submit this Letter of Guarantee for review? It will be forwarded to the Cashier.');">
+                    ✓ Submit for Review
+                </button>
+            </form>
+        </div>
+    }
+    else if (@Model.LogStatus == "UnderReview" && (User.IsInRole("admin") || User.IsInRole("cashier")))
+    {
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
+            <p class="field-label" style="margin-bottom: 0.75rem;">👀 Review Actions (Cashier)</p>
+            <p class="help-text" style="margin-bottom: 1rem;">Approve or reject this Letter of Guarantee.</p>
+            
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start;">
+                <div style="flex: 1; min-width: 200px;">
+                    <form asp-action="Approve" asp-route-id="@Model.LogId" method="post" id="approveForm">
+                        <label class="field-label" for="approvalComments" style="margin-bottom: 0.5rem;">Approval Comments (Optional)</label>
+                        <textarea id="approvalComments" name="reviewComments" rows="2" class="form-control" placeholder="Add any notes about this approval..." style="margin-bottom: 0.75rem; width: 100%;"></textarea>
+                        <button type="submit" class="btn-primary" onclick="return confirm('Approve this Letter of Guarantee?');">
+                            ✓ Approve LoG
+                        </button>
+                    </form>
+                </div>
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <button type="button" class="btn-danger" onclick="document.getElementById('rejectionModal').style.display='block';" style="margin-top: 28px;">
+                        ✕ Reject LoG
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else if (@Model.LogStatus == "Approved")
+    {
+        <div class="alert alert-success" style="margin-top: 1.5rem;">
+            <strong>✓ Approved</strong><br />
+            This LoG has been approved and is ready for activation.
+        </div>
+    }
+    else if (@Model.LogStatus == "Rejected")
+    {
+        <div class="alert alert-error" style="margin-top: 1.5rem;">
+            <strong>✕ Rejected</strong><br />
+            This LoG has been rejected. Review comments below.
+        </div>
+    }
+
     @if (User.IsInRole("admin"))
     {
         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
@@ -218,6 +271,49 @@
             </div>
         }
     </div>
+    
+    @* Approval Workflow History *@
+    @if (Model.SubmittedOn.HasValue || Model.ApprovedOn.HasValue || Model.RejectedOn.HasValue)
+    {
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
+            <h3 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 600;">Approval History</h3>
+            <div class="data-grid">
+                @if (Model.SubmittedOn.HasValue)
+                {
+                    <div>
+                        <p class="field-label">📤 Submitted On</p>
+                        <p><strong>@Model.SubmittedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                    </div>
+                    <div>
+                        <p class="field-label">Submitted By</p>
+                        <p><strong>@(Model.SubmittedByUser?.DisplayName ?? "Unknown")</strong></p>
+                    </div>
+                }
+                @if (Model.ApprovedOn.HasValue)
+                {
+                    <div>
+                        <p class="field-label">✓ Approved On</p>
+                        <p><strong style="color: var(--success-color);">@Model.ApprovedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                    </div>
+                    <div>
+                        <p class="field-label">Approved By</p>
+                        <p><strong style="color: var(--success-color);">@(Model.ApprovedByUser?.DisplayName ?? "Unknown")</strong></p>
+                    </div>
+                }
+                @if (Model.RejectedOn.HasValue)
+                {
+                    <div>
+                        <p class="field-label">✕ Rejected On</p>
+                        <p><strong style="color: var(--error-color);">@Model.RejectedOn?.ToString("MMM dd, yyyy 'at' hh:mm tt")</strong></p>
+                    </div>
+                    <div>
+                        <p class="field-label">Rejected By</p>
+                        <p><strong style="color: var(--error-color);">@(Model.RejectedByUser?.DisplayName ?? "Unknown")</strong></p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </div>
 
 <!-- Deactivation Modal -->
@@ -241,6 +337,34 @@
     
     <script>
         document.getElementById('deactivateModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+    </script>
+}
+<!-- Rejection Modal -->
+@if ((User.IsInRole("admin") || User.IsInRole("cashier")) && Model.LogStatus == "UnderReview")
+{
+    <div id="rejectionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div class="card" style="max-width: 500px; margin: 2rem;">
+            <h2>Reject Letter of Guarantee</h2>
+            <form asp-action="Reject" asp-route-id="@Model.LogId" method="post">
+                <div class="form-group">
+                    <label for="rejectionReason" class="field-label">Reason for Rejection <span class="required">*</span></label>
+                    <textarea name="rejectionReason" id="rejectionReason" rows="4" placeholder="Explain why this LoG is being rejected (e.g., missing documentation, incorrect information, etc.)" required></textarea>
+                    <p class="help-text" style="margin-top: 0.5rem;">The submitter will see this reason and can resubmit after making corrections.</p>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-danger">✕ Confirm Rejection</button>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('rejectionModal').style.display='none';">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('rejectionModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 this.style.display = 'none';
             }
