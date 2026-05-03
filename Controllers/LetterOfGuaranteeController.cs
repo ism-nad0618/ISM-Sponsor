@@ -66,7 +66,7 @@ namespace ISMSponsor.Controllers
         [Authorize(Roles = "admin,admissions")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateLogViewModel model)
+        public async Task<IActionResult> Create(CreateLogViewModel model, string action)
         {
             if (!ModelState.IsValid)
             {
@@ -77,6 +77,7 @@ namespace ISMSponsor.Controllers
 
             var user = await _userManager.GetUserAsync(User);
             var userId = user?.Id ?? "";
+            var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
 
             // Prepare LoG and coverage rules
             var log = new LogCoverage
@@ -126,17 +127,42 @@ namespace ISMSponsor.Controllers
                 await _logService.SaveAttachmentAsync(createdLog!.LogId, model.Attachment);
             }
 
-            // Log activity
-            await _logsService.LogActivityAsync(
-                item: "LoG Created",
-                details: $"Created LoG #{createdLog!.LogId} for Student {model.StudentId} under Sponsor {model.SponsorId} with {model.CoverageRules.Count} coverage rules",
-                userDisplay: user?.DisplayName ?? User.Identity?.Name ?? "System",
-                roleName: User.IsInRole("admin") ? "admin" : "admissions",
-                schoolYearId: model.SchoolYearId
-            );
+            // If "Save and Submit" was clicked, change status to Submitted
+            if (action == "saveAndSubmit")
+            {
+                createdLog!.LogStatus = "Submitted";
+                createdLog.SubmittedOn = DateTime.Now;
+                createdLog.SubmittedByUserId = userId;
+                createdLog.ModifiedOn = DateTime.Now;
+                createdLog.ModifiedByUserId = userId;
+                await _context.SaveChangesAsync();
 
-            TempData["Success"] = "Letter of Guarantee created successfully.";
-            return RedirectToAction(nameof(Details), new { id = createdLog.LogId });
+                // Log submission activity
+                await _logsService.LogActivityAsync(
+                    item: $"LoG #{createdLog.LogId}",
+                    details: $"Created and submitted LoG for admin review - Student: {model.StudentId}, Sponsor: {model.SponsorId}",
+                    userDisplay: userDisplay,
+                    roleName: User.IsInRole("admin") ? "admin" : "admissions",
+                    schoolYearId: model.SchoolYearId
+                );
+
+                TempData["Success"] = "Letter of Guarantee created and submitted successfully. Admin will review it.";
+            }
+            else
+            {
+                // Log creation activity
+                await _logsService.LogActivityAsync(
+                    item: "LoG Created",
+                    details: $"Created LoG #{createdLog!.LogId} for Student {model.StudentId} under Sponsor {model.SponsorId} with {model.CoverageRules.Count} coverage rules",
+                    userDisplay: userDisplay,
+                    roleName: User.IsInRole("admin") ? "admin" : "admissions",
+                    schoolYearId: model.SchoolYearId
+                );
+
+                TempData["Success"] = "Letter of Guarantee created successfully.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = createdLog!.LogId });
         }
 
         [Authorize(Roles = "admin,admissions,cashier")]
@@ -250,7 +276,6 @@ namespace ISMSponsor.Controllers
             {
                 "Draft",
                 "Submitted",
-                "UnderReview",
                 "Approved",
                 "Rejected"
             }, log.LogStatus);
@@ -261,7 +286,7 @@ namespace ISMSponsor.Controllers
         [Authorize(Roles = "admin,admissions")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(EditLogViewModel model)
+        public async Task<IActionResult> Edit(EditLogViewModel model, string action)
         {
             if (!ModelState.IsValid)
             {
@@ -285,6 +310,7 @@ namespace ISMSponsor.Controllers
 
             var user = await _userManager.GetUserAsync(User);
             var userId = user?.Id ?? "";
+            var userDisplay = user?.DisplayName ?? User.Identity?.Name ?? "System";
 
             // Validate coverage rules
             var rules = model.CoverageRules.Select(r => new LoGCoverageRule
@@ -321,6 +347,14 @@ namespace ISMSponsor.Controllers
             log.EffectiveTo = model.EffectiveTo;
             log.Notes = model.Notes;
             log.ReviewComments = model.ReviewComments;
+
+            // If "Submit" action was clicked and status is Draft, change to Submitted
+            if (action == "submit" && log.LogStatus == "Draft")
+            {
+                log.LogStatus = "Submitted";
+                log.SubmittedOn = DateTime.Now;
+                log.SubmittedByUserId = userId;
+            }
 
             await _logService.UpdateAsync(log, userId);
 
@@ -360,15 +394,22 @@ namespace ISMSponsor.Controllers
             }
 
             // Log activity
+            var activityDetails = action == "submit" 
+                ? $"Updated and submitted LoG #{log.LogId} for admin review - Status: {log.LogStatus}, Rules: {model.CoverageRules.Count}"
+                : $"Updated LoG #{log.LogId} - Status: {model.LogStatus}, Rules: {model.CoverageRules.Count}";
+            
             await _logsService.LogActivityAsync(
-                item: "LoG Updated",
-                details: $"Updated LoG #{log.LogId} - Status: {model.LogStatus}, Rules: {model.CoverageRules.Count}",
-                userDisplay: user?.DisplayName ?? User.Identity?.Name ?? "System",
+                item: action == "submit" ? $"LoG #{log.LogId}" : "LoG Updated",
+                details: activityDetails,
+                userDisplay: userDisplay,
                 roleName: User.IsInRole("admin") ? "admin" : "admissions",
                 schoolYearId: log.SchoolYearId
             );
 
-            TempData["Success"] = "Letter of Guarantee updated successfully.";
+            TempData["Success"] = action == "submit" 
+                ? "Letter of Guarantee updated and submitted successfully. Admin will review it."
+                : "Letter of Guarantee updated successfully.";
+            
             return RedirectToAction(nameof(Details), new { id = log.LogId });
         }
 

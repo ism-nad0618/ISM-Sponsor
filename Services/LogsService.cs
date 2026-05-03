@@ -90,7 +90,7 @@ namespace ISMSponsor.Services
         {
             var allowedStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "Submitted", "UnderReview", "Approved", "Rejected"
+                "Submitted", "Approved", "Rejected"
             };
 
             if (!allowedStatuses.Contains(status))

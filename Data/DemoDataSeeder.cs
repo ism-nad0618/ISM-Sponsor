@@ -555,7 +555,7 @@ public class DemoDataSeeder
             {
                 SponsorId = "DEMO-SP004",
                 SchoolYearId = "25-26",
-                LogStatus = "UnderReview",
+                LogStatus = "Submitted",
                 IsActive = false,
                 CreatedOn = DateTime.UtcNow.AddDays(-7),
                 CreatedByUserId = adminUserId

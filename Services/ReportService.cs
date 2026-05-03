@@ -101,7 +101,7 @@ public class ReportService
             TotalLoGs = logs.Count,
             ActiveLoGs = logs.Count(l => l.IsActive),
             InactiveLoGs = logs.Count(l => !l.IsActive),
-            PendingApprovalLoGs = logs.Count(l => l.LogStatus == "UnderReview")
+            PendingApprovalLoGs = logs.Count(l => l.LogStatus == "Submitted")
         };
 
         if (filters.StartDate.HasValue && filters.EndDate.HasValue)
@@ -287,7 +287,7 @@ public class ReportService
             .CountAsync(cr => cr.Status == "pending");
 
         report.PendingLoGReviews = await _context.LogCoverages
-            .CountAsync(l => l.LogStatus == "UnderReview");
+            .CountAsync(l => l.LogStatus == "Submitted");
 
         // Recent sponsor requests
         var requests = await _context.ChangeRequests

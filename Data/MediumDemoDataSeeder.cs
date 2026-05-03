@@ -361,7 +361,7 @@ public class MediumDemoDataSeeder
                     SchoolYearId = "25-26",
                     StudentId = student.StudentId,
                     SponsorId = student.SponsorId!,
-                    LogStatus = studentNum % 10 == 0 ? "UnderReview" : (studentNum % 15 == 0 ? "Draft" : "Approved"),
+                    LogStatus = studentNum % 10 == 0 ? "Submitted" : (studentNum % 15 == 0 ? "Draft" : "Approved"),
                     IsActive = studentNum % 15 != 0,
                     EffectiveFrom = new DateTime(2025, 8, 15),
                     EffectiveTo = new DateTime(2026, 5, 30),

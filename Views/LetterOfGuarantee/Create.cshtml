@@ -100,7 +100,8 @@
         </div>
 
         <div class="form-actions form-actions-bordered">
-            <button type="submit" class="btn-primary btn-add" id="submitBtn"> Create LoG</button>
+            <button type="submit" name="action" value="save" class="btn-primary btn-add" id="saveBtn">Save as Draft</button>
+            <button type="submit" name="action" value="saveAndSubmit" class="btn-primary btn-add" id="saveAndSubmitBtn">Save and Submit</button>
             <a asp-action="Index" class="btn-secondary btn-add">Cancel</a>
         </div>
     </form>
@@ -121,11 +122,18 @@
         // Form submission loading state
         document.querySelector('form').addEventListener('submit', function(e) {
             const loadingOverlay = document.querySelector('.loading-overlay');
-            const submitBtn = document.getElementById('submitBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const saveAndSubmitBtn = document.getElementById('saveAndSubmitBtn');
             
-            if (loadingOverlay && submitBtn) {
-                submitBtn.classList.add('btn-loading');
-                submitBtn.disabled = true;
+            if (loadingOverlay) {
+                if (saveBtn) {
+                    saveBtn.classList.add('btn-loading');
+                    saveBtn.disabled = true;
+                }
+                if (saveAndSubmitBtn) {
+                    saveAndSubmitBtn.classList.add('btn-loading');
+                    saveAndSubmitBtn.disabled = true;
+                }
                 loadingOverlay.style.display = 'flex';
             }
         });

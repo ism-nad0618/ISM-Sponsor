@@ -127,7 +127,11 @@
         </div>
 
         <div class="form-actions form-actions-bordered">
-            <button type="submit" class="btn-primary btn-add"> Save Changes</button>
+            <button type="submit" name="action" value="save" class="btn-primary btn-add">Save Changes</button>
+            @if (Model.LogStatus == "Draft")
+            {
+                <button type="submit" name="action" value="submit" class="btn-primary btn-add">Submit</button>
+            }
             <a asp-action="Details" asp-route-id="@Model.LogId" class="btn-secondary btn-add">Cancel</a>
         </div>
     </form>
