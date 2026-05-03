@@ -995,7 +995,7 @@ async function submitLogForReview() {
         const response = await fetch(`/Settings/LetterOfGuarantee/Submit/${logId}`, {
             method: 'POST',
             headers: {
-                'RequestVerificationToken': token
+                'X-CSRF-TOKEN': token
             }
         });
         
