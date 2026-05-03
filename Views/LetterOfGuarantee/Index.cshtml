@@ -582,10 +582,10 @@
                     @if (User.IsInRole("admin") || User.IsInRole("admissions") || User.IsInRole("sponsor"))
                     {
                         <button type="submit" class="btn-primary" id="saveLogBtn" style="display: none; flex: 1;">
-                             Save Changes
+                            Save Changes
                         </button>
-                        <button type="button" class="btn-primary" id="submitLogBtn" style="display: none; flex: 1; background: var(--primary-color);" onclick="submitLogForReview()">
-                            📤 Submit for Admin Review
+                        <button type="button" class="btn-primary" id="submitLogBtn" style="display: none; flex: 1;" onclick="submitLogForReview()">
+                            Submit
                         </button>
                     }
                     <button type="button" class="btn-secondary" onclick="closeEditLogModal()">
@@ -878,6 +878,12 @@ async function openEditLogModal(logId) {
         const submitLogBtn = document.getElementById('submitLogBtn');
         if (submitLogBtn) {
             if (data.logStatus === 'Draft') {
+                submitLogBtn.setAttribute('data-show-submit', 'true');
+            } else {
+                submitLogBtn.setAttribute('data-show-submit', 'false');
+            }
+            // Update visibility based on current step
+            if (currentStep === 4 && data.logStatus === 'Draft' && canEdit) {
                 submitLogBtn.style.display = 'block';
             } else {
                 submitLogBtn.style.display = 'none';
@@ -1052,6 +1058,11 @@ function goToStep(step) {
     const saveBtn = document.getElementById('saveLogBtn');
     if (saveBtn) {
         saveBtn.style.display = (step === 4 && canEdit) ? 'block' : 'none';
+    }
+    const submitBtn = document.getElementById('submitLogBtn');
+    if (submitBtn) {
+        // Submit button shows only in step 4, when canEdit is true, and status is Draft (set in openEditLogModal)
+        submitBtn.style.display = (step === 4 && canEdit) ? submitBtn.getAttribute('data-show-submit') === 'true' ? 'block' : 'none' : 'none';
     }
 }
 
