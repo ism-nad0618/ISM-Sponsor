@@ -39,7 +39,6 @@
                 <option value="inactive" selected="@(Model.StatusFilter == "inactive")">Inactive</option>
                 <option value="Draft" selected="@(Model.StatusFilter == "Draft")">Draft</option>
                 <option value="Submitted" selected="@(Model.StatusFilter == "Submitted")">Submitted</option>
-                <option value="UnderReview" selected="@(Model.StatusFilter == "UnderReview")">Under Review</option>
                 <option value="Approved" selected="@(Model.StatusFilter == "Approved")">Approved</option>
                 <option value="Rejected" selected="@(Model.StatusFilter == "Rejected")">Rejected</option>
             </select>
@@ -103,7 +102,7 @@
                                 {
                                     @($"{log.Student.FirstName} {log.Student.LastName}")
                                     <br />
-                                    <small style="color: #666;">Grade @log.Student.GradeLevel</small>
+                                    <small style="color: #666;">@log.Student.GradeLevel</small>
                                 }
                                 else
                                 {
