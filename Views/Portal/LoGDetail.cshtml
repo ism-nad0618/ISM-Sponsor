@@ -7,12 +7,14 @@
 }
 
 <div class="page-header">
-    <div>
-        <h1>Letter of Guarantee Details</h1>
-        <p class="page-subtitle">LoG #@log.LogId for Student @log.StudentId</p>
-    </div>
-    <div>
-        <a href="@Url.Action("LettersOfGuarantee")" class="btn btn-secondary">← Back to LoGs</a>
+    <div class="page-header-actions">
+        <div>
+            <h1>Letter of Guarantee Details</h1>
+            <p class="page-subtitle">LoG #@log.LogId for Student @log.StudentId</p>
+        </div>
+        <div>
+            <a href="@Url.Action("LettersOfGuarantee")" class="btn-secondary">← Back to LoGs</a>
+        </div>
     </div>
 </div>
 
@@ -148,7 +150,10 @@
     <h2 class="table-title">Coverage Rules (@Model.CoverageRules.Count)</h2>
     @if (!Model.CoverageRules.Any())
     {
-        <p style="padding: 1rem; color: #666; text-align: center;">No coverage rules defined for this LoG.</p>
+        <div style="padding: 2rem; text-align: center; color: #666;">
+            <p style="margin: 0 0 0.5rem 0; font-size: 1rem;">📋 No coverage rules have been defined for this Letter of Guarantee yet.</p>
+            <p style="margin: 0; font-size: 0.9rem;">Coverage rules specify which items or categories are covered and the amounts. Contact the admissions office if you believe rules should be added.</p>
+        </div>
     }
     else
     {

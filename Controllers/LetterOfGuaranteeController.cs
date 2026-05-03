@@ -1389,10 +1389,11 @@ namespace ISMSponsor.Controllers
                 var userId = user?.Id ?? "";
 
                 var log = await _context.LogCoverages
+                    .AsSplitQuery()
                     .Include(l => l.CoverageRules)
-                    .ThenInclude(r => r.Item)
+                        .ThenInclude(r => r.Item)
                     .Include(l => l.CoverageRules)
-                    .ThenInclude(r => r.Category)
+                        .ThenInclude(r => r.Category)
                     .FirstOrDefaultAsync(l => l.LogId == model.LogId);
 
                 if (log == null)

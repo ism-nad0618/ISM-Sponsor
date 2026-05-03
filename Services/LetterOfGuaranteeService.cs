@@ -55,6 +55,7 @@ namespace ISMSponsor.Services
         public async Task<LogCoverage?> GetByIdAsync(int logId)
         {
             return await _context.LogCoverages
+                .AsSplitQuery()
                 .Include(l => l.Student)
                 .Include(l => l.Sponsor)
                 .Include(l => l.ActivatedByUser)
@@ -65,9 +66,9 @@ namespace ISMSponsor.Services
                 .Include(l => l.ApprovedByUser)
                 .Include(l => l.RejectedByUser)
                 .Include(l => l.CoverageRules)
-                .ThenInclude(r => r.Item)
+                    .ThenInclude(r => r.Item)
                 .Include(l => l.CoverageRules)
-                .ThenInclude(r => r.Category)
+                    .ThenInclude(r => r.Category)
                 .FirstOrDefaultAsync(l => l.LogId == logId);
         }
 

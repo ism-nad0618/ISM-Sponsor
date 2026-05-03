@@ -101,12 +101,13 @@ namespace ISMSponsor.Controllers
             var currentSchoolYear = await _schoolYearContext.GetSelectedSchoolYearAsync();
             var selectedYearId = schoolYear ?? currentSchoolYear?.SchoolYearId ?? string.Empty;
 
-            var schoolYears = await _context.SchoolYears.OrderByDescending(y => y.Name).ToListAsync();
+            var schoolYears = await _context.SchoolYears.OrderByDescending(y => y.SchoolYearId).ToListAsync();
             var selectedYear = schoolYears.FirstOrDefault(y => y.SchoolYearId == selectedYearId);
 
             var query = _context.LogCoverages
                 .Include(l => l.Student)
                 .Include(l => l.CoverageRules)
+                .Include(l => l.Sponsor)
                 .Where(l => l.SponsorId == sponsorId && l.SchoolYearId == selectedYearId);
 
             // Apply search filter
@@ -119,12 +120,7 @@ namespace ISMSponsor.Controllers
             // Apply status filter
             if (!string.IsNullOrWhiteSpace(status))
             {
-                if (status == "active")
-                    query = query.Where(l => l.IsActive);
-                else if (status == "inactive")
-                    query = query.Where(l => !l.IsActive);
-                else
-                    query = query.Where(l => l.LogStatus == status);
+                query = query.Where(l => l.LogStatus == status);
             }
 
             var logs = await query.OrderByDescending(l => l.CreatedOn).ToListAsync();
@@ -156,12 +152,13 @@ namespace ISMSponsor.Controllers
             }
 
             var log = await _context.LogCoverages
+                .AsSplitQuery()
                 .Include(l => l.Student)
                 .Include(l => l.Sponsor)
                 .Include(l => l.CoverageRules)
-                .ThenInclude(r => r.Item)
+                    .ThenInclude(r => r.Item)
                 .Include(l => l.CoverageRules)
-                .ThenInclude(r => r.Category)
+                    .ThenInclude(r => r.Category)
                 .FirstOrDefaultAsync(l => l.LogId == id && l.SponsorId == sponsorId);
 
             if (log == null)
@@ -178,6 +175,35 @@ namespace ISMSponsor.Controllers
             };
 
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// View LoG details in a modal
+        /// </summary>
+        public async Task<IActionResult> DetailsModal(int id)
+        {
+            var sponsorId = GetSponsorId();
+            if (string.IsNullOrEmpty(sponsorId))
+            {
+                return Unauthorized();
+            }
+
+            var log = await _context.LogCoverages
+                .AsSplitQuery()
+                .Include(l => l.Student)
+                .Include(l => l.Sponsor)
+                .Include(l => l.CoverageRules)
+                    .ThenInclude(r => r.Item)
+                .Include(l => l.CoverageRules)
+                    .ThenInclude(r => r.Category)
+                .FirstOrDefaultAsync(l => l.LogId == id && l.SponsorId == sponsorId);
+
+            if (log == null)
+            {
+                return NotFound();
+            }
+
+            return PartialView("_DetailsModal", log);
         }
 
         /// <summary>

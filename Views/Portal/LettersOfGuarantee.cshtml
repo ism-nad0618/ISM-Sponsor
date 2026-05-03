@@ -5,80 +5,58 @@
 }
 
 <div class="page-header">
-    <div>
-        <h1>Letters of Guarantee</h1>
-        <p class="page-subtitle">View and manage your Letters of Guarantee for @Model.SelectedSchoolYearName</p>
+    <div class="page-header-actions">
+        <div>
+            <h1>Letters of Guarantee</h1>
+            <p class="page-subtitle">View your student LoG coverage and status for @Model.SelectedSchoolYearName</p>
+        </div>
     </div>
 </div>
 
-<!-- Filters -->
-<div class="card" style="margin-bottom: 1.5rem;">
+<div class="card">
     <form method="get" action="@Url.Action("LettersOfGuarantee")" class="filter-form">
-        <div class="filter-group" style="flex: 1;">
-            <label for="schoolYear" class="field-label">School Year</label>
-            <select id="schoolYear" name="schoolYear">
-                @foreach (var year in Model.AvailableSchoolYears)
-                {
-                    <option value="@year.SchoolYearId" selected="@(year.SchoolYearId == Model.SelectedSchoolYearId)">
-                        @year.Name
-                    </option>
-                }
-            </select>
+        <div class="filter-group" style="flex: 2; min-width: 250px;">
+            <label class="field-label">Search</label>
+            <input type="text" name="search" value="@Model.SearchQuery" placeholder="Student ID or Name..." />
         </div>
-        
-        <div class="filter-group" style="flex: 1;">
-            <label for="search" class="field-label">Search</label>
-            <input type="text" id="search" name="search" value="@Model.SearchQuery" placeholder="Student ID or Name..." />
-        </div>
-        
-        <div class="filter-group" style="flex: 1;">
-            <label for="status" class="field-label">Status</label>
-            <select id="status" name="status">
+        <div class="filter-group" style="min-width: 150px;">
+            <label class="field-label">Status</label>
+            <select name="status">
                 <option value="">All Statuses</option>
-                <option value="active" selected="@(Model.StatusFilter == "active")">Active</option>
-                <option value="inactive" selected="@(Model.StatusFilter == "inactive")">Inactive</option>
                 <option value="Draft" selected="@(Model.StatusFilter == "Draft")">Draft</option>
                 <option value="Submitted" selected="@(Model.StatusFilter == "Submitted")">Submitted</option>
                 <option value="Approved" selected="@(Model.StatusFilter == "Approved")">Approved</option>
                 <option value="Rejected" selected="@(Model.StatusFilter == "Rejected")">Rejected</option>
             </select>
         </div>
-        
-        <button type="submit" class="btn-primary">Apply Filters</button>
+        <div class="filter-group" style="min-width: 150px;">
+            <label class="field-label">School Year</label>
+            <select name="schoolYear">
+                @foreach (var year in Model.AvailableSchoolYears)
+                {
+                    <option value="@year.SchoolYearId" selected="@(year.SchoolYearId == Model.SelectedSchoolYearId)">@year.SchoolYearId</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn-secondary">Apply</button>
         <a href="@Url.Action("LettersOfGuarantee")" class="btn-secondary">Clear</a>
     </form>
 </div>
 
-<!-- Summary Stats -->
-<div class="stat-grid" style="margin-bottom: 1.5rem;">
-    <div class="stat-card">
-        <div class="stat-label">Total LoGs</div>
-        <div class="stat-value">@Model.LettersOfGuarantee.Count</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Active LoGs</div>
-        <div class="stat-value">@Model.LettersOfGuarantee.Count(l => l.IsActive)</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Approved</div>
-        <div class="stat-value">@Model.LettersOfGuarantee.Count(l => l.LogStatus == "Approved")</div>
-    </div>
-</div>
-
-<!-- LoGs Table -->
 <div class="card">
-    <h2 class="table-title">Letters of Guarantee (@Model.LettersOfGuarantee.Count)</h2>
+    <h2 class="table-title">LoG Records (@Model.LettersOfGuarantee.Count)</h2>
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th>LoG #</th>
+                    <th>School Year</th>
                     <th>Student ID</th>
                     <th>Student Name</th>
+                    <th>Grade</th>
                     <th>Status</th>
                     <th>Active</th>
-                    <th>Rules</th>
-                    <th>Created On</th>
-                    <th>Activated On</th>
+                    <th>Attachment</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -86,8 +64,11 @@
                 @if (!Model.LettersOfGuarantee.Any())
                 {
                     <tr>
-                        <td colspan="8" class="empty-state">
-                            No Letters of Guarantee found matching your criteria.
+                        <td colspan="9" class="empty-state">
+                            <div style="text-align: center; padding: 2rem;">
+                                <p style="margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: 600; color: #374151;">No Letters of Guarantee Found</p>
+                                <p style="margin: 0; color: #6b7280;">No LoG records match your search criteria. Try adjusting your filters.</p>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -96,23 +77,13 @@
                     foreach (var log in Model.LettersOfGuarantee)
                     {
                         <tr>
-                            <td><strong>@log.StudentId</strong></td>
+                            <td>@log.LogId</td>
+                            <td>@log.SchoolYearId</td>
+                            <td>@log.StudentId</td>
+                            <td>@(log.Student != null ? $"{log.Student.FirstName} {log.Student.LastName}" : "N/A")</td>
+                            <td>@(log.Student?.GradeLevel ?? "N/A")</td>
                             <td>
-                                @if (log.Student != null)
-                                {
-                                    @($"{log.Student.FirstName} {log.Student.LastName}")
-                                    <br />
-                                    <small style="color: #666;">@log.Student.GradeLevel</small>
-                                }
-                                else
-                                {
-                                    <span style="color: #999;">N/A</span>
-                                }
-                            </td>
-                            <td>
-                                <span class="status-badge status-@log.LogStatus.ToLower()">
-                                    @log.LogStatus
-                                </span>
+                                <span class="status-badge status-@log.LogStatus.ToLower()">@log.LogStatus</span>
                             </td>
                             <td>
                                 @if (log.IsActive)
@@ -124,20 +95,18 @@
                                     <span class="status-badge status-inactive">Inactive</span>
                                 }
                             </td>
-                            <td>@(log.CoverageRules?.Count ?? 0) rules</td>
-                            <td>@log.CreatedOn.ToString("MMM d, yyyy")</td>
                             <td>
-                                @if (log.ActivatedOn.HasValue)
+                                @if (!string.IsNullOrEmpty(log.AttachmentFileName))
                                 {
-                                    @log.ActivatedOn.Value.ToString("MMM d, yyyy")
+                                    <span>📎</span>
                                 }
                                 else
                                 {
-                                    <span style="color: #999;">Not activated</span>
+                                    <span style="color: #d1d5db;">—</span>
                                 }
                             </td>
-                            <td>
-                                <a href="@Url.Action("LoGDetail", new { id = log.LogId })" class="link">View Details</a>
+                            <td class="action-cell">
+                                <a href="javascript:void(0)" onclick="openDetailsModal(@log.LogId)" class="btn-link">View Details</a>
                             </td>
                         </tr>
                     }
@@ -146,3 +115,61 @@
         </table>
     </div>
 </div>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header" style="padding: 1rem;">
+            <h2 style="margin: 0; font-size: 1.25rem;">Letter of Guarantee #<span id="detailsLogId"></span></h2>
+            <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="detailsModalBody" style="padding: 0;">
+            <div style="text-align: center; padding: 2rem; color: #666;">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function openDetailsModal(logId) {
+    const modal = document.getElementById('detailsModal');
+    const modalBody = document.getElementById('detailsModalBody');
+    const detailsLogIdSpan = document.getElementById('detailsLogId');
+    
+    // Show modal
+    modal.style.display = 'flex';
+    
+    // Set LoG ID in title
+    if (detailsLogIdSpan) {
+        detailsLogIdSpan.textContent = logId;
+    }
+    
+    // Load content
+    modalBody.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Loading...</div>';
+    
+    try {
+        const response = await fetch(`/Portal/DetailsModal/${logId}`);
+        if (!response.ok) {
+            throw new Error('Failed to load details');
+        }
+        const html = await response.text();
+        modalBody.innerHTML = html;
+    } catch (error) {
+        modalBody.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc2626;">Error loading details. Please try again.</div>';
+        console.error('Error loading details modal:', error);
+    }
+}
+
+function closeDetailsModal() {
+    document.getElementById('detailsModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('detailsModal');
+    if (event.target === modal) {
+        closeDetailsModal();
+    }
+});
+</script>

@@ -99,16 +99,7 @@
                             <td>
                                 @if (log != null)
                                 {
-                                    if (item.HasActiveLoG)
-                                    {
-                                        <span class="status-badge status-active">Active LoG</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="status-badge status-inactive">Inactive LoG</span>
-                                    }
-                                    <br />
-                                    <small style="color: #666;">@log.LogStatus</small>
+                                    <span class="status-badge status-@log.LogStatus.ToLower()">@log.LogStatus</span>
                                 }
                                 else
                                 {
