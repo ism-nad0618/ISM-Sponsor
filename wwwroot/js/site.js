@@ -10,11 +10,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const sidebarClose = document.getElementById('sidebarClose');
     
+    // Set initial aria-hidden state
+    if (sidebar) {
+        sidebar.setAttribute('aria-hidden', 'true');
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.setAttribute('aria-hidden', 'true');
+    }
+    
     function openSidebar() {
         sidebar.classList.add('sidebar-open');
         sidebarOverlay.classList.add('active');
         mobileMenuToggle.setAttribute('aria-expanded', 'true');
         sidebar.setAttribute('aria-hidden', 'false');
+        sidebarOverlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden'; // Prevent body scroll when menu is open
         
         // Focus first link in sidebar for accessibility
@@ -29,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebarOverlay.classList.remove('active');
         mobileMenuToggle.setAttribute('aria-expanded', 'false');
         sidebar.setAttribute('aria-hidden', 'true');
+        sidebarOverlay.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         
         // Return focus to toggle button for accessibility

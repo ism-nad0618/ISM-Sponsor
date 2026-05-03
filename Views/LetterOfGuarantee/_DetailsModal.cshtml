@@ -44,6 +44,13 @@
                 <p class="field-label">Student Name</p>
                 <p><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
             </div>
+            @if (Model.Student != null)
+            {
+                <div>
+                    <p class="field-label">Grade Level</p>
+                    <p><strong>@Model.Student.GradeLevel</strong></p>
+                </div>
+            }
         </div>
         
         <div class="form-group">

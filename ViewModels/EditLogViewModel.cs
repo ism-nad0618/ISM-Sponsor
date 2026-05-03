@@ -13,6 +13,8 @@ namespace ISMSponsor.ViewModels
         [Required]
         public string StudentId { get; set; } = string.Empty;
 
+        public string? StudentGradeLevel { get; set; }
+
         [Required]
         public string SponsorId { get; set; } = string.Empty;
 

@@ -460,6 +460,10 @@
                             <p class="field-label">Student Name</p>
                             <p><strong id="editStudentName"></strong></p>
                         </div>
+                        <div>
+                            <p class="field-label">Grade Level</p>
+                            <p><strong id="editStudentGradeLevel"></strong></p>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -851,12 +855,14 @@ async function openEditLogModal(logId) {
         const editSchoolYear = document.getElementById('editSchoolYear');
         const editStudentId = document.getElementById('editStudentId');
         const editStudentName = document.getElementById('editStudentName');
+        const editStudentGradeLevelElement = document.getElementById('editStudentGradeLevel');
         
         if (editLogId) editLogId.textContent = data.logId;
         if (editLogIdInput) editLogIdInput.value = data.logId;
         if (editSchoolYear) editSchoolYear.textContent = data.schoolYearId;
         if (editStudentId) editStudentId.textContent = data.studentId;
         if (editStudentName) editStudentName.textContent = data.studentName || 'N/A';
+        if (editStudentGradeLevelElement) editStudentGradeLevelElement.textContent = data.studentGradeLevel || 'N/A';
         
         // Populate sponsor dropdown
         const sponsorSelect = document.getElementById('editSponsorId');

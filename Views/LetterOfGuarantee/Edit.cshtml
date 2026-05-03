@@ -38,6 +38,13 @@
                 <p class="field-label">Student ID</p>
                 <p><strong>@Model.StudentId</strong></p>
             </div>
+            @if (!string.IsNullOrEmpty(Model.StudentGradeLevel))
+            {
+                <div>
+                    <p class="field-label">Grade Level</p>
+                    <p><strong>@Model.StudentGradeLevel</strong></p>
+                </div>
+            }
         </div>
 
         <div class="form-group">

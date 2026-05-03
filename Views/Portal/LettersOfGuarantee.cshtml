@@ -118,12 +118,12 @@
 
 <!-- Details Modal -->
 <div id="detailsModal" class="modal">
-    <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header" style="padding: 1rem;">
-            <h2 style="margin: 0; font-size: 1.25rem;">Letter of Guarantee #<span id="detailsLogId"></span></h2>
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2>Letter of Guarantee #<span id="detailsLogId"></span></h2>
             <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
         </div>
-        <div class="modal-body" id="detailsModalBody" style="padding: 0;">
+        <div class="modal-body" id="detailsModalBody">
             <div style="text-align: center; padding: 2rem; color: #666;">
                 Loading...
             </div>
@@ -131,7 +131,105 @@
     </div>
 </div>
 
+<style>
+.step-tab {
+    flex: 1;
+    padding: 12px 16px;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background-color: white;
+}
+
+.step-tab:hover {
+    background-color: #f3f4f6;
+}
+
+.step-tab.active {
+    border-bottom-color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.step-tab.completed {
+    border-bottom-color: #10b981;
+}
+
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e5e7eb;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.step-tab.active .step-number {
+    background-color: #2563eb;
+    color: white;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+    transform: scale(1.1);
+}
+
+.step-tab.completed .step-number {
+    background-color: #10b981;
+    color: white;
+}
+
+.step-tab.completed .step-number::after {
+    content: '✓';
+    position: absolute;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.step-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    transition: color 0.3s ease;
+}
+
+.step-tab.active .step-label {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.step-tab.completed .step-label {
+    color: #10b981;
+}
+
+.step-content {
+    min-height: 300px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
 <script>
+let currentDetailsStep = 1;
+const totalDetailsSteps = 4;
+
 async function openDetailsModal(logId) {
     const modal = document.getElementById('detailsModal');
     const modalBody = document.getElementById('detailsModalBody');
@@ -155,6 +253,10 @@ async function openDetailsModal(logId) {
         }
         const html = await response.text();
         modalBody.innerHTML = html;
+        
+        // Reset to step 1
+        currentDetailsStep = 1;
+        updateDetailsStep();
     } catch (error) {
         modalBody.innerHTML = '<div style="text-align: center; padding: 2rem; color: #dc2626;">Error loading details. Please try again.</div>';
         console.error('Error loading details modal:', error);
@@ -163,6 +265,77 @@ async function openDetailsModal(logId) {
 
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
+    currentDetailsStep = 1;
+}
+
+function goToDetailsStep(step) {
+    if (step < 1 || step > totalDetailsSteps) return;
+    currentDetailsStep = step;
+    updateDetailsStep();
+}
+
+function nextDetailsStep() {
+    if (currentDetailsStep < totalDetailsSteps) {
+        currentDetailsStep++;
+        updateDetailsStep();
+    }
+}
+
+function previousDetailsStep() {
+    if (currentDetailsStep > 1) {
+        currentDetailsStep--;
+        updateDetailsStep();
+    }
+}
+
+function updateDetailsStep() {
+    // Update tab styles
+    document.querySelectorAll('.step-tab[data-modal="details"]').forEach((tab, index) => {
+        const tabStep = index + 1;
+        if (tabStep === currentDetailsStep) {
+            tab.classList.add('active');
+            tab.classList.remove('completed');
+        } else if (tabStep < currentDetailsStep) {
+            tab.classList.add('completed');
+            tab.classList.remove('active');
+        } else {
+            tab.classList.remove('active', 'completed');
+        }
+    });
+    
+    // Update progress line
+    const progressLine = document.getElementById('progressLine');
+    if (progressLine) {
+        const progressPercent = ((currentDetailsStep - 1) / (totalDetailsSteps - 1)) * 100;
+        progressLine.style.width = progressPercent + '%';
+    }
+    
+    // Update content visibility
+    document.querySelectorAll('.step-content[data-modal="details"]').forEach((content, index) => {
+        const contentStep = index + 1;
+        if (contentStep === currentDetailsStep) {
+            content.style.display = 'block';
+        } else {
+            content.style.display = 'none';
+        }
+    });
+    
+    // Update prev/next buttons
+    const prevBtn = document.getElementById('detailsPrevStepBtn');
+    const nextBtn = document.getElementById('detailsNextStepBtn');
+    
+    if (prevBtn) {
+        prevBtn.style.display = currentDetailsStep === 1 ? 'none' : 'block';
+    }
+    
+    if (nextBtn) {
+        if (currentDetailsStep === totalDetailsSteps) {
+            nextBtn.style.display = 'none';
+        } else {
+            nextBtn.style.display = 'block';
+            nextBtn.textContent = 'Next →';
+        }
+    }
 }
 
 // Close modal when clicking outside

@@ -1,264 +1,301 @@
 @model ISMSponsor.Models.Domain.LogCoverage
 
-<div class="modal-body" style="padding: 1rem;">
-    <!-- Basic Info -->
-    <div>
-        <h3 class="form-section-title" style="margin-bottom: 0.5rem; font-size: 1rem;">Student and Sponsor Information</h3>
+<!-- Step Progress Bar -->
+<div style="position: relative; display: flex; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb;">
+    <!-- Progress Line -->
+    <div style="position: absolute; top: 20px; left: 0; right: 0; height: 2px; background: #e5e7eb; z-index: 0;">
+        <div id="progressLine" style="height: 100%; background: #2563eb; width: 0%; transition: width 0.3s ease;"></div>
+    </div>
+    
+    <div class="step-tab active" data-step="1" data-modal="details" onclick="goToDetailsStep(1)" style="position: relative; z-index: 1;">
+        <span class="step-number">1</span>
+        <span class="step-label">Basic Info</span>
+    </div>
+    <div class="step-tab" data-step="2" data-modal="details" onclick="goToDetailsStep(2)" style="position: relative; z-index: 1;">
+        <span class="step-number">2</span>
+        <span class="step-label">Coverage Details</span>
+    </div>
+    <div class="step-tab" data-step="3" data-modal="details" onclick="goToDetailsStep(3)" style="position: relative; z-index: 1;">
+        <span class="step-number">3</span>
+        <span class="step-label">Coverage Rules</span>
+    </div>
+    <div class="step-tab" data-step="4" data-modal="details" onclick="goToDetailsStep(4)" style="position: relative; z-index: 1;">
+        <span class="step-number">4</span>
+        <span class="step-label">Attachment</span>
+    </div>
+</div>
+
+<div class="modal-body">
+    <div id="detailsSuccess" class="alert alert-success" style="display: none; margin-bottom: 16px;"></div>
+    <div id="detailsError" class="alert alert-error" style="display: none; margin-bottom: 16px;"></div>
+    
+    <form>
+        @Html.AntiForgeryToken()
+    
+    <!-- Step 1: Basic Info -->
+    <div class="step-content active" data-step="1" data-modal="details">
+        <h3 class="form-section-title">Student and Sponsor Information</h3>
         
-        <div class="data-grid" style="margin-bottom: 0.75rem; gap: 0.5rem;">
+        <div class="data-grid" style="margin-bottom: 1.5rem;">
             <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">School Year</p>
-                <p style="margin: 0;"><strong>@Model.SchoolYearId</strong></p>
+                <p class="field-label">School Year</p>
+                <p><strong>@Model.SchoolYearId</strong></p>
             </div>
             <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Student ID</p>
-                <p style="margin: 0;"><strong>@Model.StudentId</strong></p>
+                <p class="field-label">Student ID</p>
+                <p><strong>@Model.StudentId</strong></p>
             </div>
             <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Student Name</p>
-                <p style="margin: 0;"><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
+                <p class="field-label">Student Name</p>
+                <p><strong>@(Model.Student != null ? $"{Model.Student.FirstName} {Model.Student.LastName}" : "N/A")</strong></p>
             </div>
             @if (Model.Student != null)
             {
                 <div>
-                    <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Grade Level</p>
-                    <p style="margin: 0;"><strong>@Model.Student.GradeLevel</strong></p>
+                    <p class="field-label">Grade Level</p>
+                    <p><strong>@Model.Student.GradeLevel</strong></p>
                 </div>
             }
         </div>
         
-        <div class="data-grid" style="margin-bottom: 0.75rem; gap: 0.5rem;">
-            <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Sponsor</p>
-                <p style="margin: 0;"><strong>@(Model.Sponsor?.SponsorName ?? Model.SponsorId)</strong></p>
-            </div>
-            <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Status</p>
-                <p style="margin: 0;"><span class="status-badge status-@Model.LogStatus.ToLower()">@Model.LogStatus</span></p>
-            </div>
-            <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Created On</p>
-                <p style="margin: 0;">@Model.CreatedOn.ToString("MMM dd, yyyy")</p>
-            </div>
+        <div class="form-group">
+            <label for="detailsSponsorId" class="field-label">Sponsor</label>
+            <select id="detailsSponsorId" disabled style="cursor: not-allowed;">
+                <option selected>@(Model.Sponsor?.SponsorName ?? Model.SponsorId)</option>
+            </select>
+            <span class="form-error" id="detailsSponsorId-error"></span>
+        </div>
+        
+        <div class="form-group">
+            <label for="detailsLogStatus" class="field-label">Status</label>
+            <select id="detailsLogStatus" disabled style="cursor: not-allowed;">
+                <option selected>@Model.LogStatus</option>
+            </select>
+            <span class="form-error" id="detailsLogStatus-error"></span>
         </div>
         
         @if (Model.IsActive)
         {
-            <div style="padding: 8px; border-radius: 4px; background: #d1fae5; color: #065f46; margin-bottom: 0.75rem; font-size: 0.9rem;">
+            <div id="detailsActiveStatus" style="padding: 12px; border-radius: 6px; background: #d1fae5; color: #065f46; margin-top: 16px;">
                 <strong>✓ Active Coverage</strong>
                 @if (Model.ActivatedOn.HasValue)
                 {
                     <text> - Activated on @Model.ActivatedOn?.ToString("MMM dd, yyyy")</text>
                 }
+                @if (Model.ActivatedByUser != null)
+                {
+                    <text> by @Model.ActivatedByUser.DisplayName</text>
+                }
             </div>
         }
         else if (Model.DeactivatedOn.HasValue)
         {
-            <div style="padding: 8px; border-radius: 4px; background: #fee2e2; color: #991b1b; margin-bottom: 0.75rem; font-size: 0.9rem;">
+            <div id="detailsActiveStatus" style="padding: 12px; border-radius: 6px; background: #fee2e2; color: #991b1b; margin-top: 16px;">
                 <strong>✕ Deactivated</strong> - @Model.DeactivatedOn?.ToString("MMM dd, yyyy")
+                @if (Model.DeactivatedByUser != null)
+                {
+                    <text> by @Model.DeactivatedByUser.DisplayName</text>
+                }
                 @if (!string.IsNullOrEmpty(Model.DeactivationReason))
                 {
-                    <text> Reason: @Model.DeactivationReason</text>
+                    <br /><strong>Reason:</strong> @Model.DeactivationReason
                 }
-            </div>
-        }
-    </div>
-    
-    <!-- Coverage Details -->
-    <div style="margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
-        <h3 class="form-section-title" style="margin-bottom: 0.5rem; font-size: 1rem;">Coverage Period and Notes</h3>
-        
-        <div class="data-grid" style="margin-bottom: 0.5rem; gap: 0.5rem;">
-            <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Effective From</p>
-                <p style="margin: 0;">@(Model.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "Not specified")</p>
-            </div>
-            <div>
-                <p class="field-label" style="margin-bottom: 0.25rem; font-size: 0.85rem;">Effective To</p>
-                <p style="margin: 0;">@(Model.EffectiveTo?.ToString("MMM dd, yyyy") ?? "Not specified")</p>
-            </div>
-        </div>
-        
-        @if (!string.IsNullOrEmpty(Model.Notes))
-        {
-            <div style="margin-bottom: 0.5rem;">
-                <label class="field-label" style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Notes</label>
-                <div style="padding: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 0.9rem;">
-                    @Model.Notes
-                </div>
-            </div>
-        }
-        
-        @if (!string.IsNullOrEmpty(Model.ReviewComments))
-        {
-            <div style="margin-bottom: 0.5rem;">
-                <label class="field-label" style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Review Comments</label>
-                <div style="padding: 8px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 4px; font-size: 0.9rem;">
-                    @Model.ReviewComments
-                </div>
-            </div>
-        }
-    </div>
-    
-    <!-- Coverage Rules -->
-    <div style="margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
-        <h3 class="form-section-title" style="margin-bottom: 0.5rem; font-size: 1rem;">Coverage Rules</h3>
-        
-        @if (Model.CoverageRules != null && Model.CoverageRules.Any())
-        {
-            <div class="table-wrap" style="font-size: 0.85rem;">
-                <table style="font-size: 0.85rem;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 0.5rem;">Target</th>
-                            <th style="padding: 0.5rem;">Item/Category</th>
-                            <th style="padding: 0.5rem;">Type</th>
-                            <th style="padding: 0.5rem;">Coverage</th>
-                            <th style="padding: 0.5rem;">Cap</th>
-                            <th style="padding: 0.5rem;">Period</th>
-                            <th style="padding: 0.5rem;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var rule in Model.CoverageRules.OrderBy(r => r.DisplayOrder))
-                        {
-                            <tr>
-                                <td style="padding: 0.5rem;">
-                                    <span class="status-badge" style="font-size: 0.75rem; padding: 2px 6px;">@rule.CoverageTarget</span>
-                                </td>
-                                <td style="padding: 0.5rem;">
-                                    @if (rule.CoverageTarget == "SpecificItem" && rule.Item != null)
-                                    {
-                                        <strong>@rule.Item.ItemName</strong>
-                                        <br />
-                                        <small style="color: #666; font-size: 0.75rem;">@rule.Item.ItemId</small>
-                                    }
-                                    else if (rule.CoverageTarget == "Category" && rule.Category != null)
-                                    {
-                                        <strong>@rule.Category.CategoryName</strong>
-                                    }
-                                    else
-                                    {
-                                        <span style="color: #999;">@(rule.ItemId ?? "N/A")</span>
-                                    }
-                                </td>
-                                <td style="padding: 0.5rem;">
-                                    @if (rule.CoverageType == "Percentage")
-                                    {
-                                        <span>Percentage</span>
-                                    }
-                                    else if (rule.CoverageType == "FixedAmount")
-                                    {
-                                        <span>Fixed Amt</span>
-                                    }
-                                    else
-                                    {
-                                        <span>@rule.CoverageType</span>
-                                    }
-                                </td>
-                                <td style="padding: 0.5rem;">
-                                    @if (rule.CoverageType == "Percentage")
-                                    {
-                                        <strong>@rule.CoveragePercentage%</strong>
-                                    }
-                                    else if (rule.CoverageType == "FixedAmount")
-                                    {
-                                        <strong>@rule.CoverageFixedAmount?.ToString("C")</strong>
-                                    }
-                                    else
-                                    {
-                                        <span style="color: #999;">N/A</span>
-                                    }
-                                </td>
-                                <td style="padding: 0.5rem;">
-                                    @if (rule.CapAmount.HasValue)
-                                    {
-                                        @rule.CapAmount.Value.ToString("C")
-                                    }
-                                    else
-                                    {
-                                        <span style="color: #999;">No cap</span>
-                                    }
-                                </td>
-                                <td style="padding: 0.5rem;">
-                                    @if (rule.EffectiveFrom.HasValue && rule.EffectiveTo.HasValue)
-                                    {
-                                        <small style="font-size: 0.75rem;">
-                                            @rule.EffectiveFrom.Value.ToString("MMM d, yy") - @rule.EffectiveTo.Value.ToString("MMM d, yy")
-                                        </small>
-                                    }
-                                    else if (rule.EffectiveFrom.HasValue)
-                                    {
-                                        <small style="font-size: 0.75rem;">From @rule.EffectiveFrom.Value.ToString("MMM d, yy")</small>
-                                    }
-                                    else
-                                    {
-                                        <span style="color: #999;">-</span>
-                                    }
-                                </td>
-                                <td style="padding: 0.5rem;">
-                                    @if (rule.IsActive)
-                                    {
-                                        <span class="status-badge status-active" style="font-size: 0.75rem; padding: 2px 6px;">Active</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="status-badge status-inactive" style="font-size: 0.75rem; padding: 2px 6px;">Inactive</span>
-                                    }
-                                </td>
-                            </tr>
-                            @if (!string.IsNullOrWhiteSpace(rule.ExceptionNote))
-                            {
-                                <tr>
-                                    <td colspan="7" style="background-color: #f8f9fa; padding: 0.25rem 0.5rem; border-left: 3px solid #ffc107; font-size: 0.8rem;">
-                                        <strong>Note:</strong> @rule.ExceptionNote
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
             </div>
         }
         else
         {
-            <div style="padding: 1rem; text-align: center; color: #666; background: #f9fafb; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 0.9rem;">
-                <p style="margin: 0;">No coverage rules defined yet.</p>
+            <div id="detailsActiveStatus" style="padding: 12px; border-radius: 6px; margin-top: 16px; display: none;">
+                <!-- Active/Inactive status will be shown here -->
             </div>
         }
     </div>
     
-    <!-- Attachment -->
-    <div style="margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
-        <h3 class="form-section-title" style="margin-bottom: 0.5rem; font-size: 1rem;">Document Attachment</h3>
+    <!-- Step 2: Coverage Details -->
+    <div class="step-content" data-step="2" data-modal="details" style="display: none;">
+        <h3 class="form-section-title">Coverage Period and Notes</h3>
+        
+        <div class="form-group">
+            <label for="detailsEffectiveFrom" class="field-label">Effective From</label>
+            <input type="date" id="detailsEffectiveFrom" value="@(Model.EffectiveFrom?.ToString("yyyy-MM-dd"))" readonly style="cursor: not-allowed;" />
+            <span class="form-error" id="detailsEffectiveFrom-error"></span>
+        </div>
+        
+        <div class="form-group">
+            <label for="detailsEffectiveTo" class="field-label">Effective To</label>
+            <input type="date" id="detailsEffectiveTo" value="@(Model.EffectiveTo?.ToString("yyyy-MM-dd"))" readonly style="cursor: not-allowed;" />
+            <span class="form-error" id="detailsEffectiveTo-error"></span>
+        </div>
+        
+        <div class="form-group">
+            <label for="detailsNotes" class="field-label">Notes</label>
+            <textarea id="detailsNotes" rows="4" readonly style="cursor: not-allowed;">@Model.Notes</textarea>
+            <span class="form-error" id="detailsNotes-error"></span>
+        </div>
+        
+        <div class="form-group">
+            <label for="detailsReviewComments" class="field-label">Review Comments</label>
+            <textarea id="detailsReviewComments" rows="3" readonly style="cursor: not-allowed;">@Model.ReviewComments</textarea>
+            <span class="form-error" id="detailsReviewComments-error"></span>
+        </div>
+    </div>
+    
+    <!-- Step 3: Coverage Rules -->
+    <div class="step-content" data-step="3" data-modal="details" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="form-section-title" style="margin: 0;">Coverage Rules</h3>
+        </div>
+        
+        <p class="help-text" style="margin-bottom: 16px;">Define what items are covered and how much coverage applies</p>
+        
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 250px;">Item</th>
+                        <th style="width: 120px;">Coverage Type</th>
+                        <th style="width: 100px;">Value</th>
+                        <th style="width: 120px;">Effective From</th>
+                        <th style="width: 120px;">Effective To</th>
+                        <th style="width: 60px;">Order</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CoverageRules != null && Model.CoverageRules.Any())
+                    {
+                        foreach (var rule in Model.CoverageRules.OrderBy(r => r.DisplayOrder))
+                        {
+                            <tr>
+                                <td style="font-weight: 500;">@(rule.Item?.ItemName ?? rule.ItemId)</td>
+                                <td>
+                                    <span class="status-badge" style="background: #e0e7ff; color: #3730a3; font-size: 0.75rem;">
+                                        @rule.CoverageType
+                                    </span>
+                                </td>
+                                <td style="font-family: monospace; font-weight: 500;">
+                                    @if (rule.CoverageType == "Percentage" && rule.CoveragePercentage.HasValue)
+                                    {
+                                        <text>@rule.CoveragePercentage%</text>
+                                    }
+                                    else if (rule.CoverageType == "FixedAmount" && rule.CoverageFixedAmount.HasValue)
+                                    {
+                                        <text>$@rule.CoverageFixedAmount.Value.ToString("N2")</text>
+                                    }
+                                    else if (rule.CoverageType == "UpToCap" && rule.CapAmount.HasValue)
+                                    {
+                                        <text>Up to $@rule.CapAmount.Value.ToString("N2")</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@rule.CoverageType</text>
+                                    }
+                                </td>
+                                <td style="color: var(--gray-600); font-size: 0.875rem;">
+                                    @(rule.EffectiveFrom?.ToString("MMM dd, yyyy") ?? "-")
+                                </td>
+                                <td style="color: var(--gray-600); font-size: 0.875rem;">
+                                    @(rule.EffectiveTo?.ToString("MMM dd, yyyy") ?? "-")
+                                </td>
+                                <td style="text-align: center; font-weight: 500;">@rule.DisplayOrder</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                No coverage rules defined for this Letter of Guarantee.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Step 4: Attachment -->
+    <div class="step-content" data-step="4" data-modal="details" style="display: none;">
+        <h3 class="form-section-title">Document Attachment</h3>
         
         @if (!string.IsNullOrEmpty(Model.AttachmentFileName))
         {
-            <div style="padding: 8px; background: #d1fae5; color: #065f46; border-radius: 4px; font-size: 0.9rem;">
-                <strong>Attachment:</strong> <span style="font-family: monospace;">@Model.AttachmentFileName</span>
+            <div id="detailsExistingAttachment" style="padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px;">
+                <strong>Current Attachment:</strong> <span id="detailsExistingAttachmentName">@Model.AttachmentFileName</span>
                 @if (Model.AttachmentUploadedOn.HasValue)
                 {
                     <text> (Uploaded: @Model.AttachmentUploadedOn?.ToString("MMM dd, yyyy"))</text>
                 }
                 <a href="@Url.Action("DownloadAttachment", "Portal", new { id = Model.LogId })" 
-                   class="btn-primary" 
-                   style="margin-left: 8px; padding: 4px 12px; font-size: 0.85rem; display: inline-block;">
-                    Download Attachment
+                   download
+                   style="background: white; color: #10b981; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; margin-left: 12px; display: inline-block; font-size: 0.875rem;">
+                    📎 Download
                 </a>
             </div>
         }
         else
         {
-            <div style="padding: 1rem; text-align: center; color: #666; background: #f9fafb; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 0.9rem;">
-                <p style="margin: 0;">No attachment uploaded.</p>
+            <div id="detailsExistingAttachment" style="display: none; padding: 12px; background: #10b981; color: white; border-radius: 6px; margin-bottom: 16px;">
+                <strong>Current Attachment:</strong> <span id="detailsExistingAttachmentName"></span>
             </div>
         }
+        
+        <div class="form-group">
+            <label for="detailsNewAttachment" class="field-label">Replace Attachment (Optional)</label>
+            <input type="file" id="detailsNewAttachment" name="NewAttachment" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" disabled style="cursor: not-allowed;" />
+            <span class="form-error" id="detailsNewAttachment-error"></span>
+            <p class="help-text">Attachment replacement is not available in view mode</p>
+        </div>
     </div>
     
-    <!-- Close Button -->
-    <div style="display: flex; justify-content: flex-end; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb;">
+    <!-- Navigation Buttons -->
+    <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+        <button type="button" class="btn-secondary" id="detailsPrevStepBtn" onclick="previousDetailsStep()" style="display: none;">
+            ← Previous
+        </button>
+        <button type="button" class="btn-primary" id="detailsNextStepBtn" onclick="nextDetailsStep()" style="flex: 1;">
+            Next →
+        </button>
+        @if (User.IsInRole("admin"))
+        {
+            @if (Model.LogStatus == "Submitted")
+            {
+                <button type="button" class="btn-danger" id="detailsRejectBtn" onclick="rejectLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                    ✕ Reject
+                </button>
+                <button type="button" class="btn-primary" id="detailsApproveBtn" onclick="approveLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                    ✓ Approve & Activate
+                </button>
+            }
+            else if (Model.LogStatus == "Approved" || Model.LogStatus == "Draft")
+            {
+                @if (!Model.IsActive)
+                {
+                    <button type="button" class="btn-primary" id="detailsApproveBtn" onclick="activateLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                        ✓ Activate
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn-danger" id="detailsRejectBtn" onclick="deactivateLogFromModal(@Model.LogId)" style="display: none; flex: 1;">
+                        ✕ Deactivate
+                    </button>
+                }
+            }
+        }
         <button type="button" class="btn-secondary" onclick="closeDetailsModal()">
-            Close
+            <span id="closeButtonTextDetails">
+                @if (Model.LogStatus == "Submitted" && User.IsInRole("admin"))
+                {
+                    <text>Cancel</text>
+                }
+                else
+                {
+                    <text>Close</text>
+                }
+            </span>
         </button>
     </div>
+    </form>
 </div>
+
+
+

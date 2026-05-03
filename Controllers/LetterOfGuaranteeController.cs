@@ -242,6 +242,7 @@ namespace ISMSponsor.Controllers
                 LogId = log.LogId,
                 SchoolYearId = log.SchoolYearId,
                 StudentId = log.StudentId,
+                StudentGradeLevel = log.Student?.GradeLevel,
                 SponsorId = log.SponsorId,
                 LogStatus = log.LogStatus,
                 EffectiveFrom = log.EffectiveFrom,

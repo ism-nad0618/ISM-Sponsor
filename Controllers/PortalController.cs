@@ -140,42 +140,43 @@ namespace ISMSponsor.Controllers
             return View(viewModel);
         }
 
-        /// <summary>
-        /// View LoG details with coverage rules
-        /// </summary>
-        public async Task<IActionResult> LoGDetail(int id)
-        {
-            var sponsorId = GetSponsorId();
-            if (string.IsNullOrEmpty(sponsorId))
-            {
-                return Unauthorized();
-            }
-
-            var log = await _context.LogCoverages
-                .AsSplitQuery()
-                .Include(l => l.Student)
-                .Include(l => l.Sponsor)
-                .Include(l => l.CoverageRules)
-                    .ThenInclude(r => r.Item)
-                .Include(l => l.CoverageRules)
-                    .ThenInclude(r => r.Category)
-                .FirstOrDefaultAsync(l => l.LogId == id && l.SponsorId == sponsorId);
-
-            if (log == null)
-            {
-                return NotFound("Letter of Guarantee not found or you don't have access to it.");
-            }
-
-            var viewModel = new PortalLoGDetailViewModel
-            {
-                LetterOfGuarantee = log,
-                Student = log.Student,
-                CoverageRules = log.CoverageRules?.OrderBy(r => r.DisplayOrder).ToList() ?? new(),
-                CanDownloadAttachment = !string.IsNullOrEmpty(log.AttachmentFileName)
-            };
-
-            return View(viewModel);
-        }
+        // Legacy full-page view - now replaced by modal
+        // /// <summary>
+        // /// View LoG details with coverage rules
+        // /// </summary>
+        // public async Task<IActionResult> LoGDetail(int id)
+        // {
+        //     var sponsorId = GetSponsorId();
+        //     if (string.IsNullOrEmpty(sponsorId))
+        //     {
+        //         return Unauthorized();
+        //     }
+        //
+        //     var log = await _context.LogCoverages
+        //         .AsSplitQuery()
+        //         .Include(l => l.Student)
+        //         .Include(l => l.Sponsor)
+        //         .Include(l => l.CoverageRules)
+        //             .ThenInclude(r => r.Item)
+        //         .Include(l => l.CoverageRules)
+        //             .ThenInclude(r => r.Category)
+        //         .FirstOrDefaultAsync(l => l.LogId == id && l.SponsorId == sponsorId);
+        //
+        //     if (log == null)
+        //     {
+        //         return NotFound("Letter of Guarantee not found or you don't have access to it.");
+        //     }
+        //
+        //     var viewModel = new PortalLoGDetailViewModel
+        //     {
+        //         LetterOfGuarantee = log,
+        //         Student = log.Student,
+        //         CoverageRules = log.CoverageRules?.OrderBy(r => r.DisplayOrder).ToList() ?? new(),
+        //         CanDownloadAttachment = !string.IsNullOrEmpty(log.AttachmentFileName)
+        //     };
+        //
+        //     return View(viewModel);
+        // }
 
         /// <summary>
         /// View LoG details in a modal
