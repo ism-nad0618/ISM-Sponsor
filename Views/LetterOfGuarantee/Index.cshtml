@@ -1435,15 +1435,22 @@ function saveRuleEdit() {
     console.log('Selected item:', selectedItem);
     console.log('Extracted categoryId:', categoryId);
     
+    // Helper function to parse decimal values (converts empty strings to null)
+    const parseDecimal = (value) => {
+        if (!value || value.trim() === '') return null;
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? null : parsed;
+    };
+    
     const rule = {
         ruleId: (index !== '' && mode === 'edit') ? editCoverageRules[index].ruleId : 0,
         coverageTarget: 'Item',
         itemId: itemId || null,
         categoryId: categoryId,  // Now fetched from the selected item
         coverageType: document.getElementById('ruleCoverageType').value,
-        coveragePercentage: document.getElementById('rulePercentage').value || null,
-        coverageFixedAmount: document.getElementById('ruleFixedAmount').value || null,
-        capAmount: document.getElementById('ruleCapAmount').value || null,
+        coveragePercentage: parseDecimal(document.getElementById('rulePercentage').value),
+        coverageFixedAmount: parseDecimal(document.getElementById('ruleFixedAmount').value),
+        capAmount: parseDecimal(document.getElementById('ruleCapAmount').value),
         effectiveFrom: document.getElementById('ruleEffectiveFrom').value || null,
         effectiveTo: document.getElementById('ruleEffectiveTo').value || null,
         displayOrder: parseInt(document.getElementById('ruleDisplayOrder').value) || 1,
