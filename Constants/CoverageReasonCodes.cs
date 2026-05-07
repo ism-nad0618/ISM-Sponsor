@@ -7,6 +7,7 @@ namespace ISMSponsor.Constants
         // Success codes
         public const string FULL_COVERAGE_ITEM = "FULL_COVERAGE_ITEM";
         public const string FULL_COVERAGE_CATEGORY = "FULL_COVERAGE_CATEGORY";
+        public const string COVERED = "COVERED";
         public const string PERCENTAGE_COVERAGE_ITEM = "PERCENTAGE_COVERAGE_ITEM";
         public const string PERCENTAGE_COVERAGE_CATEGORY = "PERCENTAGE_COVERAGE_CATEGORY";
         public const string FIXED_AMOUNT_COVERAGE_ITEM = "FIXED_AMOUNT_COVERAGE_ITEM";
@@ -15,6 +16,7 @@ namespace ISMSponsor.Constants
         // Partial coverage codes
         public const string CAP_REACHED_ITEM = "CAP_REACHED_ITEM";
         public const string CAP_REACHED_CATEGORY = "CAP_REACHED_CATEGORY";
+        public const string EXCEEDS_CAP = "EXCEEDS_CAP";
         public const string PERCENTAGE_SPLIT = "PERCENTAGE_SPLIT";
         public const string FIXED_SPLIT = "FIXED_SPLIT";
 
@@ -39,6 +41,7 @@ namespace ISMSponsor.Constants
             {
                 new ReasonCodeInfo { Code = FULL_COVERAGE_ITEM, Description = "Full coverage provided by item-level rule", Category = "Success" },
                 new ReasonCodeInfo { Code = FULL_COVERAGE_CATEGORY, Description = "Full coverage provided by category-level rule", Category = "Success" },
+                new ReasonCodeInfo { Code = COVERED, Description = "Charge is fully covered by the sponsor", Category = "Success" },
                 new ReasonCodeInfo { Code = PERCENTAGE_COVERAGE_ITEM, Description = "Percentage coverage applied by item-level rule", Category = "Success" },
                 new ReasonCodeInfo { Code = PERCENTAGE_COVERAGE_CATEGORY, Description = "Percentage coverage applied by category-level rule", Category = "Success" },
                 new ReasonCodeInfo { Code = FIXED_AMOUNT_COVERAGE_ITEM, Description = "Fixed amount coverage applied by item-level rule", Category = "Success" },
@@ -46,6 +49,7 @@ namespace ISMSponsor.Constants
                 
                 new ReasonCodeInfo { Code = CAP_REACHED_ITEM, Description = "Coverage capped by item-level rule limit", Category = "Partial" },
                 new ReasonCodeInfo { Code = CAP_REACHED_CATEGORY, Description = "Coverage capped by category-level rule limit", Category = "Partial" },
+                new ReasonCodeInfo { Code = EXCEEDS_CAP, Description = "Charge amount exceeds sponsor coverage cap", Category = "Partial" },
                 new ReasonCodeInfo { Code = PERCENTAGE_SPLIT, Description = "Partial coverage based on percentage rule", Category = "Partial" },
                 new ReasonCodeInfo { Code = FIXED_SPLIT, Description = "Partial coverage based on fixed amount rule", Category = "Partial" },
                 

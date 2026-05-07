@@ -92,5 +92,34 @@ namespace ISMSponsor.Services
 
             return fileName;
         }
+
+        public (string? fileName, DateTime? uploadedOn) GetVerificationDocumentInfo(string sponsorId)
+        {
+            var uploads = Path.Combine("wwwroot", "uploads", "sponsors", sponsorId);
+            
+            if (!Directory.Exists(uploads))
+            {
+                return (null, null);
+            }
+
+            var files = Directory.GetFiles(uploads, "verification-*.*");
+            if (files.Length == 0)
+            {
+                return (null, null);
+            }
+
+            // Get the most recent file
+            var fileInfo = files
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
+
+            if (fileInfo == null)
+            {
+                return (null, null);
+            }
+
+            return (fileInfo.Name, fileInfo.LastWriteTime);
+        }
     }
 }

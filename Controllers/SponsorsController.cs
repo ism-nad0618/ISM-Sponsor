@@ -881,6 +881,68 @@ namespace ISMSponsor.Controllers
                 return RedirectToAction("Index");
             }
         }
+
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpGet]
+        public IActionResult GetVerificationDocumentInfo(string sponsorId)
+        {
+            try
+            {
+                var (fileName, uploadedOn) = _sponsorService.GetVerificationDocumentInfo(sponsorId);
+                
+                if (fileName == null)
+                {
+                    return Json(new { hasDocument = false });
+                }
+
+                return Json(new
+                {
+                    hasDocument = true,
+                    fileName = fileName,
+                    uploadedOn = uploadedOn?.ToString("MMM dd, yyyy HH:mm")
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting verification document info for sponsor {SponsorId}", sponsorId);
+                return Json(new { hasDocument = false });
+            }
+        }
+
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpGet]
+        public async Task<IActionResult> DownloadVerificationDocument(string sponsorId)
+        {
+            try
+            {
+                var (fileName, _) = _sponsorService.GetVerificationDocumentInfo(sponsorId);
+                
+                if (fileName == null)
+                {
+                    return NotFound("Verification document not found");
+                }
+
+                var filePath = Path.Combine("wwwroot", "uploads", "sponsors", sponsorId, fileName);
+                
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return NotFound("Verification document file not found on server");
+                }
+
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                var contentType = "application/octet-stream";
+                
+                // Use a cleaner filename for download
+                var downloadFileName = $"{sponsorId}_verification{Path.GetExtension(fileName)}";
+                
+                return File(fileBytes, contentType, downloadFileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error downloading verification document for sponsor {SponsorId}", sponsorId);
+                return NotFound("Error downloading verification document");
+            }
+        }
     }
 
     public class SponsorCreationResult

@@ -153,7 +153,8 @@ public class DemoDataSeeder
             new Item { ItemId = "TECHNOLOGY", ItemName = "Technology Fee", GradeLevel = "ALL", CategoryId = "FEE", IsActive = true },
             new Item { ItemId = "UNIFORM", ItemName = "School Uniform", GradeLevel = "ALL", CategoryId = "MATERIAL", IsActive = true },
             new Item { ItemId = "TEXTBOOK", ItemName = "Textbook Fee", GradeLevel = "ALL", CategoryId = "MATERIAL", IsActive = true },
-            new Item { ItemId = "LAB-FEE", ItemName = "Laboratory Fee", GradeLevel = "HS", CategoryId = "FEE", IsActive = true }
+            new Item { ItemId = "LAB-FEE", ItemName = "Laboratory Fee", GradeLevel = "HS", CategoryId = "FEE", IsActive = true },
+            new Item { ItemId = "MAJOR-SLSP-G06 SLSP FULL", ItemName = "Specialized Learning Support Program Fee (Full Semester Fees)", GradeLevel = "STUD-06", CategoryId = "FEE", IsActive = true }
         };
 
         foreach (var item in items)
@@ -420,6 +421,48 @@ public class DemoDataSeeder
             });
         }
 
+        // SP002: Ayala Holdings (for STUD006 coverage testing)
+        if (!await _context.Sponsors.AnyAsync(s => s.SponsorId == "SP002"))
+        {
+            var sponsor = new Sponsor
+            {
+                SponsorId = "SP002",
+                SponsorName = "Ayala Holdings",
+                LegalName = "Ayala Holdings Corporation",
+                Address = "Tower One & Exchange Plaza, Ayala Triangle, Ayala Avenue, Makati",
+                Tin = "000-123-456-789",
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow.AddMonths(-6),
+                CreatedByUserId = adminUserId,
+                PowerSchoolId = "PS002"
+            };
+            _context.Sponsors.Add(sponsor);
+            await _context.SaveChangesAsync();
+
+            _context.Set<SponsorContact>().Add(new SponsorContact
+            {
+                SponsorId = "SP002",
+                Name = "Patricia Reyes",
+                Email = "p.reyes@ayala.com",
+                Phone = "+63 2 8848 5555",
+                IsActive = true
+            });
+
+            _context.Set<SponsorAddress>().Add(new SponsorAddress
+            {
+                SponsorId = "SP002",
+                AddressType = "Billing",
+                AddressLine1 = "Tower One & Exchange Plaza",
+                AddressLine2 = "Ayala Triangle, Ayala Avenue",
+                City = "Makati",
+                StateProvince = "Metro Manila",
+                PostalCode = "1226",
+                Country = "Philippines",
+                IsPrimary = true,
+                IsActive = true
+            });
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -434,7 +477,8 @@ public class DemoDataSeeder
             new Student { StudentId = "DEMO-ST005", FirstName = "Olivia", LastName = "Johnson", GradeLevel = "STUD-06", SponsorId = "DEMO-SP003", SchoolYearId = "25-26", StudentStatus = "Active" },
             new Student { StudentId = "DEMO-ST006", FirstName = "Ethan", LastName = "Martinez", GradeLevel = "STUD-09", SponsorId = "DEMO-SP004", SchoolYearId = "25-26", StudentStatus = "Active" },
             new Student { StudentId = "DEMO-ST007", FirstName = "Ava", LastName = "Garcia", GradeLevel = "STUD-04", SponsorId = "DEMO-SP004", SchoolYearId = "25-26", StudentStatus = "Active" },
-            new Student { StudentId = "DEMO-ST008", FirstName = "Mason", LastName = "Chen", GradeLevel = "STUD-10", SponsorId = "DEMO-SP005", SchoolYearId = "25-26", StudentStatus = "Withdrawn" }
+            new Student { StudentId = "DEMO-ST008", FirstName = "Mason", LastName = "Chen", GradeLevel = "STUD-10", SponsorId = "DEMO-SP005", SchoolYearId = "25-26", StudentStatus = "Withdrawn" },
+            new Student { StudentId = "STUD006", FirstName = "Renee", LastName = "Tan", GradeLevel = "STUD-06", SponsorId = "SP002", SchoolYearId = "25-26", StudentStatus = "Active" }
         };
 
         foreach (var student in students)
@@ -581,6 +625,41 @@ public class DemoDataSeeder
                 DeactivationReason = "School year ended"
             };
             _context.LogCoverages.Add(log5);
+        }
+
+        // LOG for SP002 Ayala Holdings - STUD006 (active, approved, with cap rule)
+        if (!await _context.LogCoverages.AnyAsync(l => l.StudentId == "STUD006" && l.SponsorId == "SP002" && l.SchoolYearId == "25-26"))
+        {
+            var logAyala = new LogCoverage
+            {
+                StudentId = "STUD006",
+                SponsorId = "SP002",
+                SchoolYearId = "25-26",
+                LogStatus = "Approved",
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow.AddMonths(-6),
+                CreatedByUserId = adminUserId,
+                ActivatedOn = DateTime.UtcNow.AddMonths(-6),
+                ActivatedByUserId = adminUserId,
+                EffectiveFrom = new DateTime(2025, 8, 1),
+                EffectiveTo = new DateTime(2026, 6, 30)
+            };
+            _context.LogCoverages.Add(logAyala);
+            await _context.SaveChangesAsync();
+
+            // Coverage rule for MAJOR-SLSP with $1000 cap
+            var ruleAyala = new LoGCoverageRule
+            {
+                LogId = logAyala.LogId,
+                CoverageTarget = "Item",
+                ItemId = "MAJOR-SLSP-G06 SLSP FULL",
+                CoverageType = "UpToCap",
+                CapAmount = 1000.00m,
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow.AddMonths(-6),
+                DisplayOrder = 1
+            };
+            _context.Set<LoGCoverageRule>().Add(ruleAyala);
         }
 
         await _context.SaveChangesAsync();

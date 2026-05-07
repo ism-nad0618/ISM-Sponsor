@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace ISMSponsor.Models.API
 {
@@ -10,6 +11,7 @@ namespace ISMSponsor.Models.API
     {
         [Required(ErrorMessage = "School year is required")]
         [MaxLength(450)]
+        [JsonPropertyName("schoolYearId")]
         public string SchoolYearId { get; set; } = string.Empty;
 
         /// <summary>
@@ -31,6 +33,7 @@ namespace ISMSponsor.Models.API
         /// Charge item code (e.g., "TUITION", "UNIFORMS")
         /// </summary>
         [MaxLength(450)]
+        [JsonPropertyName("itemId")]
         public string? ItemId { get; set; }
 
         /// <summary>
@@ -40,9 +43,22 @@ namespace ISMSponsor.Models.API
         public string? CategoryId { get; set; }
 
         /// <summary>
+        /// Charge description
+        /// </summary>
+        [MaxLength(500)]
+        public string? ChargeDescription { get; set; }
+
+        /// <summary>
+        /// Currency for the charge amount (e.g., "US Dollar", "PHP")
+        /// </summary>
+        [MaxLength(50)]
+        public string? Currency { get; set; }
+
+        /// <summary>
         /// Charge amount in cents or smallest currency unit (e.g., 100000 = $1000.00)
         /// </summary>
         [Required(ErrorMessage = "Amount is required")]
+        [JsonPropertyName("amount")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero")]
         public decimal Amount { get; set; }
 

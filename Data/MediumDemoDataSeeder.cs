@@ -132,6 +132,7 @@ public class MediumDemoDataSeeder
             new ItemCategory { CategoryId = "SUPPLIES", CategoryName = "School Supplies", Description = "Books, materials, and supplies", IsActive = true },
             new ItemCategory { CategoryId = "UNIFORM", CategoryName = "Uniforms", Description = "School uniforms and PE attire", IsActive = true },
             new ItemCategory { CategoryId = "ACTIVITIES", CategoryName = "Activities", Description = "Field trips, sports, clubs", IsActive = true },
+            new ItemCategory { CategoryId = "FEE", CategoryName = "Fee", Description = "Miscellaneous fees", IsActive = true },
             new ItemCategory { CategoryId = "OTHER", CategoryName = "Other Fees", Description = "Miscellaneous school fees", IsActive = true }
         };
 
@@ -154,7 +155,8 @@ public class MediumDemoDataSeeder
             new Item { ItemId = "PE-UNIFORM", ItemName = "PE Uniform", GradeLevel = "ALL", CategoryId = "UNIFORM", IsActive = true },
             new Item { ItemId = "SUPPLIES", ItemName = "School Supplies", GradeLevel = "ALL", CategoryId = "SUPPLIES", IsActive = true },
             new Item { ItemId = "MEALS", ItemName = "Meal Plan", GradeLevel = "ALL", CategoryId = "OTHER", IsActive = true },
-            new Item { ItemId = "TRANSPORT", ItemName = "Transportation", GradeLevel = "ALL", CategoryId = "OTHER", IsActive = true }
+            new Item { ItemId = "TRANSPORT", ItemName = "Transportation", GradeLevel = "ALL", CategoryId = "OTHER", IsActive = true },
+            new Item { ItemId = "MAJOR-SLSP-G06 SLSP FULL", ItemName = "Specialized Learning Support Program Fee (Full Semester Fees)", GradeLevel = "STUD-06", CategoryId = "FEE", IsActive = true }
         };
 
         var itemsCreated = 0;
@@ -287,6 +289,52 @@ public class MediumDemoDataSeeder
             }
         }
 
+        // Add SP002 (Ayala Holdings) for test scenarios
+        if (!await _context.Sponsors.AnyAsync(s => s.SponsorId == "SP002"))
+        {
+            var sponsor = new Sponsor
+            {
+                SponsorId = "SP002",
+                SponsorName = "Ayala Holdings",
+                LegalName = "Ayala Holdings Corporation",
+                Address = "Tower One & Exchange Plaza, Ayala Triangle, Ayala Avenue, Makati",
+                Tin = "000-123-456-789",
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow.AddMonths(-6),
+                CreatedByUserId = adminUserId,
+                PowerSchoolId = "PS002",
+                NetSuiteId = "NS002"
+            };
+
+            _context.Sponsors.Add(sponsor);
+            await _context.SaveChangesAsync();
+
+            _context.Set<SponsorContact>().Add(new SponsorContact
+            {
+                SponsorId = "SP002",
+                Name = "Patricia Reyes",
+                Email = "p.reyes@ayala.com",
+                Phone = "+63 2 8848 5555",
+                IsActive = true
+            });
+
+            _context.Set<SponsorAddress>().Add(new SponsorAddress
+            {
+                SponsorId = "SP002",
+                AddressType = "Billing",
+                AddressLine1 = "Tower One & Exchange Plaza",
+                AddressLine2 = "Ayala Triangle, Ayala Avenue",
+                City = "Makati",
+                StateProvince = "Metro Manila",
+                PostalCode = "1226",
+                Country = "Philippines",
+                IsPrimary = true,
+                IsActive = true
+            });
+
+            Console.WriteLine("  ✓ Created SP002 - Ayala Holdings");
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -330,6 +378,24 @@ public class MediumDemoDataSeeder
                     Console.WriteLine($"  ✓ Created {studentsCreated} students...");
                 }
             }
+        }
+
+        // Add STUD006 (Renee Tan) for test scenarios
+        if (!await _context.Students.AnyAsync(s => s.StudentId == "STUD006"))
+        {
+            var student = new Student
+            {
+                StudentId = "STUD006",
+                FirstName = "Renee",
+                LastName = "Tan",
+                SchoolYearId = "25-26",
+                GradeLevel = "STUD-06",
+                SponsorId = "SP002",
+                StudentStatus = "Active"
+            };
+            _context.Students.Add(student);
+            studentsCreated++;
+            Console.WriteLine("  ✓ Created STUD006 - Renee Tan");
         }
 
         await _context.SaveChangesAsync();
@@ -441,6 +507,44 @@ public class MediumDemoDataSeeder
         await _context.SaveChangesAsync();
         Console.WriteLine($"  ✓ Total LoGs created: {logsCreated}");
         Console.WriteLine($"  ✓ Total coverage rules created: {rulesCreated}");
+
+        // Add LoG for STUD006 with MAJOR-SLSP coverage rule
+        if (!await _context.LogCoverages.AnyAsync(l => l.StudentId == "STUD006" && l.SchoolYearId == "25-26"))
+        {
+            var log = new LogCoverage
+            {
+                SchoolYearId = "25-26",
+                StudentId = "STUD006",
+                SponsorId = "SP002",
+                LogStatus = "Approved",
+                IsActive = true,
+                EffectiveFrom = new DateTime(2025, 8, 15),
+                EffectiveTo = new DateTime(2026, 5, 30),
+                Notes = "Test LoG for STUD006 - Ayala Holdings",
+                CreatedOn = DateTime.UtcNow.AddMonths(-6),
+                ActivatedOn = DateTime.UtcNow.AddMonths(-6)
+            };
+
+            _context.LogCoverages.Add(log);
+            await _context.SaveChangesAsync();
+
+            // Add coverage rule for MAJOR-SLSP with $1000 cap
+            var rule = new LoGCoverageRule
+            {
+                LogId = log.LogId,
+                CoverageTarget = "Item",
+                ItemId = "MAJOR-SLSP-G06 SLSP FULL",
+                CoverageType = "UpToCap",
+                CapAmount = 1000.00m,
+                ExceptionNote = "SLSP coverage with $1000 cap for testing",
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow.AddMonths(-6)
+            };
+            _context.Set<LoGCoverageRule>().Add(rule);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine("  ✓ Created LoG for STUD006 with MAJOR-SLSP rule");
+        }
     }
 
     private async Task PrintSummaryAsync()

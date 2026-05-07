@@ -36,10 +36,11 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="activeOnly">Filter to active LoGs only (default: true)</param>
         /// <returns>List of Letters of Guarantee</returns>
         /// <remarks>
-        /// Sample request:
+        /// Sample request (using demo data):
         ///
-        ///     GET /api/v1/logs?schoolYearId=2024-2025&amp;activeOnly=true
+        ///     GET /api/v1/logs?schoolYearId=25-26&amp;sponsorId=DEMO-SP001&amp;activeOnly=true
         ///
+        /// Returns all active LoGs for Global Tech Corporation in 2025-2026 school year
         /// </remarks>
         [HttpGet]
         [ProducesResponseType(typeof(List<LogDto>), StatusCodes.Status200OK)]
@@ -124,18 +125,19 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="request">LoG creation details</param>
         /// <returns>Created LoG with ID</returns>
         /// <remarks>
-        /// Sample request:
+        /// Sample request (using demo data):
         ///
         ///     POST /api/v1/logs
         ///     {
-        ///       "schoolYearId": "2024-2025",
-        ///       "studentId": "STU001",
-        ///       "sponsorId": "ACME",
-        ///       "effectiveFrom": "2024-08-15",
-        ///       "effectiveTo": "2025-06-15",
-        ///       "notes": "Full coverage for ACME Corp student"
+        ///       "schoolYearId": "25-26",
+        ///       "studentId": "DEMO-ST001",
+        ///       "sponsorId": "DEMO-SP001",
+        ///       "effectiveFrom": "2025-08-15",
+        ///       "effectiveTo": "2026-06-15",
+        ///       "notes": "Full coverage LoG for Emma Wilson"
         ///     }
         ///
+        /// Creates draft LoG for Emma Wilson (Global Tech Corporation) for school year 2025-2026
         /// </remarks>
         [HttpPost]
         [ProducesResponseType(typeof(LogDto), StatusCodes.Status201Created)]
@@ -221,23 +223,24 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="request">Coverage item details</param>
         /// <returns>Updated LoG with new item</returns>
         /// <remarks>
-        /// Sample request:
+        /// Sample request (full coverage for specific item):
         ///
         ///     POST /api/v1/logs/123/items
         ///     {
         ///       "coverageTarget": "Item",
-        ///       "itemId": "UNIFORMS",
+        ///       "itemId": "TUITION-ELEM",
         ///       "coverageType": "Full"
         ///     }
         ///
-        /// Or with percentage:
+        /// Sample request (80% coverage for category with cap):
         ///
         ///     POST /api/v1/logs/123/items
         ///     {
         ///       "coverageTarget": "Category",
-        ///       "categoryId": "MEALS",
+        ///       "categoryId": "SUPPLIES",
         ///       "coverageType": "Percentage",
-        ///       "coveragePercentage": 80.0
+        ///       "coveragePercentage": 80.0,
+        ///       "capAmount": 5000.00
         ///     }
         ///
         /// </remarks>

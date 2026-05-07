@@ -49,6 +49,56 @@ ASP.NET Core 8.0 web application for managing sponsor relationships and Letters 
 
 4. Open browser to `https://localhost:5001` or `http://localhost:5000`
 
+### Testing
+
+#### Unit and Integration Tests
+
+Run all unit and integration tests:
+```bash
+dotnet test
+```
+
+Run specific test class:
+```bash
+dotnet test --filter "FullyQualifiedName~CoverageEvaluationTests"
+```
+
+#### Deployed API Smoke Tests
+
+Smoke tests verify that the live deployed API supports the demo requirements.
+
+**Run against deployed Azure API:**
+```bash
+dotnet test --filter "FullyQualifiedName~DeployedApiSmokeTests"
+```
+
+**Configuration (optional environment variables):**
+```bash
+# Change the target API base URL
+export DEPLOYED_API_BASE_URL=https://ismsponsor.azurewebsites.net
+
+# Add authentication token if required
+export DEPLOYED_API_TOKEN=your-bearer-token-here
+
+# Run smoke tests
+dotnet test --filter "FullyQualifiedName~DeployedApiSmokeTests"
+```
+
+**What the smoke tests verify:**
+- POST `/api/v1/coverage/evaluate` - Split billing ($1500 charge exceeds $1000 cap)
+- POST `/api/v1/coverage/preview` - Split billing preview
+- POST `/api/v1/coverage/evaluate` - Full coverage ($800 charge within cap)
+- POST `/api/v1/coverage/preview` - Full coverage preview
+- GET `/api/v1/sponsors/SP002` - Sponsor details (Ayala Holdings)
+- GET `/api/docs/index.html` - Swagger documentation accessibility
+
+**Test data used:**
+- Sponsor: SP002 (Ayala Holdings)
+- Student: STUD006 (Renee Tan)
+- School Year: 25-26
+- LoG Cap: $1000.00 (UpToCap rule)
+- Charge Code: MAJOR-SLSP-G06 SLSP FULL
+
 ### Demo Data (Step 9)
 
 Demo data is automatically seeded on startup in Development or Staging environments. This includes:

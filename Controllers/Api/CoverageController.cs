@@ -31,38 +31,75 @@ namespace ISMSponsor.Controllers.Api
         }
 
         /// <summary>
-        /// Evaluate and persist coverage decision to audit trail (commits decision)
+        /// Evaluate coverage for a charge and persist decision to audit trail
         /// </summary>
         /// <param name="request">Coverage evaluation request with student, sponsor, and charge details</param>
-        /// <returns>Coverage decision with allocation breakdown (persisted to audit)</returns>
+        /// <returns>Coverage decision with allocation breakdown (automatically persisted to audit)</returns>
         /// <remarks>
-        /// Sample request:
+        /// Sample request (using demo data - STUD006 has $1000 cap with SP002):
         ///
         ///     POST /api/v1/coverage/evaluate
         ///     {
-        ///       "studentId": "STU001",
-        ///       "sponsorId": "ACME",
-        ///       "schoolYearId": "2024-2025",
-        ///       "itemId": "UNIFORMS",
-        ///       "amount": 50000,
-        ///       "chargeDate": "2024-01-15"
+        ///       "studentId": "STUD006",
+        ///       "schoolYearId": "25-26",
+        ///       "itemId": "MAJOR-SLSP-G06 SLSP FULL",
+        ///       "chargeDescription": "Specialized Learning Support Program Fee",
+        ///       "amount": 1500.00,
+        ///       "currency": "USD",
+        ///       "chargeDate": "2026-05-06",
+        ///       "correlationId": "TEST-001"
         ///     }
         ///
         /// Sample response:
         ///
         ///     {
-        ///       "decisionId": "DEC-002",
-        ///       "decision": "Covered",
-        ///       "billTo": "Sponsor",
-        ///       "sponsorAmount": 50000,
-        ///       "parentAmount": 0,
-        ///       "reasonCode": "FULL_COVERAGE",
-        ///       "ruleVersion": "RV-1",
-        ///       "auditRecordId": 1042,
-        ///       "success": true
+        ///       "decision": "Split",
+        ///       "billTo": "SponsorAndParent",
+        ///       "studentId": "STUD006",
+        ///       "studentName": "Renee Tan",
+        ///       "sponsorId": "SP002",
+        ///       "sponsorName": "Ayala Holdings",
+        ///       "sponsorAmount": 1000.00,
+        ///       "parentAmount": 500.00,
+        ///       "totalAmount": 1500.00,
+        ///       "reasonCode": "EXCEEDS_CAP",
+        ///       "explanation": "Charge exceeds sponsor cap. Sponsor covers $1000, parent balance $500.",
+        ///       "matchedRuleId": 1,
+        ///       "ruleVersion": "v1",
+        ///       "auditRecordId": 123,
+        ///       "success": true,
+        ///       "correlationId": "TEST-001",
+        ///       "decisionId": "DEC-20260506-001",
+        ///       "evaluatedAt": "2026-05-06T12:00:00Z",
+        ///       "sponsorPercent": 66.67,
+        ///       "parentPercent": 33.33,
+        ///       "ruleSnapshot": "SP002 Ayala Holdings; cap: $1000; charge: $1500; EXCEEDS_CAP",
+        ///       "allocations": [
+        ///         {
+        ///           "partyType": "Sponsor",
+        ///           "partyId": "SP002",
+        ///           "partyName": "Ayala Holdings",
+        ///           "amount": 1000.00,
+        ///           "currency": "USD",
+        ///           "billTo": "Sponsor",
+        ///           "chargeCode": "MAJOR-SLSP-G06 SLSP FULL",
+        ///           "chargeDescription": "Specialized Learning Support Program Fee"
+        ///         },
+        ///         {
+        ///           "partyType": "Parent",
+        ///           "partyId": null,
+        ///           "partyName": null,
+        ///           "amount": 500.00,
+        ///           "currency": "USD",
+        ///           "billTo": "Parent",
+        ///           "chargeCode": "MAJOR-SLSP-G06 SLSP FULL",
+        ///           "chargeDescription": "Specialized Learning Support Program Fee"
+        ///         }
+        ///       ]
         ///     }
         ///
-        /// Decision is persisted to audit trail and can be retrieved via GET /api/v1/audit/decisions/{decisionId}
+        /// Note: Decision is automatically persisted to audit trail (no separate commit endpoint needed).
+        /// Retrieve via GET /api/v1/audit/decisions/{auditRecordId}
         /// </remarks>
         [HttpPost("evaluate")]
         [ProducesResponseType(typeof(CoverageEvaluationResponse), StatusCodes.Status200OK)]
@@ -115,32 +152,66 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="request">Coverage evaluation request with student, sponsor, and charge details</param>
         /// <returns>Coverage decision with allocation breakdown (not persisted)</returns>
         /// <remarks>
-        /// Sample request:
+        /// Sample request (returns decision WITHOUT persisting to audit):
         ///
         ///     POST /api/v1/coverage/preview
         ///     {
-        ///       "studentId": "STU001",
-        ///       "sponsorId": "ACME",
-        ///       "schoolYearId": "2024-2025",
-        ///       "itemId": "TUITION",
-        ///       "amount": 100000,
-        ///       "chargeDate": "2024-01-15"
+        ///       "studentId": "STUD006",
+        ///       "schoolYearId": "25-26",
+        ///       "itemId": "MAJOR-SLSP-G06 SLSP FULL",
+        ///       "chargeDescription": "Specialized Learning Support Program Fee",
+        ///       "amount": 1500.00,
+        ///       "currency": "USD",
+        ///       "chargeDate": "2026-05-06",
+        ///       "isPreview": true
         ///     }
         ///
         /// Sample response:
         ///
         ///     {
-        ///       "decisionId": "DEC-001",
         ///       "decision": "Split",
-        ///       "billTo": "Split",
-        ///       "sponsorAmount": 75000,
-        ///       "parentAmount": 25000,
-        ///       "reasonCode": "CAP_PARTIAL",
-        ///       "ruleVersion": "RV-1",
-        ///       "success": true
+        ///       "billTo": "SponsorAndParent",
+        ///       "sponsorId": "SP002",
+        ///       "sponsorName": "Ayala Holdings",
+        ///       "sponsorAmount": 1000.00,
+        ///       "parentAmount": 500.00,
+        ///       "totalAmount": 1500.00,
+        ///       "reasonCode": "EXCEEDS_CAP",
+        ///       "explanation": "The charge amount exceeds the sponsor coverage cap. The sponsor will cover 1000.00 and the remaining 500.00 will be billed to the parent.",
+        ///       "matchedRuleId": 1,
+        ///       "ruleVersion": "v1",
+        ///       "success": true,
+        ///       "correlationId": "abc-123",
+        ///       "decisionId": "DEC-001",
+        ///       "evaluatedAt": "2026-05-06T12:00:00Z",
+        ///       "sponsorPercent": 66.67,
+        ///       "parentPercent": 33.33,
+        ///       "ruleSnapshot": "Sponsor SP002 Ayala Holdings; sponsor cap: 1000.00; charge amount: 1500.00; reason: EXCEEDS_CAP",
+        ///       "allocations": [
+        ///         {
+        ///           "partyType": "Sponsor",
+        ///           "partyId": "SP002",
+        ///           "partyName": "Ayala Holdings",
+        ///           "amount": 1000.00,
+        ///           "currency": "USD",
+        ///           "billTo": "Sponsor",
+        ///           "chargeCode": "MAJOR-SLSP-G06 SLSP FULL",
+        ///           "chargeDescription": "Specialized Learning Support Program Fee"
+        ///         },
+        ///         {
+        ///           "partyType": "Parent",
+        ///           "partyId": null,
+        ///           "partyName": null,
+        ///           "amount": 500.00,
+        ///           "currency": "USD",
+        ///           "billTo": "Parent",
+        ///           "chargeCode": "MAJOR-SLSP-G06 SLSP FULL",
+        ///           "chargeDescription": "Specialized Learning Support Program Fee"
+        ///         }
+        ///       ]
         ///     }
         ///
-        /// Use this endpoint for "what-if" analysis before committing a decision.
+        /// Use preview for "what-if" analysis. Decision is NOT persisted. Use /evaluate to persist.
         /// </remarks>
         [HttpPost("preview")]
         [ProducesResponseType(typeof(CoverageEvaluationResponse), StatusCodes.Status200OK)]
@@ -180,7 +251,7 @@ namespace ISMSponsor.Controllers.Api
         /// <summary>
         /// Retrieve a specific coverage decision by audit record ID
         /// </summary>
-        /// <param name="auditId">Audit record ID returned from /evaluate or /commit (preview is not persisted)</param>
+        /// <param name="auditId">Audit record ID returned from /evaluate endpoint</param>
         /// <returns>Full coverage decision details including rule snapshot and percentages</returns>
         [HttpGet("decisions/{auditId}")]
         [ApiExplorerSettings(IgnoreApi = true)]

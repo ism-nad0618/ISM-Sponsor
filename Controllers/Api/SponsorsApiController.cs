@@ -36,6 +36,7 @@ namespace ISMSponsor.Controllers.Api
         ///
         ///     GET /api/v1/sponsors?activeOnly=true
         ///
+        /// Returns all active sponsors (e.g., DEMO-SP001 to DEMO-SP010)
         /// </remarks>
         [HttpGet]
         [ProducesResponseType(typeof(List<SponsorDto>), StatusCodes.Status200OK)]
@@ -86,17 +87,18 @@ namespace ISMSponsor.Controllers.Api
         /// <param name="request">Sponsor creation details</param>
         /// <returns>Created sponsor with confirmation</returns>
         /// <remarks>
-        /// Sample request:
+        /// Sample request (creating new sponsor):
         ///
         ///     POST /api/v1/sponsors
         ///     {
-        ///       "sponsorId": "NEWCORP",
-        ///       "sponsorName": "New Corporation",
-        ///       "legalName": "New Corporation Inc.",
-        ///       "tin": "12-3456789",
-        ///       "address": "123 Main St, City, State 12345"
+        ///       "sponsorId": "TEST-SP999",
+        ///       "sponsorName": "Test Corporation Philippines",
+        ///       "legalName": "Test Corporation Philippines Inc.",
+        ///       "tin": "999-888-777-000",
+        ///       "address": "10F Test Building, BGC, Taguig City, Metro Manila"
         ///     }
         ///
+        /// Note: sponsorId must be unique. Use TEST- or API- prefix for API-created sponsors.
         /// </remarks>
         [HttpPost]
         [ProducesResponseType(typeof(SponsorDto), StatusCodes.Status201Created)]

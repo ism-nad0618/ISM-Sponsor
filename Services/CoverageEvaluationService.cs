@@ -63,20 +63,52 @@ namespace ISMSponsor.Services
                 var log = await FindActiveLogAsync(request);
                 if (log == null)
                 {
+                    // Try to get student info even though there's no LoG
+                    var student = await _context.Students
+                        .Where(s => s.StudentId == request.StudentId && s.SchoolYearId == request.SchoolYearId)
+                        .FirstOrDefaultAsync();
+                    
                     response.Decision = CoverageDecision.NotCovered;
                     response.BillTo = Models.API.BillTo.Parent;
                     response.ParentAmount = request.Amount;
+                    response.TotalAmount = request.Amount;
+                    response.StudentId = request.StudentId;
+                    response.StudentName = student != null ? $"{student.FirstName} {student.LastName}" : null;
                     response.ReasonCode = CoverageReasonCodes.NO_ACTIVE_LOG;
                     response.Explanation = $"No active Letter of Guarantee found for student {request.StudentId} in school year {request.SchoolYearId}";
 
                     PopulateEvaluationMetadata(request, response);
+                    
+                    // Create single parent allocation
+                    response.Allocations = new List<BillingAllocationDto>
+                    {
+                        new BillingAllocationDto
+                        {
+                            PartyType = "Parent",
+                            PartyId = null,
+                            PartyName = null,
+                            Amount = Math.Round(response.ParentAmount, 2),
+                            Currency = request.Currency ?? "US Dollar",
+                            BillTo = "Parent",
+                            ChargeCode = request.ItemId ?? request.CategoryId ?? string.Empty,
+                            ChargeDescription = request.ChargeDescription
+                        }
+                    };
+                    
                     audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
                     audit.CorrelationId = response.CorrelationId;
                     audit.SponsorPercent = response.SponsorPercent;
                     audit.ParentPercent = response.ParentPercent;
-                    _context.CoverageEvaluationAudits.Add(audit);
-                    await _context.SaveChangesAsync();
-                    response.AuditRecordId = audit.AuditId;
+                    if (!request.IsPreview)
+                    {
+                        _context.CoverageEvaluationAudits.Add(audit);
+                        await _context.SaveChangesAsync();
+                        response.AuditRecordId = audit.AuditId;
+                    }
+                    else
+                    {
+                        response.AuditRecordId = 0;
+                    }
                     return response;
                 }
 
@@ -192,8 +224,82 @@ namespace ISMSponsor.Services
                     response.ParentPercent = Math.Round((response.ParentAmount / request.Amount) * 100, 2);
                 }
                 
+                // Populate sponsor information and total amount
+                response.StudentId = log.StudentId;
+                response.StudentName = log.Student != null ? $"{log.Student.FirstName} {log.Student.LastName}" : null;
+                response.SponsorId = log.SponsorId;
+                response.SponsorName = log.Sponsor?.SponsorName;
+                response.TotalAmount = request.Amount;
+
                 // Serialize the matched rule as snapshot for audit compliance and rule replay
-                response.RuleSnapshot = SerializeRuleSnapshot(matchedRule);
+                response.RuleSnapshot = SerializeRuleSnapshot(log, matchedRule, request, response);
+
+                // Create billing allocations based on decision type
+                if (response.Decision == CoverageDecision.Covered && response.BillTo == Models.API.BillTo.Sponsor)
+                {
+                    // Fully covered by sponsor: single sponsor allocation
+                    response.Allocations = new List<BillingAllocationDto>
+                    {
+                        new BillingAllocationDto
+                        {
+                            PartyType = "Sponsor",
+                            PartyId = log.SponsorId,
+                            PartyName = log.Sponsor?.SponsorName,
+                            Amount = Math.Round(response.SponsorAmount, 2),
+                            Currency = request.Currency ?? "US Dollar",
+                            BillTo = "Sponsor",
+                            ChargeCode = request.ItemId ?? request.CategoryId ?? string.Empty,
+                            ChargeDescription = request.ChargeDescription
+                        }
+                    };
+                }
+                else if (response.Decision == CoverageDecision.Split || response.BillTo == Models.API.BillTo.SponsorAndParent)
+                {
+                    // Split billing: two allocations (sponsor and parent)
+                    response.Allocations = new List<BillingAllocationDto>
+                    {
+                        new BillingAllocationDto
+                        {
+                            PartyType = "Sponsor",
+                            PartyId = log.SponsorId,
+                            PartyName = log.Sponsor?.SponsorName,
+                            Amount = Math.Round(response.SponsorAmount, 2),
+                            Currency = request.Currency ?? "US Dollar",
+                            BillTo = "Sponsor",
+                            ChargeCode = request.ItemId ?? request.CategoryId ?? string.Empty,
+                            ChargeDescription = request.ChargeDescription
+                        },
+                        new BillingAllocationDto
+                        {
+                            PartyType = "Parent",
+                            PartyId = null,
+                            PartyName = null,
+                            Amount = Math.Round(response.ParentAmount, 2),
+                            Currency = request.Currency ?? "US Dollar",
+                            BillTo = "Parent",
+                            ChargeCode = request.ItemId ?? request.CategoryId ?? string.Empty,
+                            ChargeDescription = request.ChargeDescription
+                        }
+                    };
+                }
+                else if (response.Decision == CoverageDecision.NotCovered && response.BillTo == Models.API.BillTo.Parent)
+                {
+                    // Not covered: single parent allocation
+                    response.Allocations = new List<BillingAllocationDto>
+                    {
+                        new BillingAllocationDto
+                        {
+                            PartyType = "Parent",
+                            PartyId = null,
+                            PartyName = null,
+                            Amount = Math.Round(response.ParentAmount, 2),
+                            Currency = request.Currency ?? "US Dollar",
+                            BillTo = "Parent",
+                            ChargeCode = request.ItemId ?? request.CategoryId ?? string.Empty,
+                            ChargeDescription = request.ChargeDescription
+                        }
+                    };
+                }
 
                 // Step 9: Create audit record (skip for preview requests)
                 audit = CreateAuditRecord(request, response, userId, userDisplay, userRole);
@@ -276,6 +382,8 @@ namespace ISMSponsor.Services
         private async Task<LogCoverage?> FindActiveLogAsync(CoverageEvaluationRequest request)
         {
             var query = _context.LogCoverages
+                .Include(l => l.Sponsor)
+                .Include(l => l.Student)
                 .Include(l => l.CoverageRules!)
                 .ThenInclude(r => r.Item)
                 .Include(l => l.CoverageRules!)
@@ -383,8 +491,8 @@ namespace ISMSponsor.Services
                         Models.API.BillTo.Sponsor,
                         requestedAmount,
                         0,
-                        isItemRule ? CoverageReasonCodes.FULL_COVERAGE_ITEM : CoverageReasonCodes.FULL_COVERAGE_CATEGORY,
-                        $"Full coverage (100%) applied for {targetDescription}"
+                        CoverageReasonCodes.COVERED,
+                        "The charge is fully covered by the sponsor."
                     );
 
                 case "Percentage":
@@ -399,15 +507,15 @@ namespace ISMSponsor.Services
                             Models.API.BillTo.Sponsor,
                             requestedAmount,
                             0,
-                            isItemRule ? CoverageReasonCodes.PERCENTAGE_COVERAGE_ITEM : CoverageReasonCodes.PERCENTAGE_COVERAGE_CATEGORY,
-                            $"Full coverage ({percentage}%) applied for {targetDescription}"
+                            CoverageReasonCodes.COVERED,
+                            "The charge is fully covered by the sponsor."
                         );
                     }
                     else
                     {
                         return (
                             CoverageDecision.Split,
-                            Models.API.BillTo.Split,
+                            Models.API.BillTo.SponsorAndParent,
                             sponsorAmount,
                             parentAmount,
                             CoverageReasonCodes.PERCENTAGE_SPLIT,
@@ -424,15 +532,15 @@ namespace ISMSponsor.Services
                             Models.API.BillTo.Sponsor,
                             requestedAmount,
                             0,
-                            isItemRule ? CoverageReasonCodes.FIXED_AMOUNT_COVERAGE_ITEM : CoverageReasonCodes.FIXED_AMOUNT_COVERAGE_CATEGORY,
-                            $"Fixed amount coverage (₱{fixedAmount:N2}) covers full charge for {targetDescription}"
+                            CoverageReasonCodes.COVERED,
+                            "The charge is fully covered by the sponsor."
                         );
                     }
                     else
                     {
                         return (
                             CoverageDecision.Split,
-                            Models.API.BillTo.Split,
+                            Models.API.BillTo.SponsorAndParent,
                             fixedAmount,
                             requestedAmount - fixedAmount,
                             CoverageReasonCodes.FIXED_SPLIT,
@@ -449,19 +557,19 @@ namespace ISMSponsor.Services
                             Models.API.BillTo.Sponsor,
                             requestedAmount,
                             0,
-                            isItemRule ? CoverageReasonCodes.FULL_COVERAGE_ITEM : CoverageReasonCodes.FULL_COVERAGE_CATEGORY,
-                            $"Full coverage up to cap (₱{capAmount:N2}) applied for {targetDescription}"
+                            CoverageReasonCodes.COVERED,
+                            "The charge is fully covered by the sponsor."
                         );
                     }
                     else
                     {
                         return (
                             CoverageDecision.Split,
-                            Models.API.BillTo.Split,
+                            Models.API.BillTo.SponsorAndParent,
                             capAmount,
                             requestedAmount - capAmount,
-                            isItemRule ? CoverageReasonCodes.CAP_REACHED_ITEM : CoverageReasonCodes.CAP_REACHED_CATEGORY,
-                            $"Coverage capped at ₱{capAmount:N2} for {targetDescription}: Sponsor pays ₱{capAmount:N2}, Parent pays ₱{requestedAmount - capAmount:N2}"
+                            CoverageReasonCodes.EXCEEDS_CAP,
+                            $"The charge amount exceeds the sponsor coverage cap. The sponsor will cover {capAmount:N2} and the remaining {requestedAmount - capAmount:N2} will be billed to the parent."
                         );
                     }
 
@@ -483,30 +591,30 @@ namespace ISMSponsor.Services
             return $"LOG{log.LogId}-RULE{rule.RuleId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
         }
 
-        private string SerializeRuleSnapshot(LoGCoverageRule rule)
+        private string SerializeRuleSnapshot(LogCoverage log, LoGCoverageRule rule, CoverageEvaluationRequest request, CoverageEvaluationResponse response)
         {
             try
             {
-                var snapshot = new
+                // Create a human-readable snapshot with sponsor info
+                var readableSnapshot = $"Sponsor {log.SponsorId} {log.Sponsor?.SponsorName}; ";
+                
+                if (rule.CoverageType == "UpToCap" && rule.CapAmount.HasValue)
                 {
-                    RuleId = rule.RuleId,
-                    CoverageTarget = rule.CoverageTarget,
-                    ItemId = rule.ItemId,
-                    ItemName = rule.Item?.ItemName,
-                    CategoryId = rule.CategoryId,
-                    CategoryName = rule.Category?.CategoryName,
-                    CoverageType = rule.CoverageType,
-                    CoveragePercentage = rule.CoveragePercentage,
-                    CoverageFixedAmount = rule.CoverageFixedAmount,
-                    CapAmount = rule.CapAmount,
-                    DisplayOrder = rule.DisplayOrder,
-                    IsActive = rule.IsActive,
-                    EffectiveFrom = rule.EffectiveFrom,
-                    EffectiveTo = rule.EffectiveTo,
-                    CreatedOn = rule.CreatedOn,
-                    ModifiedOn = rule.ModifiedOn
-                };
-                return JsonSerializer.Serialize(snapshot);
+                    readableSnapshot += $"sponsor cap: {rule.CapAmount.Value:N2}; charge amount: {request.Amount:N2}; reason: {response.ReasonCode}";
+                }
+                else
+                {
+                    readableSnapshot += $"coverage type: {rule.CoverageType}; ";
+                    if (rule.CoveragePercentage.HasValue)
+                        readableSnapshot += $"percentage: {rule.CoveragePercentage.Value}%; ";
+                    if (rule.CoverageFixedAmount.HasValue)
+                        readableSnapshot += $"fixed amount: {rule.CoverageFixedAmount.Value:N2}; ";
+                    if (rule.CapAmount.HasValue)
+                        readableSnapshot += $"cap: {rule.CapAmount.Value:N2}; ";
+                    readableSnapshot += $"charge amount: {request.Amount:N2}; reason: {response.ReasonCode}";
+                }
+
+                return readableSnapshot;
             }
             catch (Exception ex)
             {

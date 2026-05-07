@@ -316,71 +316,6 @@
             <button type="button" class="close" onclick="closeViewProfileModal()">&times;</button>
         </div>
         
-        <!-- Approval Status Section (Admin Only) -->
-        <div id="approvalStatusSection" style="display: none; margin: 16px 0 0 0;">
-            <div id="approvalPendingBanner" style="display: none; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-                <div style="display: flex; align-items: start; gap: 12px;">
-                    <span style="font-size: 24px;">⏳</span>
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0 0 4px 0; color: #92400e; font-size: 15px;">Approval Pending</h4>
-                        <p style="margin: 0; color: #92400e; font-size: 13px;">This sponsor is awaiting approval before they can access the system.</p>
-                    </div>
-                </div>
-                <div style="margin-top: 16px; display: flex; gap: 12px;">
-                    <button type="button" class="btn-primary btn-add" onclick="showApprovalForm()"> Approve Sponsor</button>
-                    <button type="button" class="btn-secondary btn-add" onclick="showRejectionForm()" style="background: #dc2626; border-color: #dc2626; color: white;"> Reject Sponsor</button>
-                </div>
-            </div>
-            
-            <div id="approvalApprovedBanner" style="display: none; background: #d1fae5; border: 1px solid #34d399; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;"></span>
-                    <div>
-                        <strong style="color: #065f46;">Approved</strong>
-                        <span id="approvalDetailsText" style="color: #065f46; font-size: 13px;"></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="approvalRejectedBanner" style="display: none; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;"></span>
-                    <div>
-                        <strong style="color: #991b1b;">Rejected</strong>
-                        <span id="rejectionDetailsText" style="color: #991b1b; font-size: 13px;"></span>
-                    </div>
-                </div>
-                <button type="button" class="btn-primary btn-add" onclick="showReapprovalForm()" style="margin-top: 12px;">Reconsider & Approve</button>
-            </div>
-            
-            <!-- Approval Form (Hidden by default) -->
-            <div id="approvalForm" style="display: none; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-                <h4 style="margin: 0 0 12px 0; color: #111827;">Approve Sponsor</h4>
-                <div class="form-group">
-                    <label class="field-label">Approval Notes (Optional)</label>
-                    <textarea id="approvalNotes" rows="3" placeholder="Add any notes about this approval..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
-                </div>
-                <div style="display: flex; gap: 8px; margin-top: 12px;">
-                    <button type="button" class="btn-primary btn-add" onclick="submitApproval()">Confirm Approval</button>
-                    <button type="button" class="btn-secondary btn-add" onclick="cancelApprovalForm()">Cancel</button>
-                </div>
-            </div>
-            
-            <!-- Rejection Form (Hidden by default) -->
-            <div id="rejectionForm" style="display: none; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-                <h4 style="margin: 0 0 12px 0; color: #111827;">Reject Sponsor</h4>
-                <div class="form-group">
-                    <label class="field-label">Rejection Reason <span class="required">*</span></label>
-                    <textarea id="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;" required></textarea>
-                    <span class="form-error" id="rejectionReason-error"></span>
-                </div>
-                <div style="display: flex; gap: 8px; margin-top: 12px;">
-                    <button type="button" class="btn-primary btn-add" onclick="submitRejection()" style="background: #dc2626; border-color: #dc2626;">Confirm Rejection</button>
-                    <button type="button" class="btn-secondary btn-add" onclick="cancelRejectionForm()">Cancel</button>
-                </div>
-            </div>
-        </div>
-        
         <!-- Step Indicator -->
         <div style="display: flex; justify-content: space-between; margin: 24px 0 16px 0; position: relative;">
             <div style="position: absolute; top: 15px; left: 0; right: 0; height: 2px; background: #e0e0e0; z-index: 0;"></div>
@@ -486,12 +421,82 @@
             
             <!-- Step 3: Verification Document -->
             <div class="profile-step" id="profileStep3" style="display: none;">
+                <!-- Approval Status Section (Admin Only) - Only shown in Step 3 -->
+                <div id="approvalStatusSection" style="display: none; margin: 0 0 16px 0;">
+                    <div id="approvalPendingBanner" style="display: none; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <span style="font-size: 24px;">⏳</span>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 4px 0; color: #92400e; font-size: 15px;">Approval Pending</h4>
+                                <p style="margin: 0; color: #92400e; font-size: 13px;">This sponsor is awaiting approval before they can access the system.</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; display: flex; gap: 12px;">
+                            <button type="button" class="btn-primary btn-add" onclick="showApprovalForm()"> Approve Sponsor</button>
+                            <button type="button" class="btn-secondary btn-add" onclick="showRejectionForm()" style="background: #dc2626; border-color: #dc2626; color: white;"> Reject Sponsor</button>
+                        </div>
+                    </div>
+                    
+                    <div id="approvalApprovedBanner" style="display: none; background: #d1fae5; border: 1px solid #34d399; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;"></span>
+                            <div>
+                                <strong style="color: #065f46;">Approved</strong>
+                                <span id="approvalDetailsText" style="color: #065f46; font-size: 13px;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="approvalRejectedBanner" style="display: none; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;"></span>
+                            <div>
+                                <strong style="color: #991b1b;">Rejected</strong>
+                                <span id="rejectionDetailsText" style="color: #991b1b; font-size: 13px;"></span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-primary btn-add" onclick="showReapprovalForm()" style="margin-top: 12px;">Reconsider & Approve</button>
+                    </div>
+                    
+                    <!-- Approval Form (Hidden by default) -->
+                    <div id="approvalForm" style="display: none; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <h4 style="margin: 0 0 12px 0; color: #111827;">Approve Sponsor</h4>
+                        <div class="form-group">
+                            <label class="field-label">Approval Notes (Optional)</label>
+                            <textarea id="approvalNotes" rows="3" placeholder="Add any notes about this approval..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button type="button" class="btn-primary btn-add" onclick="submitApproval()">Confirm Approval</button>
+                            <button type="button" class="btn-secondary btn-add" onclick="cancelApprovalForm()">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Rejection Form (Hidden by default) -->
+                    <div id="rejectionForm" style="display: none; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <h4 style="margin: 0 0 12px 0; color: #111827;">Reject Sponsor</h4>
+                        <div class="form-group">
+                            <label class="field-label">Rejection Reason <span class="required">*</span></label>
+                            <textarea id="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;" required></textarea>
+                            <span class="form-error" id="rejectionReason-error"></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button type="button" class="btn-primary btn-add" onclick="submitRejection()" style="background: #dc2626; border-color: #dc2626;">Confirm Rejection</button>
+                            <button type="button" class="btn-secondary btn-add" onclick="cancelRejectionForm()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
                 <h3 class="form-section-title">Verification Document</h3>
                 <p class="help-text" style="margin-bottom: 1.5rem;">Upload or replace verification document (PDF, JPG, PNG, DOC, or DOCX, max 10MB)</p>
                 
                 <div class="form-group">
                     <label class="field-label">Current Document</label>
-                    <p style="margin: 8px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;" id="currentDocumentInfo">No document uploaded</p>
+                    <div style="margin: 8px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                        <p id="currentDocumentInfo" style="margin: 0;">Loading document information...</p>
+                        <div id="currentDocumentActions" style="display: none; margin-top: 8px;">
+                            <a id="downloadDocumentLink" href="#" class="btn-primary" style="display: inline-block; padding: 0.4rem 0.8rem; text-decoration: none; font-size: 0.875rem;">📎 Download Document</a>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -951,12 +956,14 @@
             document.getElementById('editPassword').value = '';
             document.getElementById('editConfirmPassword').value = '';
             
-            // Step 3 - document info (will be loaded if available)
-            document.getElementById('currentDocumentInfo').textContent = 'Loading document information...';
-            // TODO: Add API call to check if document exists
-            
             // Handle Approval Status (Admin Only)
             const approvalStatus = sponsor.approvalStatus || 'Approved';
+            
+            // Step 3 - Load verification document info
+            loadVerificationDocumentInfo(sponsor.sponsorId);
+            
+            // Store approval status for use in step navigation
+            window.currentSponsorApprovalStatus = approvalStatus;
             const approvalSection = document.getElementById('approvalStatusSection');
             const pendingBanner = document.getElementById('approvalPendingBanner');
             const approvedBanner = document.getElementById('approvalApprovedBanner');
@@ -997,6 +1004,33 @@
         clearProfileErrors();
         profileGoToStep(1);
     };
+    
+    async function loadVerificationDocumentInfo(sponsorId) {
+        try {
+            const response = await fetch(`/Sponsors/GetVerificationDocumentInfo?sponsorId=${sponsorId}`);
+            const result = await response.json();
+            
+            const docInfo = document.getElementById('currentDocumentInfo');
+            const docActions = document.getElementById('currentDocumentActions');
+            const downloadLink = document.getElementById('downloadDocumentLink');
+            
+            if (result.hasDocument) {
+                docInfo.textContent = `Document uploaded: ${result.fileName}`;
+                if (result.uploadedOn) {
+                    docInfo.textContent += ` (${result.uploadedOn})`;
+                }
+                downloadLink.href = `/Sponsors/DownloadVerificationDocument?sponsorId=${sponsorId}`;
+                docActions.style.display = 'block';
+            } else {
+                docInfo.textContent = 'No document uploaded';
+                docActions.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error loading verification document info:', error);
+            document.getElementById('currentDocumentInfo').textContent = 'Unable to load document information';
+            document.getElementById('currentDocumentActions').style.display = 'none';
+        }
+    }
     
     function clearProfileErrors() {
         document.getElementById('profileError').style.display = 'none';
@@ -1174,6 +1208,14 @@
         // Show current step
         document.getElementById('profileStep' + step).style.display = 'block';
         profileCurrentStep = step;
+        
+        // Show/hide approval status section - only visible in step 3
+        const approvalSection = document.getElementById('approvalStatusSection');
+        if (step === 3 && approvalSection) {
+            approvalSection.style.display = 'block';
+        } else if (approvalSection) {
+            approvalSection.style.display = 'none';
+        }
         
         // Update step indicators
         for (let i = 1; i <= 3; i++) {
@@ -1419,10 +1461,23 @@
     
     // =========== TABLE FILTER AND SORT ===========
     
-    // Initialize debounced search on page load
+    // Initialize debounced search and check URL parameters on page load
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof setupDebouncedSearch !== 'undefined') {
             setupDebouncedSearch('searchInput', filterTable, 300);
+        }
+        
+        // Check for URL parameters and apply filters
+        const urlParams = new URLSearchParams(window.location.search);
+        const approvalParam = urlParams.get('approval');
+        
+        if (approvalParam) {
+            const approvalFilter = document.getElementById('approvalFilter');
+            if (approvalFilter) {
+                approvalFilter.value = approvalParam;
+                // Apply the filter automatically
+                filterTable();
+            }
         }
     });
     

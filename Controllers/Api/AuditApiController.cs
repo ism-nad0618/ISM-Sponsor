@@ -46,7 +46,7 @@ namespace ISMSponsor.Controllers.Api
         {
             try
             {
-                var audit = await _context.CoverageEvaluationAudits
+                var audit = await _context.     CoverageEvaluationAudits    
                     .AsNoTracking()
                     .FirstOrDefaultAsync(a => a.AuditId == decisionId);
 
