@@ -153,7 +153,7 @@ namespace ISMSponsor.Controllers
             return RedirectToAction("Profile");
         }
 
-        [Authorize(Roles = "admin,cashier")]
+        [Authorize(Roles = "admin,cashier,admissions")]
         public async Task<IActionResult> Index()
         {
             var list = await _sponsorService.GetAllAsync();
@@ -368,7 +368,7 @@ namespace ISMSponsor.Controllers
             }
         }
 
-        [Authorize(Roles = "admin,cashier")]
+        [Authorize(Roles = "admin,cashier,admissions")]
         [HttpGet]
         public async Task<IActionResult> GetProfileData(string id)
         {
@@ -392,6 +392,48 @@ namespace ISMSponsor.Controllers
             });
         }
 
+        /// <summary>
+        /// Checks if the current user can edit the specified sponsor.
+        /// Admin users can edit at any approval status.
+        /// Cashier users can only edit when approval status is PendingApproval.
+        /// Admissions users cannot edit (read-only).
+        /// </summary>
+        [Authorize(Roles = "admin,cashier,admissions")]
+        [HttpGet]
+        public async Task<IActionResult> CanEditSponsor(string id)
+        {
+            var sponsor = await _sponsorService.GetByIdAsync(id);
+            if (sponsor == null)
+            {
+                return Json(new { canEdit = false, reason = "Sponsor not found" });
+            }
+
+            var isAdmin = User.IsInRole("admin");
+            var isCashier = User.IsInRole("cashier");
+            var isAdmissions = User.IsInRole("admissions");
+
+            if (isAdmissions && !isAdmin && !isCashier)
+            {
+                return Json(new { canEdit = false, reason = "Admissions users have read-only access" });
+            }
+
+            if (isCashier && !isAdmin)
+            {
+                if (sponsor.ApprovalStatus != "PendingApproval")
+                {
+                    return Json(new { canEdit = false, reason = "Cashiers can only edit sponsors with Pending Approval status" });
+                }
+            }
+
+            // Admin can edit at any status
+            return Json(new { canEdit = true, reason = "" });
+        }
+
+        /// <summary>
+        /// Updates sponsor profile including basic info, user account, and verification document.
+        /// Admin users can edit at any approval status.
+        /// Cashier users can only edit when approval status is PendingApproval.
+        /// </summary>
         [Authorize(Roles = "admin,cashier")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -400,17 +442,37 @@ namespace ISMSponsor.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return Json(new { success = false, message = "Validation failed", errors });
+                var errorDetails = string.Join("; ", errors);
+                _logger.LogWarning("UpdateProfile validation failed for {SponsorId}: {Errors}", model.SponsorId, errorDetails);
+                return Json(new { success = false, message = "Validation failed: " + errorDetails, errors });
             }
 
             try
             {
+                _logger.LogInformation("UpdateProfile called for sponsor {SponsorId} by user {User}", 
+                    model.SponsorId, User.Identity?.Name);
+                
                 // Get the sponsor
                 var sponsor = await _sponsorService.GetByIdAsync(model.SponsorId);
                 if (sponsor == null)
                 {
+                    _logger.LogWarning("Sponsor {SponsorId} not found", model.SponsorId);
                     return Json(new { success = false, message = "Sponsor not found" });
                 }
+
+                // Check editing permissions based on role and approval status
+                var isAdmin = User.IsInRole("admin");
+                var isCashier = User.IsInRole("cashier");
+
+                if (isCashier && !isAdmin)
+                {
+                    // Cashiers can only edit when approval is pending
+                    if (sponsor.ApprovalStatus != "PendingApproval")
+                    {
+                        return Json(new { success = false, message = "Cashiers can only edit sponsors with Pending Approval status" });
+                    }
+                }
+                // Admin can edit at any approval status (no restriction)
 
                 // Update sponsor information
                 sponsor.SponsorName = model.SponsorName;
@@ -418,11 +480,8 @@ namespace ISMSponsor.Controllers
                 sponsor.Address = model.Address ?? string.Empty;
                 sponsor.Tin = model.Tin ?? string.Empty;
                 await _sponsorService.UpdateAsync(sponsor);
-
-                // Queue downstream integrations to ALL targets (non-blocking)
-                await _integrationOrchestrator.QueueSponsorSyncAsync(
-                    model.SponsorId, 
-                    IntegrationEventType.SponsorUpdate);
+                
+                _logger.LogInformation("Sponsor information updated for {SponsorId}", model.SponsorId);
 
                 // Update password if provided
                 if (!string.IsNullOrEmpty(model.Password))
@@ -433,8 +492,8 @@ namespace ISMSponsor.Controllers
                         return Json(new { success = false, message = "Passwords do not match" });
                     }
 
-                    // Find user by sponsor ID
-                    var users = _context.Users.Where(u => u.SponsorId == model.SponsorId).ToList();
+                    // Find user by sponsor ID (use async)
+                    var users = await _context.Users.Where(u => u.SponsorId == model.SponsorId).ToListAsync();
                     if (users.Any())
                     {
                         var user = users.First();
@@ -446,28 +505,40 @@ namespace ISMSponsor.Controllers
                             var errors = string.Join(", ", passwordResult.Errors.Select(e => e.Description));
                             return Json(new { success = false, message = $"Sponsor updated but password change failed: {errors}" });
                         }
+                        
+                        _logger.LogInformation("Password updated for user {Username}", user.UserName);
                     }
                 }
 
                 // Handle verification document upload
                 if (model.VerificationDocument != null && model.VerificationDocument.Length > 0)
                 {
+                    _logger.LogInformation("Processing document upload for sponsor {SponsorId}. File: {FileName}, Size: {Size} bytes",
+                        model.SponsorId, model.VerificationDocument.FileName, model.VerificationDocument.Length);
+
                     // Validate file
                     var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
                     var fileExtension = Path.GetExtension(model.VerificationDocument.FileName).ToLowerInvariant();
                     
                     if (!allowedExtensions.Contains(fileExtension))
                     {
+                        _logger.LogWarning("Invalid file type {Extension} for sponsor {SponsorId}", fileExtension, model.SponsorId);
                         return Json(new { success = false, message = "Invalid file type. Allowed: PDF, JPG, PNG, DOC, DOCX" });
                     }
 
                     if (model.VerificationDocument.Length > 10 * 1024 * 1024)
                     {
+                        _logger.LogWarning("File too large ({Size} bytes) for sponsor {SponsorId}", model.VerificationDocument.Length, model.SponsorId);
                         return Json(new { success = false, message = "File size must not exceed 10MB" });
                     }
 
                     // Save the new document
-                    await _sponsorService.SaveVerificationDocumentAsync(model.SponsorId, model.VerificationDocument);
+                    var savedFileName = await _sponsorService.SaveVerificationDocumentAsync(model.SponsorId, model.VerificationDocument);
+                    _logger.LogInformation("Document saved successfully for sponsor {SponsorId}: {FileName}", model.SponsorId, savedFileName);
+                }
+                else
+                {
+                    _logger.LogInformation("No document uploaded for sponsor {SponsorId}", model.SponsorId);
                 }
 
                 // Log the activity
@@ -480,12 +551,19 @@ namespace ISMSponsor.Controllers
                     schoolYearId: ""
                 );
 
+                _logger.LogInformation("Sponsor profile updated successfully for {SponsorId}", model.SponsorId);
+                // Queue downstream integrations to ALL targets (non-blocking) - do this last
+                await _integrationOrchestrator.QueueSponsorSyncAsync(
+                    model.SponsorId, 
+                    IntegrationEventType.SponsorUpdate);
+
                 return Json(new { success = true, message = "Sponsor profile updated successfully" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating sponsor profile {SponsorId}", model.SponsorId);
-                return Json(new { success = false, message = "An error occurred while updating the profile" });
+                _logger.LogError(ex, "Error updating sponsor profile {SponsorId}: {ErrorMessage}", 
+                    model?.SponsorId ?? "unknown", ex.Message);
+                return Json(new { success = false, message = $"An error occurred while updating the profile: {ex.Message}" });
             }
         }
 

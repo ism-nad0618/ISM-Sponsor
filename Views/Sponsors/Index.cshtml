@@ -10,9 +10,12 @@
             <h1>All Sponsors</h1>
             <p class="page-subtitle">Review registered sponsor records</p>
         </div>
-        <div style="display: flex; gap: 12px;">
-            <button type="button" class="btn-primary btn-add" onclick="openCreateSponsorModal()">+ New Sponsor</button>
-        </div>
+        @if (User.IsInRole("admin") || User.IsInRole("cashier"))
+        {
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="btn-primary btn-add" onclick="openCreateSponsorModal()">+ New Sponsor</button>
+            </div>
+        }
     </div>
 </div>
 
@@ -141,16 +144,26 @@
                                 </a>
                             </td>
                             <td class="action-cell">
-                                <a href="javascript:void(0)" class="btn-link" onclick="openViewProfileModal('@s.SponsorId')">View/Edit</a>
-                                @if (s.IsActive)
+                                @if (User.IsInRole("admin") || User.IsInRole("cashier"))
                                 {
-                                    <span style="color: var(--gray-300); margin: 0 4px;">|</span>
-                                    <a href="javascript:void(0)" class="btn-link" onclick="toggleSponsorStatus('@s.SponsorId', false)">Deactivate</a>
+                                    <a href="javascript:void(0)" class="btn-link" onclick="openViewProfileModal('@s.SponsorId')">View/Edit</a>
                                 }
                                 else
                                 {
-                                    <span style="color: var(--gray-300); margin: 0 4px;">|</span>
-                                    <a href="javascript:void(0)" class="btn-link" onclick="toggleSponsorStatus('@s.SponsorId', true)">Activate</a>
+                                    <a href="javascript:void(0)" class="btn-link" onclick="openViewProfileModal('@s.SponsorId')">View</a>
+                                }
+                                @if (User.IsInRole("admin") || User.IsInRole("cashier"))
+                                {
+                                    @if (s.IsActive)
+                                    {
+                                        <span style="color: var(--gray-300); margin: 0 4px;">|</span>
+                                        <a href="javascript:void(0)" class="btn-link" onclick="toggleSponsorStatus('@s.SponsorId', false)">Deactivate</a>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: var(--gray-300); margin: 0 4px;">|</span>
+                                        <a href="javascript:void(0)" class="btn-link" onclick="toggleSponsorStatus('@s.SponsorId', true)">Activate</a>
+                                    }
                                 }
                             </td>
                         </tr>
@@ -379,7 +392,10 @@
                 
                 <div class="form-actions" style="margin-top: 24px;">
                     <button type="button" class="btn-secondary btn-add" onclick="closeViewProfileModal()">Close</button>
-                    <button type="button" class="btn-primary btn-add" onclick="profileNextStep(2)">Next: User Account →</button>
+                    @if (User.IsInRole("admin") || User.IsInRole("cashier"))
+                    {
+                        <button type="button" class="btn-primary btn-add" onclick="profileNextStep(2)">Next: User Account →</button>
+                    }
                 </div>
             </div>
             
@@ -414,8 +430,15 @@
                 </div>
                 
                 <div class="form-actions" style="margin-top: 24px;">
-                    <button type="button" class="btn-secondary btn-add" onclick="profilePrevStep(1)">← Back</button>
-                    <button type="button" class="btn-primary btn-add" onclick="profileNextStep(3)">Next: Attachment →</button>
+                    @if (User.IsInRole("admin") || User.IsInRole("cashier"))
+                    {
+                        <button type="button" class="btn-secondary btn-add" onclick="profilePrevStep(1)">← Back</button>
+                        <button type="button" class="btn-primary btn-add" onclick="profileNextStep(3)">Next: Attachment →</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn-secondary btn-add" onclick="closeViewProfileModal()">Close</button>
+                    }
                 </div>
             </div>
             
@@ -476,7 +499,7 @@
                         <h4 style="margin: 0 0 12px 0; color: #111827;">Reject Sponsor</h4>
                         <div class="form-group">
                             <label class="field-label">Rejection Reason <span class="required">*</span></label>
-                            <textarea id="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;" required></textarea>
+                            <textarea id="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
                             <span class="form-error" id="rejectionReason-error"></span>
                         </div>
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -507,8 +530,15 @@
                 </div>
                 
                 <div class="form-actions" style="margin-top: 24px;">
-                    <button type="button" class="btn-secondary btn-add" onclick="profilePrevStep(2)">← Back</button>
-                    <button type="submit" class="btn-primary btn-add" id="saveProfileBtn"> Save Changes</button>
+                    @if (User.IsInRole("admin") || User.IsInRole("cashier"))
+                    {
+                        <button type="button" class="btn-secondary btn-add" onclick="profilePrevStep(2)">← Back</button>
+                        <button type="submit" class="btn-primary btn-add" id="saveProfileBtn"> Save Changes</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn-secondary btn-add" onclick="closeViewProfileModal()">Close</button>
+                    }
                 </div>
             </div>
         </form>
@@ -932,6 +962,10 @@
     
     window.openViewProfileModal = async function(sponsorId) {
         try {
+            // Check if user can edit this sponsor
+            const canEditResponse = await fetch(`/Sponsors/CanEditSponsor?id=${sponsorId}`);
+            const canEditResult = await canEditResponse.json();
+            
             const response = await fetch(`/Sponsors/GetProfileData?id=${sponsorId}`);
             const sponsor = await response.json();
             
@@ -939,6 +973,18 @@
                 alert('Failed to load sponsor data');
                 return;
             }
+            
+            // Show warning if user cannot edit
+            if (!canEditResult.canEdit) {
+                const profileError = document.getElementById('profileError');
+                profileError.textContent = canEditResult.reason;
+                profileError.style.display = 'block';
+            } else {
+                document.getElementById('profileError').style.display = 'none';
+            }
+            
+            // Store edit permission for later use
+            window.currentCanEdit = canEditResult.canEdit;
             
             // Populate modal with sponsor data
             document.getElementById('profileSponsorIdHidden').value = sponsor.sponsorId;
@@ -992,11 +1038,73 @@
             document.getElementById('viewProfileModal').classList.add('active');
             profileGoToStep(1);
             clearProfileErrors();
+            
+            // Make form read-only if user cannot edit
+            if (!canEditResult.canEdit) {
+                makeFormReadOnly();
+                // Hide the save button
+                document.getElementById('saveProfileBtn').style.display = 'none';
+            } else {
+                // Make sure save button is visible
+                document.getElementById('saveProfileBtn').style.display = 'inline-block';
+                // Remove any readonly attributes (except always-readonly fields)
+                removeFormReadOnly();
+            }
+            
+            // Additional check: Make form read-only for admissions users
+            @if (User.IsInRole("admissions") && !User.IsInRole("admin") && !User.IsInRole("cashier"))
+            {
+                <text>
+                makeFormReadOnly();
+                document.getElementById('saveProfileBtn').style.display = 'none';
+                </text>
+            }
         } catch (error) {
             console.error('Error loading sponsor:', error);
             alert('Failed to load sponsor profile');
         }
     };
+    
+    function makeFormReadOnly() {
+        // Disable all input fields in the form
+        const inputs = document.querySelectorAll('#editProfileForm input:not([readonly]), #editProfileForm textarea:not([readonly]), #editProfileForm select:not([disabled])');
+        inputs.forEach(input => {
+            if (input.type !== 'hidden' && input.id !== 'editSponsorId') {
+                input.setAttribute('readonly', 'readonly');
+                input.setAttribute('data-was-readonly', 'true');
+                input.style.backgroundColor = '#f5f5f5';
+                input.style.cursor = 'not-allowed';
+            }
+        });
+        
+        // Disable file uploads
+        const fileInputs = document.querySelectorAll('#editProfileForm input[type=\"file\"]');
+        fileInputs.forEach(input => {
+            input.disabled = true;
+            input.style.display = 'none';
+        });
+    }
+    
+    function removeFormReadOnly() {
+        // Re-enable input fields (except those that should always be readonly)
+        const alwaysReadonlyIds = ['editSponsorId', 'editUsername', 'editDisplayName'];
+        const inputs = document.querySelectorAll('#editProfileForm input[data-was-readonly="true"]');
+        inputs.forEach(input => {
+            if (!alwaysReadonlyIds.includes(input.id)) {
+                input.removeAttribute('readonly');
+                input.removeAttribute('data-was-readonly');
+                input.style.backgroundColor = '';
+                input.style.cursor = '';
+            }
+        });
+        
+        // Re-enable file uploads
+        const fileInputs = document.querySelectorAll('#editProfileForm input[type=\"file\"]');
+        fileInputs.forEach(input => {
+            input.disabled = false;
+            input.style.display = '';
+        });
+    }
     
     window.closeViewProfileModal = function() {
         document.getElementById('viewProfileModal').classList.remove('active');
@@ -1345,6 +1453,14 @@
     if (editProfileForm) {
         editProfileForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Check if editing is allowed
+            if (window.currentCanEdit === false) {
+                const errorDiv = document.getElementById('profileError');
+                errorDiv.textContent = 'You do not have permission to edit this sponsor.';
+                errorDiv.style.display = 'block';
+                return;
+            }
             
             // Validate all steps before submitting
             if (!validateProfileStep(1)) {
